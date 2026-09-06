@@ -60,9 +60,10 @@ export class CodebaseParser {
     // Döngüsel karmaşıklık (Cyclomatic complexity) kestirimi
     const complexity = this.estimateComplexity(content);
 
-    // Import ve Export'ları regex ile güvenli şekilde çıkarma (ReDoS korumalı)
+    // Import, Export ve Fonksiyonları regex ile güvenli şekilde çıkarma (ReDoS korumalı)
     const imports = this.extractImports(filePath, content);
     const exports = this.extractExports(content);
+    const functions = this.extractFunctions(content);
 
     // İstanbul Bölgesi Tayini (Frontend/Avrupa vs Backend/Anadolu)
     const district = this.assignDistrict(filePath);
@@ -71,15 +72,33 @@ export class CodebaseParser {
       id: filePath,
       name: filePath.split('/').pop().split('\\').pop(),
       path: filePath,
+      content: content, // Gerçek kaynak kod önizlemesi için
       loc,
       sloc,
       complexity,
       imports,
       exports,
+      functions,
       district,
       isCore: this.isCoreModule(filePath),
       healthScore: this.calculateHealthScore(loc, complexity)
     };
+  }
+
+  /**
+   * Kod içerisindeki fonksiyon ve metot tanımlarını çıkarır
+   */
+  extractFunctions(content) {
+    const funcs = [];
+    const funcRegex = /(?:function\s+([A-Za-z0-9_$]+)|(?:const|let|var)\s+([A-Za-z0-9_$]+)\s*=\s*(?:async\s*)?\([^)]*\)\s*=>|(?:async\s+)?([A-Za-z0-9_$]+)\s*\([^)]*\)\s*\{)/g;
+    let match;
+    while ((match = funcRegex.exec(content)) !== null) {
+      const name = match[1] || match[2] || match[3];
+      if (name && !['if', 'for', 'while', 'switch', 'catch'].includes(name)) {
+        if (!funcs.includes(name)) funcs.push(name);
+      }
+    }
+    return funcs.slice(0, 15); // İlk 15 önemli fonksiyon
   }
 
   /**

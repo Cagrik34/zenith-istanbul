@@ -286,6 +286,63 @@ export class BosphorusScene {
     return group;
   }
 
+  /**
+   * Seçilen bina ile bağımlı olduğu binalar arasına 3D Neon Lazer Hatları çizer
+   */
+  drawLaserConnections(sourceMod, trafficEngine) {
+    this.clearLaserConnections();
+    if (!sourceMod || !sourceMod.worldPosition) return;
+
+    const sourcePos = sourceMod.worldPosition.clone();
+    sourcePos.y += 10;
+
+    const targets = Array.from(trafficEngine.adjacencyList.get(sourceMod.id) || []);
+    const dependents = Array.from(trafficEngine.reverseAdjacencyList.get(sourceMod.id) || []);
+
+    // 1. Dışa giden importlar (Cyan Neon Lazerler)
+    targets.forEach(targetId => {
+      const targetMod = trafficEngine.modules.get(targetId);
+      if (targetMod && targetMod.worldPosition) {
+        this.createLaserArc(sourcePos, targetMod.worldPosition, 0x00f0ff);
+      }
+    });
+
+    // 2. İçe gelen çağıranlar (Pink / Red Neon Lazerler)
+    dependents.forEach(depId => {
+      const depMod = trafficEngine.modules.get(depId);
+      if (depMod && depMod.worldPosition) {
+        this.createLaserArc(depMod.worldPosition, sourcePos, 0xff007f);
+      }
+    });
+  }
+
+  createLaserArc(start, end, hexColor) {
+    const midPoint = new THREE.Vector3().addVectors(start, end).multiplyScalar(0.5);
+    midPoint.y += 45; // Havada kavis yapan lazer köprüsü
+
+    const curve = new THREE.QuadraticBezierCurve3(start, midPoint, end);
+    const points = curve.getPoints(24);
+    const geo = new THREE.BufferGeometry().setFromPoints(points);
+    const mat = new THREE.LineBasicMaterial({
+      color: hexColor,
+      linewidth: 3,
+      transparent: true,
+      opacity: 0.95
+    });
+
+    const line = new THREE.Line(geo, mat);
+    this.scene.add(line);
+    this.activeLaserLines.push(line);
+  }
+
+  clearLaserConnections() {
+    if (!this.activeLaserLines) this.activeLaserLines = [];
+    for (const line of this.activeLaserLines) {
+      this.scene.remove(line);
+    }
+    this.activeLaserLines = [];
+  }
+
   buildBridges(bridges) {
     // Boğaziçi Köprü Hatları (Z: -60 -> 15 Temmuz Şehitler, Z: 60 -> FSM Köprüsü)
     const bridgeLocations = [

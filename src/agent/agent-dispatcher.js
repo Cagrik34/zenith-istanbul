@@ -48,17 +48,55 @@ export class AgentDispatcher {
     log('🧪 [DOĞRULAMA] AST Bağımlılık Grafiği Yeniden Derleniyor...', 'info');
     
     // Grafikteki döngüyü kır (userService -> AuthModal kenarını sil, güvenli types modülü ekle)
+    this.lastGeneratedDiff = this.produceRefactorDiff();
     this.executeGraphDecoupling(trafficEngine);
     await this.delay(800);
 
     log('✅ [TARJAN SCC GEÇTİ] Kalan Döngüsel Bağımlılık Sayısı: 0', 'success');
     log('🌉 [KÖPRÜ AÇILDI] 15 Temmuz Şehitler Köprüsü Trafiğe Açıldı! Araçlar Akıyor.', 'success');
+    log('📄 [YAMA HAZIRLANDI] Unified Git Diff üretildi ("Refactor Diffini Gör" butonundan inceleyebilirsiniz).', 'highlight');
     log('🎉 [TAMAMLANDI] ZenithIstanbul Mimarisi Kusursuz Senkron Durumuna Getirildi.', 'header');
 
     this.isResolving = false;
     if (this.onIncidentResolved) {
-      this.onIncidentResolved();
+      this.onIncidentResolved(this.lastGeneratedDiff);
     }
+  }
+
+  /**
+   * Gerçekçi Git Diff Yaması Üretir
+   */
+  produceRefactorDiff() {
+    return `diff --git a/src/services/userService.ts b/src/services/userService.ts
+index 8f2c19a..4b108e4 100644
+--- a/src/services/userService.ts
++++ b/src/services/userService.ts
+@@ -1,6 +1,6 @@
+-import { AuthModal } from '../ui/AuthModal'; // 🚨 DÖNGÜSEL BAĞIMLILIK: Servis UI'ı import ediyordu!
++import type { UserSessionPayload } from '../types/auth-contracts'; // ✅ Ortak tipe taşındı
+ import { dbPool } from './dbConnection';
+ 
+ export function getUserProfile(userId: string): Promise<UserProfile> {
+-  const session = AuthModal.getActiveSession();
++  const session = dbPool.getSession(userId);
+   return dbPool.query('SELECT * FROM users WHERE id = $1', [userId]);
+ }
+
+diff --git a/src/types/auth-contracts.ts b/src/types/auth-contracts.ts
+new file mode 100644
+index 0000000..7c2d119
+--- /dev/null
++++ b/src/types/auth-contracts.ts
+@@ -0,0 +1,9 @@
++/**
++ * ZenithIstanbul - Decoupled Contract Layer (Tarihi Yarımada)
++ */
++export interface UserSessionPayload {
++  userId: string;
++  roles: string[];
++  issuedAt: number;
++  expiresAt: number;
++}`;
   }
 
   executeGraphDecoupling(trafficEngine) {

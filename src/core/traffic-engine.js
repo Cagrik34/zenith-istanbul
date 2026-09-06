@@ -198,53 +198,73 @@ export class TrafficEngine {
   }
 
   /**
-   * İBB / AKOM tarzı İstanbul Trafik Yoğunluk İndeksi hesabı (%0 - %100)
+   * Bir modülün etki alanını (Blast Radius) hesaplar
+   * @param {string} moduleId - Seçilen modül
    */
-  calculateTrafficDensity() {
-    let density = 20; // Baz akıcı trafik
+  calculateBlastRadius(moduleId) {
+    const directDependents = Array.from(this.reverseAdjacencyList.get(moduleId) || []);
+    const directDependencies = Array.from(this.adjacencyList.get(moduleId) || []);
 
-    // Döngüsel bağımlılıklar trafiği kilitler
-    density += this.circularChains.length * 25;
-
-    // Kilitli köprüler
-    const jammedBridges = this.bridges.filter(b => b.isJammed).length;
-    density += jammedBridges * 20;
-
-    // Yüksek karmaşıklık monolitleri
-    let highComplexityCount = 0;
-    for (const mod of this.modules.values()) {
-      if (mod.complexity > 40) highComplexityCount++;
+    // 2. Derece etki alanı (Transit etkilenenler)
+    const transitDependents = new Set();
+    for (const dep of directDependents) {
+      const secondTier = this.reverseAdjacencyList.get(dep);
+      if (secondTier) {
+        for (const st of secondTier) {
+          if (st !== moduleId && !directDependents.includes(st)) {
+            transitDependents.add(st);
+          }
+        }
+      }
     }
-    density += Math.min(25, highComplexityCount * 4);
 
-    this.trafficDensity = Math.min(99, Math.max(12, density));
+    const totalImpactCount = directDependents.length + transitDependents.size;
+    let riskLevel = 'Düşük';
+    if (totalImpactCount > 8) riskLevel = 'Kritik (Şehir Geneli Çökme Riski)';
+    else if (totalImpactCount > 3) riskLevel = 'Orta (Köprü ve Semt Etkilenir)';
+
+    return {
+      moduleId,
+      directDependents,
+      directDependencies,
+      transitDependents: Array.from(transitDependents),
+      totalImpactCount,
+      riskLevel
+    };
   }
 
   /**
-   * Genel durum bülteni (AKOM Raporu)
+   * Mimari Raporu (Markdown formatında) üretir
    */
-  generateAkomReport() {
-    const jammedCount = this.bridges.filter(b => b.isJammed).length;
-    let statusText = 'Trafik Akıcı (Tüm Köprüler Açık)';
-    let alertLevel = 'success';
+  exportArchitectureReportMarkdown() {
+    const report = this.generateAkomReport();
+    let md = `# 🌉 ZenithIstanbul — Kod Mimarisi & Trafik Raporu\n\n`;
+    md += `**Tarih:** ${new Date().toLocaleString('tr-TR')}\n`;
+    md += `**Trafik Yoğunluğu:** %${report.density} (${report.statusText})\n`;
+    md += `**Toplam Modül Sayısı:** ${report.totalModules}\n`;
+    md += `**Döngüsel Kilit (Circular SCC):** ${report.circularDependencies}\n`;
+    md += `**Boğaz Köprüsü Importları:** ${this.bridges.length}\n`;
+    md += `**Prens Adaları (Ölü Kodlar):** ${report.deadCodeCount}\n\n`;
 
-    if (this.trafficDensity >= 70) {
-      statusText = '🚨 ŞEHİR GENELİ KİLİT! Köprülerde Dairesel Bağımlılık Alarmı';
-      alertLevel = 'critical';
-    } else if (this.trafficDensity >= 40) {
-      statusText = '⚠️ Yoğun Trafik: Maslak ve Köprü Bağlantılarında Yavaşlama';
-      alertLevel = 'warning';
+    md += `## 🚨 Döngüsel Bağımlılık Zincirleri (Tarjan SCC)\n`;
+    if (this.circularChains.length === 0) {
+      md += `> ✅ Hiçbir döngüsel bağımlılık bulunamadı. Boğaz trafiği akıcı.\n\n`;
+    } else {
+      this.circularChains.forEach((chain, i) => {
+        md += `### Zincir #${i + 1}:\n`;
+        md += `\`${chain.join(' ➔ ')}\`\n\n`;
+      });
     }
 
-    return {
-      density: this.trafficDensity,
-      statusText,
-      alertLevel,
-      totalModules: this.modules.size,
-      circularDependencies: this.circularChains.length,
-      jammedBridges: jammedCount,
-      deadCodeCount: this.deadCodeModules.length,
-      chains: this.circularChains
-    };
+    md += `## 🏙️ Semt & Yaka Dağılımı\n`;
+    md += `| Semt / Bölge | Yaka | Dosya Sayısı | Açıklama |\n`;
+    md += `|---|---|---|---|\n`;
+    md += `| **Levent / Maslak** | Avrupa | ${Array.from(this.modules.values()).filter(m => m.district.district.includes('Maslak') || m.district.district.includes('Levent')).length} | Yüksek karmaşıklıktaki iş mantığı ve sayfalar |\n`;
+    md += `| **Beşiktaş / Şişli** | Avrupa | ${Array.from(this.modules.values()).filter(m => m.district.district.includes('Beşiktaş') || m.district.district.includes('Şişli')).length} | UI bileşenleri ve arayüz elemanları |\n`;
+    md += `| **Kadıköy / Üsküdar** | Anadolu | ${Array.from(this.modules.values()).filter(m => m.district.side === 'asia').length} | Veri tabanı, servisler ve backend katmanı |\n`;
+    md += `| **Tarihi Yarımada** | Çekirdek | ${Array.from(this.modules.values()).filter(m => m.district.side === 'historic').length} | Kadim konfigürasyon ve temel tipler |\n`;
+    md += `| **Prens Adaları** | İzole | ${report.deadCodeCount} | Çağrılmayan ölü kodlar |\n\n`;
+
+    md += `---\n*Rapor ZenithIstanbul tarafından yerel olarak üretilmiştir. Hiçbir kod dışarı sızdırılmamıştır.*\n`;
+    return md;
   }
-}
