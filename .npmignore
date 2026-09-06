@@ -1,0 +1,12 @@
+# ZenithIstanbul npmignore
+.git/
+.github/
+.vscode/
+.idea/
+*.log
+scratch/
+test/
+tests/
+coverage/
+.DS_Store
+Thumbs.db
