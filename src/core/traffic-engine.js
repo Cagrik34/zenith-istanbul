@@ -235,6 +235,57 @@ export class TrafficEngine {
   }
 
   /**
+   * İBB / AKOM tarzı İstanbul Trafik Yoğunluk İndeksi hesabı (%0 - %100)
+   */
+  calculateTrafficDensity() {
+    let density = 20; // Baz akıcı trafik
+
+    // Döngüsel bağımlılıklar trafiği kilitler
+    density += this.circularChains.length * 25;
+
+    // Kilitli köprüler
+    const jammedBridges = this.bridges.filter(b => b.isJammed).length;
+    density += jammedBridges * 20;
+
+    // Yüksek karmaşıklık monolitleri
+    let highComplexityCount = 0;
+    for (const mod of this.modules.values()) {
+      if (mod.complexity > 40) highComplexityCount++;
+    }
+    density += Math.min(25, highComplexityCount * 4);
+
+    this.trafficDensity = Math.min(99, Math.max(12, density));
+  }
+
+  /**
+   * Genel durum bülteni (AKOM Raporu)
+   */
+  generateAkomReport() {
+    const jammedCount = this.bridges.filter(b => b.isJammed).length;
+    let statusText = 'Trafik Akıcı (Tüm Köprüler Açık)';
+    let alertLevel = 'success';
+
+    if (this.trafficDensity >= 70) {
+      statusText = '🚨 ŞEHİR GENELİ KİLİT! Köprülerde Dairesel Bağımlılık Alarmı';
+      alertLevel = 'critical';
+    } else if (this.trafficDensity >= 40) {
+      statusText = '⚠️ Yoğun Trafik: Maslak ve Köprü Bağlantılarında Yavaşlama';
+      alertLevel = 'warning';
+    }
+
+    return {
+      density: this.trafficDensity,
+      statusText,
+      alertLevel,
+      totalModules: this.modules.size,
+      circularDependencies: this.circularChains.length,
+      jammedBridges: jammedCount,
+      deadCodeCount: this.deadCodeModules.length,
+      chains: this.circularChains
+    };
+  }
+
+  /**
    * Bir modülün etki alanını (Blast Radius) hesaplar
    * @param {string} moduleId - Seçilen modül
    */
