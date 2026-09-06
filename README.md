@@ -2,10 +2,15 @@
 ### *3D Codebase Metropole & Autonomous Agent Command Deck*
 > **"Inspired by Istanbul's Bosphorus geography and engineered for Principal/Staff Engineer architectural telemetry."**
 
+[![Live 3D Demo](https://img.shields.io/badge/Live_Demo-Interactive_3D_Bosphorus-00f0ff?style=for-the-badge&logo=three.js)](https://cagrik34.github.io/zenith-istanbul/)
+[![npm version](https://img.shields.io/npm/v/zenith-istanbul?style=for-the-badge&color=ff0055)](https://www.npmjs.com/package/zenith-istanbul)
+[![CI Gatekeeper](https://img.shields.io/github/actions/workflow/status/Cagrik34/zenith-istanbul/zenith-gatekeeper.yml?style=for-the-badge&label=CI%20Gatekeeper)](https://github.com/Cagrik34/zenith-istanbul/actions)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Zero-Cloud Security](https://img.shields.io/badge/Security-Zero--Cloud%20Client--Side-brightgreen.svg)](#security--privacy)
-[![WebGL 60FPS](https://img.shields.io/badge/Render-WebGL%20Three.js-cyan.svg)](#architecture)
 [![Author](https://img.shields.io/badge/Crafted%20by-Çağrı%20Giray%20KEŞAN-ff007f.svg)](https://github.com/Cagrik34)
+
+> 🎮 **Canlı Tarayıcı Demosu:** Kurulum yapmadan 3D Boğaz sahnesini doğrudan incelemek için [cagrik34.github.io/zenith-istanbul](https://cagrik34.github.io/zenith-istanbul/) adresini ziyaret edin.
+> ⚡ **Terminalden Yerel Analiz:** Kendi projenizi tek komutla taratmak için terminalde `npx zenith-istanbul .` çalıştırın.
 
 ---
 
@@ -45,7 +50,7 @@ $$\text{Traffic Index} = \min\left(100, \text{round}\left(\frac{|\text{SCC Edges
 ZenithIstanbul provides an interactive remediation bridge for cyclic invariants:
 1. **Detection:** Tarjan's algorithm flags cycles; ingress bridge deadlocks.
 2. **Balanced-Brace Extraction:** Employs a zero-dependency lexical balanced-brace scanner to cleanly extract interface and type definitions into decoupled contracts (`src/contracts/*.contract.ts`), eliminating unexported local leaks.
-3. **Live File Patching:** Applies remediation patch directly to disk via `POST /api/apply-patch`.
+3. **Live File Patching:** Applies remediation patch directly to disk via `POST /api/apply-patch` with path traversal protections.
 
 ---
 

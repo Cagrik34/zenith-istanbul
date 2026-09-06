@@ -927,50 +927,72 @@
 
     async function loadDriftHistory() {
       try {
-        const res = await fetch('/api/history');
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 1200);
+        const res = await fetch('/api/history', { signal: controller.signal });
+        clearTimeout(timeoutId);
         if (res.ok) {
           const data = await res.json();
-          if (data.success && Array.isArray(data.history)) {
+          if (data.success && Array.isArray(data.history) && data.history.length > 0) {
             driftHistory = data.history;
             renderDriftUI();
+            return;
           }
         }
       } catch (e) {}
-    }
 
-    function renderDriftUI() {
-      const badgeCount = document.getElementById('drift-badge-count');
-      if (badgeCount) badgeCount.textContent = driftHistory.length;
-
-      const svg = document.getElementById('drift-svg');
-      const tooltip = document.getElementById('drift-tooltip');
-      const list = document.getElementById('drift-history-list');
-
-      hud.renderDriftChart(svg, tooltip, driftHistory, activeSnapshotIndex, (rec, idx) => {
-        inspectSnapshotInHUD(rec, idx);
-      });
-
-      hud.renderHistoryList(list, driftHistory, activeSnapshotIndex, (rec, idx) => {
-        inspectSnapshotInHUD(rec, idx);
-      });
+      // Web Showcase Mode: Load from localStorage or initialize with demo trajectory
+      try {
+        const local = localStorage.getItem('zenith_web_drift_history');
+        if (local) {
+          driftHistory = JSON.parse(local);
+        } else {
+          const now = Date.now();
+          driftHistory = [
+            { id: 'snap_1', timestamp: new Date(now - 14400000).toISOString(), gitCommit: '8b07398', trafficIndex: 82, cyclicDeadlocks: 3, securityExposures: 2, isolatedModules: 1 },
+            { id: 'snap_2', timestamp: new Date(now - 10800000).toISOString(), gitCommit: 'fafab6d', trafficIndex: 65, cyclicDeadlocks: 2, securityExposures: 1, isolatedModules: 2 },
+            { id: 'snap_3', timestamp: new Date(now - 7200000).toISOString(), gitCommit: '005db7b', trafficIndex: 40, cyclicDeadlocks: 1, securityExposures: 0, isolatedModules: 3 },
+            { id: 'snap_4', timestamp: new Date(now - 3600000).toISOString(), gitCommit: 'e1a983c', trafficIndex: 22, cyclicDeadlocks: 0, securityExposures: 0, isolatedModules: 4 },
+            { id: 'snap_5', timestamp: new Date(now).toISOString(), gitCommit: 'v1.0.0', trafficIndex: 0, cyclicDeadlocks: 0, securityExposures: 0, isolatedModules: 5 }
+          ];
+          localStorage.setItem('zenith_web_drift_history', JSON.stringify(driftHistory));
+        }
+      } catch (err) {}
+      renderDriftUI();
     }
 
     async function persistScanSnapshot(report) {
-      if (activeSnapshotIndex !== null) return;
+      if (!report || activeSnapshotIndex !== null) return;
+      const newRecord = {
+        id: 'scan_' + Date.now(),
+        timestamp: new Date().toISOString(),
+        gitCommit: 'HEAD',
+        trafficIndex: report.trafficIndex ?? report.density,
+        cyclicDeadlocks: report.circularDependencies,
+        securityExposures: report.securityLeakCount,
+        isolatedModules: report.deadCodeCount,
+        totalModules: report.totalModules,
+        totalEdges: trafficEngine.bridges ? trafficEngine.bridges.length : 0
+      };
+
       try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 1200);
         await fetch('/api/scan', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            trafficIndex: report.trafficIndex ?? report.density,
-            cyclicDeadlocks: report.circularDependencies,
-            securityExposures: report.securityLeakCount,
-            isolatedModules: report.deadCodeCount,
-            totalModules: report.totalModules,
-            totalEdges: trafficEngine.bridges ? trafficEngine.bridges.length : 0
-          })
+          body: JSON.stringify(newRecord),
+          signal: controller.signal
         });
-      } catch (e) {}
+        clearTimeout(timeoutId);
+      } catch (e) {
+        try {
+          driftHistory.push(newRecord);
+          if (driftHistory.length > 30) driftHistory = driftHistory.slice(-30);
+          localStorage.setItem('zenith_web_drift_history', JSON.stringify(driftHistory));
+          renderDriftUI();
+        } catch (err) {}
+      }
     }
 
     async function rescanLiveProject() {
