@@ -56,7 +56,6 @@ export class AgentDispatcher {
     log(`   └─ Violates Layered Inversion Principle: High-order subsystem directly coupled with low-order peer.`, 'info');
     await this.delay(500);
 
-    // 1. Try IPC Process Execution Bridge (POST /api/dispatch-agent)
     let executionResult = null;
     try {
       log('📡 [IPC BRIDGE] Querying local execution runtime (/api/dispatch-agent)...', 'info');
@@ -74,10 +73,8 @@ export class AgentDispatcher {
         }
       }
     } catch (e) {
-      // Offline fallback: Proceed with client-side deterministic lexical contract extractor
     }
 
-    // 2. Client-Side Lexical / Regex-based Contract Extractor (If backend IPC unavailable)
     if (!executionResult) {
       log('⚙️ [LEXICAL CONTRACT EXTRACTOR] Synthesizing decoupled contract layer via regex-based tokenizer...', 'header');
       executionResult = this.extractLexicalContracts(sourceMod, targetMod, chain);
@@ -90,7 +87,6 @@ export class AgentDispatcher {
       log(`   📄 [PAYLOAD ARTIFACT] ${file.path}`, 'info');
     }
 
-    // 3. Update Graph Topology in Traffic Engine
     this.lastGeneratedDiff = executionResult.diff;
     this.lastPayload = {
       diff: executionResult.diff,
@@ -121,20 +117,8 @@ export class AgentDispatcher {
     const cleanSourceName = (sourceMod ? sourceMod.name : 'moduleA').replace(/\.[^/.]+$/, '');
     const cleanTargetName = (targetMod ? targetMod.name : 'moduleB').replace(/\.[^/.]+$/, '');
 
-    // 1. Extract interfaces and types from target module with multiline generic support
-    const extractedTypes = [];
-    const extractedTypeNames = [];
-    const typeRegex = /export\s+(type|interface)\s+([A-Za-z0-9_]+)[\s\S]*?(?=(?:export\s+(?:type|interface|const|function|class)|$))/g;
-    let match;
-    while ((match = typeRegex.exec(rawTarget)) !== null) {
-      const typeDef = match[0].trim();
-      if (typeDef) {
-        extractedTypes.push(typeDef);
-        extractedTypeNames.push(match[2]);
-      }
-    }
+    const { types: extractedTypes, names: extractedTypeNames } = this.scanBalancedDeclarations(rawTarget);
 
-    // If no explicit types found, extract exported symbol names and construct typed contracts
     const exportedSymbols = (targetMod && targetMod.exports && targetMod.exports.length > 0)
       ? targetMod.exports
       : ['SessionPayload', 'UserRecord'];
@@ -146,7 +130,6 @@ export class AgentDispatcher {
       contractBody = exportedSymbols.map(sym => `export interface I${sym}Contract {\n  id: string;\n  status: 'active' | 'pending' | 'revoked';\n  timestamp: number;\n  metadata?: Record<string, unknown>;\n}`).join('\n\n');
     }
 
-    // 2. Synthesize New Decoupled Contract File
     const contractPath = `src/contracts/${cleanTargetName}.contract.ts`;
     const contractContent = `/**
  * Architectural Decoupled Contract Interface
@@ -159,11 +142,9 @@ export class AgentDispatcher {
 ${contractBody}
 `;
 
-    // 3. Transform Source Module (Replace peer import with decoupled contract import)
     const primaryTypeName = extractedTypeNames[0] || (exportedSymbols[0] ? `I${exportedSymbols[0]}Contract` : 'EntityContract');
     const relativeContractImport = `import type { ${primaryTypeName} } from '../contracts/${cleanTargetName}.contract';`;
 
-    // Replace offending import statement in source code
     let transformedSource = rawSource;
     const peerImportPattern = new RegExp(`(?:import|require)\\s*.*?['"].*?${cleanTargetName}['"];?`, 'g');
     if (peerImportPattern.test(transformedSource)) {
@@ -172,7 +153,6 @@ ${contractBody}
       transformedSource = `${relativeContractImport}\n${transformedSource}`;
     }
 
-    // 4. Compute True Unified Git Diff
     const diff = this.produceUnifiedDiff(
       sourceMod ? sourceMod.path : `src/${cleanSourceName}.ts`,
       rawSource,
@@ -189,6 +169,123 @@ ${contractBody}
         { path: contractPath, content: contractContent }
       ]
     };
+  }
+
+  /**
+   * Deterministik Dengeli Parantez Sayacı (Balanced-Brace Scanner)
+   * Sıfır bağımlılık: Interface, object type ve union type bloklarını parantez derinliği ve
+   * üst düzey noktalı virgül ile kesin olarak keser. Export edilmemiş yerel kodların (internalSalt, helper vs.)
+   * kontrat dosyasına sızmasını %100 engeller.
+   * @param {string} code
+   * @returns {{ types: string[], names: string[] }}
+   */
+  scanBalancedDeclarations(code) {
+    const extractedTypes = [];
+    const extractedTypeNames = [];
+    if (!code || typeof code !== 'string') return { types: extractedTypes, names: extractedTypeNames };
+
+    const declRegex = /export\s+(type|interface)\s+([A-Za-z0-9_]+)/g;
+    let match;
+
+    while ((match = declRegex.exec(code)) !== null) {
+      const kind = match[1];
+      const name = match[2];
+      const startIndex = match.index;
+      const declEndIndex = startIndex + match[0].length;
+
+      let endIndex = -1;
+      let foundFirstBrace = false;
+      let firstBraceIndex = -1;
+
+      for (let i = declEndIndex; i < code.length; i++) {
+        const char = code[i];
+        if (char === ';' && !foundFirstBrace) {
+          endIndex = i + 1;
+          break;
+        }
+        if (char === '{') {
+          foundFirstBrace = true;
+          firstBraceIndex = i;
+          break;
+        }
+      }
+
+      if (foundFirstBrace) {
+        let depth = 0;
+        let inSingleQuote = false;
+        let inDoubleQuote = false;
+        let inBacktick = false;
+        let inLineComment = false;
+        let inBlockComment = false;
+
+        for (let i = firstBraceIndex; i < code.length; i++) {
+          const char = code[i];
+          const prev = i > 0 ? code[i - 1] : '';
+
+          if (inLineComment) {
+            if (char === '\n') inLineComment = false;
+            continue;
+          }
+          if (inBlockComment) {
+            if (char === '/' && prev === '*') inBlockComment = false;
+            continue;
+          }
+          if (inSingleQuote) {
+            if (char === "'" && prev !== '\\') inSingleQuote = false;
+            continue;
+          }
+          if (inDoubleQuote) {
+            if (char === '"' && prev !== '\\') inDoubleQuote = false;
+            continue;
+          }
+          if (inBacktick) {
+            if (char === '`' && prev !== '\\') inBacktick = false;
+            continue;
+          }
+
+          if (char === '/' && code[i + 1] === '/') {
+            inLineComment = true;
+            i++;
+            continue;
+          }
+          if (char === '/' && code[i + 1] === '*') {
+            inBlockComment = true;
+            i++;
+            continue;
+          }
+          if (char === "'") { inSingleQuote = true; continue; }
+          if (char === '"') { inDoubleQuote = true; continue; }
+          if (char === '`') { inBacktick = true; continue; }
+
+          if (char === '{') {
+            depth++;
+          } else if (char === '}') {
+            depth--;
+            if (depth === 0) {
+              let end = i + 1;
+              if (code[end] === ';') {
+                end++;
+              }
+              endIndex = end;
+              break;
+            }
+          }
+        }
+      } else if (endIndex === -1) {
+        endIndex = code.length;
+      }
+
+      if (endIndex !== -1) {
+        const typeDef = code.slice(startIndex, endIndex).trim();
+        if (typeDef) {
+          extractedTypes.push(typeDef);
+          extractedTypeNames.push(name);
+        }
+        declRegex.lastIndex = endIndex;
+      }
+    }
+
+    return { types: extractedTypes, names: extractedTypeNames };
   }
 
   /**
@@ -247,7 +344,6 @@ ${contractBody}
    * Applies graph updates to live traffic engine memory
    */
   applyDecoupledGraphUpdate(trafficEngine, sourceId, targetId, files) {
-    // 1. Remove cycle edge
     const targets = trafficEngine.adjacencyList.get(sourceId);
     if (targets) {
       targets.delete(targetId);
@@ -257,14 +353,12 @@ ${contractBody}
       incoming.delete(sourceId);
     }
 
-    // 2. Clear circular deadlock state in memory
     trafficEngine.circularChains = [];
     trafficEngine.sccs = [];
     for (const bridge of trafficEngine.bridges) {
       bridge.isJammed = false;
     }
 
-    // 3. Recalculate deterministic traffic density
     trafficEngine.calculateTrafficDensity();
   }
 

@@ -30,7 +30,6 @@ export class TrafficHUD {
     if (!this.audioCtx || !this.audioEnabled) return;
     try {
       const now = this.audioCtx.currentTime;
-      // Dual oscillator detuned pair (110 Hz and 113.5 Hz)
       const osc1 = this.audioCtx.createOscillator();
       const osc2 = this.audioCtx.createOscillator();
       const gain = this.audioCtx.createGain();
@@ -142,4 +141,210 @@ export class TrafficHUD {
       });
     } catch (e) {}
   }
+
+  /**
+   * Acoustic feedback when inspecting a historical architecture snapshot
+   */
+  playSnapshotClickTone() {
+    if (!this.audioCtx || !this.audioEnabled) return;
+    try {
+      const now = this.audioCtx.currentTime;
+      const osc = this.audioCtx.createOscillator();
+      const gain = this.audioCtx.createGain();
+
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(880, now);
+      osc.frequency.exponentialRampToValueAtTime(1320, now + 0.08);
+
+      gain.gain.setValueAtTime(0.12, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+
+      osc.connect(gain);
+      gain.connect(this.audioCtx.destination);
+
+      osc.start(now);
+      osc.stop(now + 0.13);
+    } catch (e) {}
+  }
+
+  /**
+   * Render Pure SVG Architecture Drift Sparkline
+   * Zero external dependencies: calculates polyline coordinates directly.
+   * @param {SVGElement} svg 
+   * @param {HTMLElement} tooltip 
+   * @param {Array} history 
+   * @param {number|null} activeIndex 
+   * @param {Function} onSelectPoint 
+   */
+  renderDriftChart(svg, tooltip, history, activeIndex, onSelectPoint) {
+    if (!svg) return;
+    svg.innerHTML = '';
+
+    if (!history || history.length === 0) {
+      const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+      text.setAttribute('x', '140');
+      text.setAttribute('y', '44');
+      text.setAttribute('text-anchor', 'middle');
+      text.setAttribute('fill', 'rgba(255,255,255,0.3)');
+      text.setAttribute('font-size', '10');
+      text.textContent = 'No telemetry history points recorded yet';
+      svg.appendChild(text);
+      return;
+    }
+
+    const width = 280;
+    const height = 80;
+    const padX = 14;
+    const padY = 12;
+    const plotW = width - padX * 2;
+    const plotH = height - padY * 2;
+
+    [0, 0.5, 1].forEach(ratio => {
+      const y = padY + plotH * (1 - ratio);
+      const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+      line.setAttribute('x1', padX);
+      line.setAttribute('y1', y);
+      line.setAttribute('x2', width - padX);
+      line.setAttribute('y2', y);
+      line.setAttribute('stroke', 'rgba(255,255,255,0.06)');
+      line.setAttribute('stroke-dasharray', '2,2');
+      svg.appendChild(line);
+    });
+
+    const count = history.length;
+    const getX = (idx) => count > 1 ? padX + (idx / (count - 1)) * plotW : padX + plotW / 2;
+
+    const trafficPoints = [];
+    const deadlockPoints = [];
+    const maxDeadlocks = Math.max(3, ...history.map(h => h.cyclicDeadlocks || 0));
+
+    const coords = [];
+
+    history.forEach((rec, idx) => {
+      const x = getX(idx);
+      const tNorm = Math.min(100, Math.max(0, rec.trafficIndex || 0)) / 100;
+      const yTraffic = padY + plotH * (1 - tNorm);
+      trafficPoints.push(`${x.toFixed(1)},${yTraffic.toFixed(1)}`);
+
+      const dNorm = Math.min(1, (rec.cyclicDeadlocks || 0) / maxDeadlocks);
+      const yDeadlock = padY + plotH * (1 - dNorm);
+      deadlockPoints.push(`${x.toFixed(1)},${yDeadlock.toFixed(1)}`);
+
+      coords.push({ x, yTraffic, yDeadlock, rec, idx });
+    });
+
+    const polyTraffic = document.createElementNS('http://www.w3.org/2000/svg', 'polyline');
+    polyTraffic.setAttribute('points', trafficPoints.join(' '));
+    polyTraffic.setAttribute('fill', 'none');
+    polyTraffic.setAttribute('stroke', '#00f0ff');
+    polyTraffic.setAttribute('stroke-width', '2');
+    polyTraffic.setAttribute('stroke-linecap', 'round');
+    polyTraffic.setAttribute('stroke-linejoin', 'round');
+    svg.appendChild(polyTraffic);
+
+    if (history.some(h => (h.cyclicDeadlocks || 0) > 0)) {
+      const polyDeadlock = document.createElementNS('http://www.w3.org/2000/svg', 'polyline');
+      polyDeadlock.setAttribute('points', deadlockPoints.join(' '));
+      polyDeadlock.setAttribute('fill', 'none');
+      polyDeadlock.setAttribute('stroke', '#ff1744');
+      polyDeadlock.setAttribute('stroke-width', '1.5');
+      polyDeadlock.setAttribute('stroke-dasharray', '3,2');
+      polyDeadlock.setAttribute('stroke-linecap', 'round');
+      svg.appendChild(polyDeadlock);
+    }
+
+    coords.forEach(({ x, yTraffic, rec, idx }) => {
+      const isSelected = activeIndex === idx;
+      const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+      circle.setAttribute('cx', x.toFixed(1));
+      circle.setAttribute('cy', yTraffic.toFixed(1));
+      circle.setAttribute('r', isSelected ? '5.5' : '3.5');
+      circle.setAttribute('fill', rec.cyclicDeadlocks > 0 ? '#ff1744' : '#00f0ff');
+      circle.setAttribute('stroke', isSelected ? '#ffffff' : '#060b18');
+      circle.setAttribute('stroke-width', isSelected ? '2' : '1.5');
+      circle.style.cursor = 'pointer';
+      circle.style.transition = 'r 0.15s ease, stroke 0.15s ease';
+
+      circle.addEventListener('mouseenter', () => {
+        circle.setAttribute('r', isSelected ? '6.5' : '5.5');
+        if (tooltip) {
+          const timeStr = rec.timestamp ? new Date(rec.timestamp).toLocaleTimeString() : 'N/A';
+          tooltip.innerHTML = `
+            <div style="font-weight: 700; color: var(--accent-cyan); margin-bottom: 2px;">
+              Snapshot #${idx + 1} (${rec.gitCommit || 'HEAD'})
+            </div>
+            <div style="font-size: 9px; color: var(--text-muted); margin-bottom: 4px;">${timeStr}</div>
+            <div style="display: flex; gap: 8px;">
+              <span>Traffic: <strong style="color: #00f0ff">%${rec.trafficIndex}</strong></span>
+              <span>Cycles: <strong style="color: #ff1744">${rec.cyclicDeadlocks}</strong></span>
+              <span>Leaks: <strong style="color: #ff9100">${rec.securityExposures}</strong></span>
+            </div>
+            <div style="font-size: 8px; color: rgba(255,255,255,0.4); margin-top: 3px;">Click to inspect in HUD</div>
+          `;
+          tooltip.style.display = 'block';
+          tooltip.style.left = `${Math.min(width - 135, Math.max(5, x - 55))}px`;
+          tooltip.style.top = `${Math.max(0, yTraffic - 48)}px`;
+        }
+      });
+
+      circle.addEventListener('mouseleave', () => {
+        circle.setAttribute('r', isSelected ? '5.5' : '3.5');
+        if (tooltip) tooltip.style.display = 'none';
+      });
+
+      circle.addEventListener('click', () => {
+        this.playSnapshotClickTone();
+        if (onSelectPoint) onSelectPoint(rec, idx);
+      });
+
+      svg.appendChild(circle);
+    });
+  }
+
+  /**
+   * Render Time-Series Snapshot History List
+   * @param {HTMLElement} container 
+   * @param {Array} history 
+   * @param {number|null} activeIndex 
+   * @param {Function} onSelectPoint 
+   */
+  renderHistoryList(container, history, activeIndex, onSelectPoint) {
+    if (!container) return;
+    container.innerHTML = '';
+
+    if (!history || history.length === 0) {
+      container.innerHTML = `<div style="text-align:center; color:var(--text-muted); font-size:10px; padding:6px;">No history records</div>`;
+      return;
+    }
+
+    const reversed = [...history].map((rec, origIdx) => ({ rec, origIdx })).reverse();
+
+    reversed.forEach(({ rec, origIdx }) => {
+      const item = document.createElement('div');
+      item.className = `drift-history-item ${activeIndex === origIdx ? 'active' : ''}`;
+      const timeStr = rec.timestamp ? new Date(rec.timestamp).toLocaleTimeString() : 'N/A';
+      const isDeadlocked = (rec.cyclicDeadlocks || 0) > 0;
+      const statusIcon = isDeadlocked ? '🚨' : (rec.securityExposures > 0 ? '🛡️' : '🟢');
+
+      item.innerHTML = `
+        <div style="display: flex; align-items: center; gap: 6px;">
+          <span>${statusIcon}</span>
+          <span style="font-weight: 600; color: #fff;">${rec.gitCommit || 'HEAD'}</span>
+          <span style="color: var(--text-muted); font-size: 9px;">${timeStr}</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 6px;">
+          <span style="font-size: 9px; color: ${isDeadlocked ? 'var(--accent-red)' : 'var(--accent-green)'}; font-weight: 700;">%${rec.trafficIndex}</span>
+          ${isDeadlocked ? `<span style="font-size: 8px; background: rgba(255, 23, 68, 0.2); color: #ff1744; padding: 1px 4px; border-radius: 3px;">${rec.cyclicDeadlocks} SCC</span>` : ''}
+        </div>
+      `;
+
+      item.addEventListener('click', () => {
+        this.playSnapshotClickTone();
+        if (onSelectPoint) onSelectPoint(rec, origIdx);
+      });
+
+      container.appendChild(item);
+    });
+  }
 }
+

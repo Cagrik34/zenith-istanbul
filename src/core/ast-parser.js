@@ -6,7 +6,6 @@
 
 export class CodebaseParser {
   constructor() {
-    // Katı secret ve hassas dosya filtreleme kuralları
     this.ignoredFilePatterns = [
       /^\.env(\..+)?$/i,
       /\.pem$/i,
@@ -24,10 +23,8 @@ export class CodebaseParser {
       /\.turbo/i
     ];
 
-    // Desteklenen kod uzantıları
     this.supportedExtensions = ['.js', '.jsx', '.ts', '.tsx', '.mjs', '.cjs', '.py', '.vue', '.svelte'];
 
-    // tsconfig / jsconfig Path Aliases eşlemeleri
     this.pathAliases = {
       '@/': 'src/',
       '~/': 'src/',
@@ -59,15 +56,12 @@ export class CodebaseParser {
   isAuditableFile(path) {
     if (!path || typeof path !== 'string') return false;
     
-    // Path Traversal saldırısı koruması (Kök dizin dışına taşma denemeleri)
     if (path.includes('../') || path.includes('..\\')) return false;
 
-    // Secret veya hassas dosya kontrolü
     for (const pattern of this.ignoredFilePatterns) {
       if (pattern.test(path)) return false;
     }
 
-    // Desteklenen uzantı kontrolü
     return this.supportedExtensions.some(ext => path.toLowerCase().endsWith(ext));
   }
 
@@ -82,25 +76,19 @@ export class CodebaseParser {
     const loc = lines.length;
     const sloc = lines.filter(l => l.trim().length > 0 && !l.trim().startsWith('//') && !l.trim().startsWith('#') && !l.trim().startsWith('/*')).length;
 
-    // Döngüsel karmaşıklık (Cyclomatic complexity) kestirimi
     const complexity = this.estimateComplexity(content);
 
-    // Import, Export ve Fonksiyonları regex ile güvenli şekilde çıkarma (ReDoS korumalı)
     const imports = this.extractImports(filePath, content);
     const exports = this.extractExports(content);
     const functions = this.extractFunctions(content);
 
-    // Barrel File (Merkezi index re-export) tespiti
     const isBarrel = this.detectBarrelFile(filePath, content, exports);
 
-    // Özel İstanbul Simgeleri (Landmarks) Tespiti
     const isMiddleware = this.isMiddlewareGateway(filePath, content);
     const isEntryPoint = this.isRootEntryPoint(filePath);
 
-    // Güvenlik Denetimi: İstemci Tarafına Sunucu Sırları Sızıntısı (Coast Guard Check)
     const securityLeaks = this.detectSecurityLeaks(filePath, content, imports);
 
-    // İstanbul Bölgesi & Monorepo Tayini
     const district = this.assignDistrict(filePath, content, { isMiddleware, isEntryPoint });
 
     return {
@@ -176,7 +164,6 @@ export class CodebaseParser {
     const isClientModule = p.includes('components/') || p.includes('ui/') || p.includes('views/') || 
                            p.includes('pages/') || p.includes('.client.') || content.includes("'use client'") || content.includes('"use client"');
 
-    // 1. Client-Side Ingress Violation: Forbidden Node.js Core and Server ORM packages (CWE-668 / CWE-1061)
     if (isClientModule) {
       const forbiddenPackages = [
         'fs', 'fs/promises', 'child_process', 'cluster', 'net', 'tls', 'dns', 'worker_threads', 'dgram',
@@ -188,7 +175,6 @@ export class CodebaseParser {
         for (const pkg of forbiddenPackages) {
           const isMatch = imp === `vendor:${pkg}` || imp.includes(`vendor:${pkg}/`) || imp.includes(`/${pkg}/`);
           if (isMatch) {
-            // Find exact index of the import statement in source code
             const importPattern = new RegExp(`(?:import|require)\\s*.*?['"](?:vendor:)?${pkg.replace('/', '\\/')}['"]`, 'g');
             const match = importPattern.exec(content);
             const index = match ? match.index : 0;
@@ -211,7 +197,6 @@ export class CodebaseParser {
       }
     }
 
-    // 2. Secret Telemetry Scan: Leaked Environment Variables (CWE-200)
     const secretEnvRegex = /\b(?:process\.env\.(?:[A-Z0-9_]*(?:SECRET|KEY|PASSWORD|TOKEN|DATABASE_URL|PRISMA_URL|AUTH_SECRET|OPENAI_API_KEY|AWS_SECRET_ACCESS_KEY|STRIPE_SECRET_KEY)[A-Z0-9_]*))\b/g;
     let envMatch;
     while ((envMatch = secretEnvRegex.exec(content)) !== null) {
@@ -230,7 +215,6 @@ export class CodebaseParser {
       });
     }
 
-    // 3. Raw Private Key Headers & Cloud Credential Patterns (CWE-321)
     const privateKeyRegex = /-----BEGIN (?:[A-Z0-9_-]+\s+)?PRIVATE KEY-----/g;
     let keyMatch;
     while ((keyMatch = privateKeyRegex.exec(content)) !== null) {
@@ -249,7 +233,6 @@ export class CodebaseParser {
       });
     }
 
-    // 4. AWS Access Key Pattern (AKIA... - CWE-798)
     const awsKeyRegex = /\bAKIA[0-9A-Z]{16}\b/g;
     let awsMatch;
     while ((awsMatch = awsKeyRegex.exec(content)) !== null) {
@@ -310,7 +293,6 @@ export class CodebaseParser {
     const imports = new Set();
     const currentDir = currentPath.split('/').slice(0, -1).join('/');
 
-    // ES6 static import & export from: import ... from '...'
     const esImportRegex = /(?:import|export)\s+(?:[\w*\s{},]*\s+from\s+)?['"]([^'"]+)['"]/g;
     let match;
     while ((match = esImportRegex.exec(content)) !== null) {
@@ -319,7 +301,6 @@ export class CodebaseParser {
       if (resolved) imports.add(resolved);
     }
 
-    // CommonJS require(): require('...')
     const cjsRegex = /require\s*\(\s*['"]([^'"]+)['"]\s*\)/g;
     while ((match = cjsRegex.exec(content)) !== null) {
       const target = match[1];
@@ -327,7 +308,6 @@ export class CodebaseParser {
       if (resolved) imports.add(resolved);
     }
 
-    // Dynamic import(): import('...')
     const dynamicImportRegex = /import\s*\(\s*['"]([^'"]+)['"]\s*\)/g;
     while ((match = dynamicImportRegex.exec(content)) !== null) {
       const target = match[1];
@@ -365,7 +345,6 @@ export class CodebaseParser {
       }
     }
 
-    // 2. Harici npm paketleri (vendor)
     if (!target.startsWith('.') && !target.startsWith('/')) {
       return `vendor:${target}`;
     }
@@ -377,7 +356,6 @@ export class CodebaseParser {
   normalizeFinalPath(parts) {
     let clean = parts.replace(/\\/g, '/');
 
-    // Path normalization: a/b/../c -> a/c
     const segments = [];
     for (const segment of clean.split('/')) {
       if (segment === '' || segment === '.') continue;
@@ -389,7 +367,6 @@ export class CodebaseParser {
     }
 
     let resolved = segments.join('/');
-    // Uzantı yoksa varsayılan olarak .ts / .js dene
     if (!resolved.match(/\.[a-z0-9]+$/i)) {
       resolved += '.ts';
     }
@@ -430,17 +407,14 @@ export class CodebaseParser {
     const p = filePath.toLowerCase();
     const cleanContent = content ? content.slice(0, 1000).toLowerCase() : '';
 
-    // 0. Özel Simgeler: Kız Kulesi (Middleware / Gateway)
     if (landmarks.isMiddleware) {
       return { side: 'bosphorus', district: 'Kız Kulesi (API Gateway)', color: '#00ffff', isLandmark: 'maiden_tower' };
     }
 
-    // 0. Özel Simgeler: Galata Kulesi (Root Entry Point)
     if (landmarks.isEntryPoint) {
       return { side: 'europe', district: 'Galata (Root Entry)', color: '#ffd700', isLandmark: 'galata_tower' };
     }
 
-    // 1. Next.js Direktifleri (En yüksek öncelik)
     if (cleanContent.includes("'use client'") || cleanContent.includes('"use client"')) {
       return { side: 'europe', district: 'Levent (Client Component)', color: '#00a8ff' };
     }
@@ -448,14 +422,12 @@ export class CodebaseParser {
       return { side: 'asia', district: 'Kadıköy (Server Action)', color: '#ff007f' };
     }
 
-    // 2. Node.js Built-in & Backend Kütüphaneleri (Anadolu Yakası)
     const backendLibs = ['fs', 'path', 'crypto', 'child_process', 'stream', 'http', 'https', 'cluster', 'prisma', 'drizzle', 'pg', 'mongoose', 'redis', 'next/headers', 'next/server'];
     const hasBackendImport = backendLibs.some(lib => cleanContent.includes(`from '${lib}'`) || cleanContent.includes(`from "${lib}"`) || cleanContent.includes(`require('${lib}')`));
     if (hasBackendImport) {
       return { side: 'asia', district: 'Ataşehir (Infrastructure)', color: '#ffaa00' };
     }
 
-    // 3. Dosya uzantı ve isim konvensiyonları
     if (p.includes('.client.') || p.endsWith('.css') || p.endsWith('.scss') || p.includes('tailwind')) {
       return { side: 'europe', district: 'Beşiktaş (UI)', color: '#00f0ff' };
     }
@@ -463,26 +435,22 @@ export class CodebaseParser {
       return { side: 'asia', district: 'Üsküdar (API Route)', color: '#ff5500' };
     }
 
-    // 4. Klasör Yapısı Heuristiği (Avrupa: UI / Pages / Components)
     if (p.includes('components') || p.includes('ui') || p.includes('views') || p.includes('pages') || p.includes('app/') || p.includes('hooks') || p.includes('styles')) {
       if (p.includes('button') || p.includes('card') || p.includes('modal') || p.includes('badge')) return { side: 'europe', district: 'Beşiktaş', color: '#00f0ff' };
       if (p.includes('pages') || p.includes('routes') || p.includes('layout')) return { side: 'europe', district: 'Levent', color: '#00a8ff' };
       return { side: 'europe', district: 'Maslak', color: '#7000ff' };
     }
 
-    // 5. Klasör Yapısı Heuristiği (Anadolu: Backend / Services / DB)
     if (p.includes('server') || p.includes('api') || p.includes('services') || p.includes('db') || p.includes('database') || p.includes('models') || p.includes('controllers')) {
       if (p.includes('db') || p.includes('models') || p.includes('schema')) return { side: 'asia', district: 'Kadıköy', color: '#ff007f' };
       if (p.includes('auth') || p.includes('security')) return { side: 'asia', district: 'Üsküdar', color: '#ff5500' };
       return { side: 'asia', district: 'Ataşehir', color: '#ffaa00' };
     }
 
-    // 6. Tarihi Yarımada (Temel yapı taşları, config, types, core)
     if (p.includes('config') || p.includes('core') || p.includes('types') || p.includes('utils') || p.includes('helpers')) {
       return { side: 'historic', district: 'Tarihi Yarımada', color: '#e5c07b' };
     }
 
-    // Varsayılan: Uzantıya göre dağıt (.tsx -> Avrupa, .ts -> Anadolu)
     if (p.endsWith('.tsx') || p.endsWith('.jsx')) {
       return { side: 'europe', district: 'Şişli', color: '#00e676' };
     }

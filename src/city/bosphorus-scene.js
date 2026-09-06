@@ -28,12 +28,10 @@ export class BosphorusScene {
     this.clock = new THREE.Clock();
     this.activeTheme = 'night';
 
-    // Hava Durumu & Sis Motoru (Rain & Fog)
     this.rainParticles = null;
     this.isRaining = true;
     this.rainCount = 1800;
 
-    // Özel İstanbul Simgeleri (Landmarks & Coast Guard)
     this.maidenTowerGroup = null;
     this.maidenBeacon = null;
     this.galataTowerGroup = null;
@@ -42,7 +40,6 @@ export class BosphorusScene {
     this.coastGuardBulbMat = null;
     this.hasSecurityLeaks = false;
 
-    // Kamera Uçuş Animasyonu (Smooth Lerp)
     this.cameraLerpTarget = null;
     this.controlsLerpTarget = null;
 
@@ -50,17 +47,14 @@ export class BosphorusScene {
   }
 
   init() {
-    // 1. Scene
     this.scene = new THREE.Scene();
     this.scene.background = new THREE.Color(0x060913);
     this.scene.fog = new THREE.FogExp2(0x060913, 0.0035);
 
-    // 2. Camera
     const aspect = this.container.clientWidth / this.container.clientHeight;
     this.camera = new THREE.PerspectiveCamera(50, aspect, 1, 3000);
     this.camera.position.set(0, 280, 420);
 
-    // 3. Renderer
     this.renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
     this.renderer.setSize(this.container.clientWidth, this.container.clientHeight);
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
@@ -70,7 +64,6 @@ export class BosphorusScene {
     this.renderer.toneMappingExposure = 1.1;
     this.container.appendChild(this.renderer.domElement);
 
-    // 4. OrbitControls
     this.controls = new OrbitControls(this.camera, this.renderer.domElement);
     this.controls.enableDamping = true;
     this.controls.dampingFactor = 0.05;
@@ -79,29 +72,22 @@ export class BosphorusScene {
     this.controls.maxDistance = 1200;
     this.controls.target.set(0, 20, 0);
 
-    // 5. Lights
     this.setupLights();
 
-    // 6. Boğaz Coğrafyası (Su, Kıyılar, Adalar)
     this.createBosphorusTerrain();
 
-    // 7. Yağmur & Sis Parçacık Sistemi
     this.setupRainSystem();
 
-    // 8. Event Listeners
     window.addEventListener('resize', () => this.onWindowResize());
     this.renderer.domElement.addEventListener('pointerdown', (e) => this.onPointerDown(e));
 
-    // 9. Render Loop Başlat
     this.animate();
   }
 
   setupLights() {
-    // Ortam Işığı (Gece mavisi)
     this.ambientLight = new THREE.AmbientLight(0x101b38, 1.8);
     this.scene.add(this.ambientLight);
 
-    // Ay / Şehir Projektörü (Directional Light)
     this.dirLight = new THREE.DirectionalLight(0x5080ff, 2.2);
     this.dirLight.position.set(150, 350, 100);
     this.dirLight.castShadow = true;
@@ -115,7 +101,6 @@ export class BosphorusScene {
     this.dirLight.shadow.camera.bottom = -300;
     this.scene.add(this.dirLight);
 
-    // Boğaz Köprüsü Neon Vurgu Işığı
     this.bridgeSpot = new THREE.SpotLight(0x00f0ff, 3, 600, Math.PI / 4, 0.4);
     this.bridgeSpot.position.set(0, 160, 50);
     this.bridgeSpot.target.position.set(0, 0, 0);
@@ -124,7 +109,6 @@ export class BosphorusScene {
   }
 
   createBosphorusTerrain() {
-    // 1. Boğaz Suyu (Water Mesh with dynamic vertex animation)
     const waterGeo = new THREE.PlaneGeometry(1600, 1600, 64, 64);
     this.waterMat = new THREE.MeshStandardMaterial({
       color: 0x051329,
@@ -138,7 +122,6 @@ export class BosphorusScene {
     this.waterMesh.receiveShadow = true;
     this.scene.add(this.waterMesh);
 
-    // 2. Avrupa Yakası Kıyısı (Sol Taraf: X: -380 ile -60 arası)
     const europeGeo = new THREE.BoxGeometry(320, 20, 700);
     const landMat = new THREE.MeshStandardMaterial({
       color: 0x0a101f,
@@ -150,34 +133,29 @@ export class BosphorusScene {
     europeCoast.receiveShadow = true;
     this.scene.add(europeCoast);
 
-    // Kıyı Rıhtım Işığı (Avrupa Bordürü)
     const dockGeo = new THREE.BoxGeometry(4, 2, 700);
     const dockNeonMat = new THREE.MeshBasicMaterial({ color: 0x00f0ff });
     const europeDock = new THREE.Mesh(dockGeo, dockNeonMat);
     europeDock.position.set(-58, 18, 0);
     this.scene.add(europeDock);
 
-    // 3. Anadolu Yakası Kıyısı (Sağ Taraf: X: 60 ile 380 arası)
     const asiaGeo = new THREE.BoxGeometry(320, 20, 700);
     const asiaCoast = new THREE.Mesh(asiaGeo, landMat);
     asiaCoast.position.set(220, 8, 0);
     asiaCoast.receiveShadow = true;
     this.scene.add(asiaCoast);
 
-    // Anadolu Bordürü
     const asiaDockNeonMat = new THREE.MeshBasicMaterial({ color: 0xff007f });
     const asiaDock = new THREE.Mesh(dockGeo, asiaDockNeonMat);
     asiaDock.position.set(58, 18, 0);
     this.scene.add(asiaDock);
 
-    // 4. Tarihi Yarımada (Güneybatı burnu / Sarayburnu)
     const historicGeo = new THREE.CylinderGeometry(80, 95, 22, 32);
     const historicLand = new THREE.Mesh(historicGeo, landMat);
     historicLand.position.set(-180, 9, 280);
     historicLand.receiveShadow = true;
     this.scene.add(historicLand);
 
-    // 5. Prens Adaları (Marmara Açıkları - Güneyde izole adalar)
     const island1 = new THREE.Mesh(new THREE.CylinderGeometry(35, 45, 16, 24), landMat);
     island1.position.set(60, 6, 330);
     this.scene.add(island1);
@@ -186,67 +164,56 @@ export class BosphorusScene {
     island2.position.set(140, 5, 360);
     this.scene.add(island2);
 
-    // Tabela ve Semt İsimleri (3D Neon Zemin Yazıları)
     this.createDistrictGroundMarks();
 
-    // 6. Özel İstanbul Simgeleri (Kız Kulesi, Galata Kulesi, Security Boundary Sentry Patrol Vessel)
     this.createLandmarks();
   }
 
   createDistrictGroundMarks() {
-    // Semt sınırları ızgarası (Subtle Cyberpunk Grid)
     const gridHelper = new THREE.GridHelper(800, 40, 0x1a294d, 0x0c162e);
     gridHelper.position.y = 18.2;
     this.scene.add(gridHelper);
   }
 
   createLandmarks() {
-    // 1. KIZ KULESİ (Maiden's Tower - Middleware & API Gateway)
     this.maidenTowerGroup = new THREE.Group();
     this.maidenTowerGroup.position.set(0, 0, 45);
 
-    // Kayalık Ada Kaidesi
     const isletGeo = new THREE.CylinderGeometry(28, 34, 5, 8);
     const isletMat = new THREE.MeshStandardMaterial({ color: 0x1f2937, roughness: 0.9 });
     const islet = new THREE.Mesh(isletGeo, isletMat);
     islet.position.y = 2.5;
     this.maidenTowerGroup.add(islet);
 
-    // Taş Kale Gövdesi
     const castleGeo = new THREE.BoxGeometry(20, 10, 20);
     const stoneMat = new THREE.MeshStandardMaterial({ color: 0xd6cbb6, roughness: 0.6 });
     const castle = new THREE.Mesh(castleGeo, stoneMat);
     castle.position.y = 9;
     this.maidenTowerGroup.add(castle);
 
-    // Silindirik Kule
     const towerGeo = new THREE.CylinderGeometry(5.5, 6.5, 16, 12);
     const tower = new THREE.Mesh(towerGeo, stoneMat);
     tower.position.y = 20;
     this.maidenTowerGroup.add(tower);
 
-    // Fener Odası (Lantern Room)
     const lanternGeo = new THREE.CylinderGeometry(6.8, 6.8, 4, 8);
     const lanternMat = new THREE.MeshStandardMaterial({ color: 0xffea9f, emissive: 0xffaa00, emissiveIntensity: 0.6 });
     const lantern = new THREE.Mesh(lanternGeo, lanternMat);
     lantern.position.y = 29;
     this.maidenTowerGroup.add(lantern);
 
-    // Kubbe ve Bakır Külah
     const coneGeo = new THREE.ConeGeometry(7, 10, 8);
     const roofMat = new THREE.MeshStandardMaterial({ color: 0x244238, roughness: 0.4 });
     const roof = new THREE.Mesh(coneGeo, roofMat);
     roof.position.y = 35;
     this.maidenTowerGroup.add(roof);
 
-    // Altın Alem
     const spireGeo = new THREE.CylinderGeometry(0.3, 0.6, 6, 6);
     const goldMat = new THREE.MeshBasicMaterial({ color: 0xffd700 });
     const spire = new THREE.Mesh(spireGeo, goldMat);
     spire.position.y = 40;
     this.maidenTowerGroup.add(spire);
 
-    // Dönen Deniz Feneri Işık Demetleri (Rotating Dual Beacon)
     this.maidenBeacon = new THREE.Group();
     this.maidenBeacon.position.y = 29;
 
@@ -272,38 +239,32 @@ export class BosphorusScene {
     this.maidenTowerGroup.add(this.maidenBeacon);
     this.scene.add(this.maidenTowerGroup);
 
-    // 2. GALATA KULESİ (Galata Tower - Root Entry Point)
     this.galataTowerGroup = new THREE.Group();
     this.galataTowerGroup.position.set(-110, 18, 120);
 
-    // Ana Kule Silindiri
     const galataMainGeo = new THREE.CylinderGeometry(14, 16, 65, 24);
     const galataStoneMat = new THREE.MeshStandardMaterial({ color: 0xb5a692, roughness: 0.7 });
     const galataMain = new THREE.Mesh(galataMainGeo, galataStoneMat);
     galataMain.position.y = 32.5;
     this.galataTowerGroup.add(galataMain);
 
-    // Seyir Balkonu
     const balconyGeo = new THREE.CylinderGeometry(17.5, 17.5, 5, 24);
     const balconyMat = new THREE.MeshStandardMaterial({ color: 0x8a7968, roughness: 0.5 });
     const balcony = new THREE.Mesh(balconyGeo, balconyMat);
     balcony.position.y = 66;
     this.galataTowerGroup.add(balcony);
 
-    // Külah Altı Kat
     const upperGeo = new THREE.CylinderGeometry(14, 15, 10, 24);
     const upper = new THREE.Mesh(upperGeo, galataStoneMat);
     upper.position.y = 72;
     this.galataTowerGroup.add(upper);
 
-    // Galata Konik Külahı
     const galataConeGeo = new THREE.ConeGeometry(16, 28, 24);
     const galataRoofMat = new THREE.MeshStandardMaterial({ color: 0x22494f, roughness: 0.35, metalness: 0.3 });
     const galataCone = new THREE.Mesh(galataConeGeo, galataRoofMat);
     galataCone.position.y = 90;
     this.galataTowerGroup.add(galataCone);
 
-    // Külah Tepesi Alem
     const galataSpireGeo = new THREE.CylinderGeometry(0.4, 0.8, 8, 8);
     const galataSpire = new THREE.Mesh(galataSpireGeo, goldMat);
     galataSpire.position.y = 106;
@@ -311,32 +272,27 @@ export class BosphorusScene {
 
     this.scene.add(this.galataTowerGroup);
 
-    // 3. SAHİL GÜVENLİK BOTU (Bosphorus Coast Guard Security Patrol Boat)
     this.coastGuardGroup = new THREE.Group();
     this.coastGuardGroup.position.set(16, 0, -45);
 
-    // Tekne Gövdesi
     const hullGeo = new THREE.BoxGeometry(9, 4.5, 26);
     const hullMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.4, metalness: 0.5 });
     const hull = new THREE.Mesh(hullGeo, hullMat);
     hull.position.y = 2.2;
     this.coastGuardGroup.add(hull);
 
-    // Security Boundary Sentry Sinyal Hattı
     const stripeGeo = new THREE.BoxGeometry(9.2, 1.2, 26.2);
     const stripeMat = new THREE.MeshBasicMaterial({ color: 0xff6600 });
     const stripe = new THREE.Mesh(stripeGeo, stripeMat);
     stripe.position.y = 3.2;
     this.coastGuardGroup.add(stripe);
 
-    // Kabin
     const cabinGeo = new THREE.BoxGeometry(6.5, 5, 11);
     const cabinMat = new THREE.MeshStandardMaterial({ color: 0xe2e8f0, roughness: 0.3 });
     const cabin = new THREE.Mesh(cabinGeo, cabinMat);
     cabin.position.set(0, 5.5, -2);
     this.coastGuardGroup.add(cabin);
 
-    // Tepe Strobe Işığı
     this.coastGuardStrobe = new THREE.PointLight(0x00ff88, 1.2, 120);
     this.coastGuardStrobe.position.set(0, 9, -2);
     this.coastGuardGroup.add(this.coastGuardStrobe);
@@ -354,10 +310,8 @@ export class BosphorusScene {
    * Modülleri 3D Şehir Binalarına Dönüştürür
    */
   buildCity(modules, bridges, circularChains) {
-    // Önceki binaları ve köprüleri temizle
     this.clearCity();
 
-    // Yakalara göre binaları yerleştirme koordinatörleri
     let europeX = -120;
     let europeZ = -220;
 
@@ -373,7 +327,6 @@ export class BosphorusScene {
     for (const mod of modules) {
       let targetPos = new THREE.Vector3();
 
-      // Özel Simge (Landmark) Yerleşimi Kontrolü
       if (mod.district && mod.district.isLandmark === 'maiden_tower') {
         targetPos.set(0, 30, 45);
         this.buildingObjects.push(this.maidenTowerGroup);
@@ -409,17 +362,14 @@ export class BosphorusScene {
         targetPos.set(historicX, 19, historicZ);
         historicZ += 30;
       } else {
-        // Prens Adaları (Dead Code)
         targetPos.set(islandX, 15, islandZ);
         islandX += 35;
       }
 
-      // Bina yüksekliği LOC'a ve karmaşıklığa göre (Maslak Gökdelenleri vs Alçak Yapılar)
       const height = Math.min(180, Math.max(25, (mod.loc / 8) + (mod.complexity * 1.5)));
       const width = Math.min(38, Math.max(16, Math.sqrt(mod.loc) * 1.2));
       const depth = width;
 
-      // Döngüsel bağımlılıkta mı? (Kırmızı alarm)
       const isInCircularJam = circularChains.some(chain => chain.includes(mod.id));
 
       const buildingMesh = this.createSkyscraper(width, height, depth, mod.district.color, isInCircularJam, mod);
@@ -431,14 +381,12 @@ export class BosphorusScene {
       mod.worldPosition = buildingMesh.position.clone();
     }
 
-    // Boğaziçi Köprülerini İnşa Et (15 Temmuz & FSM)
     this.buildBridges(bridges);
   }
 
   createSkyscraper(width, height, depth, baseHexColor, isJammed, moduleData) {
     const group = new THREE.Group();
 
-    // 1. Ana Bina Gövdesi
     const geo = new THREE.BoxGeometry(width, height, depth);
     const color = isJammed ? 0xff0044 : parseInt(baseHexColor.replace('#', '0x'));
 
@@ -455,7 +403,6 @@ export class BosphorusScene {
     body.receiveShadow = true;
     group.add(body);
 
-    // 2. Siberpunk Neon Çerçeveler (Edge Wireframe)
     const edgeGeo = new THREE.EdgesGeometry(geo);
     const edgeMat = new THREE.LineBasicMaterial({
       color: isJammed ? 0xff1744 : 0x00f0ff,
@@ -464,7 +411,6 @@ export class BosphorusScene {
     const edges = new THREE.LineSegments(edgeGeo, edgeMat);
     group.add(edges);
 
-    // 3. Çatı Anteni / Uyarı Işığı (Yüksek Maslak Gökdelenleri İçin)
     if (height > 90) {
       const spireGeo = new THREE.CylinderGeometry(0.8, 1.5, 20, 8);
       const spireMat = new THREE.MeshBasicMaterial({ color: isJammed ? 0xff0000 : 0x00f0ff });
@@ -473,7 +419,6 @@ export class BosphorusScene {
       group.add(spire);
     }
 
-    // Tıklanabilir referans için kullanıcı verisini ata
     group.userData = { module: moduleData, bodyMesh: body, defaultColor: color };
     return group;
   }
@@ -491,7 +436,6 @@ export class BosphorusScene {
     const targets = Array.from(trafficEngine.adjacencyList.get(sourceMod.id) || []);
     const dependents = Array.from(trafficEngine.reverseAdjacencyList.get(sourceMod.id) || []);
 
-    // 1. Dışa giden importlar (Cyan Neon Lazerler)
     targets.forEach(targetId => {
       const targetMod = trafficEngine.modules.get(targetId);
       if (targetMod && targetMod.worldPosition) {
@@ -499,7 +443,6 @@ export class BosphorusScene {
       }
     });
 
-    // 2. İçe gelen çağıranlar (Pink / Red Neon Lazerler)
     dependents.forEach(depId => {
       const depMod = trafficEngine.modules.get(depId);
       if (depMod && depMod.worldPosition) {
@@ -536,7 +479,6 @@ export class BosphorusScene {
   }
 
   buildBridges(bridges) {
-    // Boğaziçi Köprü Hatları (Z: -60 -> 15 Temmuz Şehitler, Z: 60 -> FSM Köprüsü)
     const bridgeLocations = [
       { name: '15 Temmuz Şehitler Köprüsü', z: -30 },
       { name: 'Fatih Sultan Mehmet Köprüsü', z: 60 },
@@ -545,12 +487,10 @@ export class BosphorusScene {
 
     for (let i = 0; i < bridgeLocations.length; i++) {
       const loc = bridgeLocations[i];
-      // Bu köprüye denk gelen kilit var mı?
       const isAnyJammed = bridges.some(b => b.isJammed);
 
       const bridgeGroup = new THREE.Group();
 
-      // Köprü Tabliyesi (Asfalt Yolu: X: -60'tan +60'a)
       const deckGeo = new THREE.BoxGeometry(130, 4, 18);
       const deckMat = new THREE.MeshStandardMaterial({
         color: 0x1a1a24,
@@ -561,7 +501,6 @@ export class BosphorusScene {
       deck.position.set(0, 24, loc.z);
       bridgeGroup.add(deck);
 
-      // Köprü Kuleleri (Avrupa Kulesi X: -58, Anadolu Kulesi X: 58)
       const towerGeo = new THREE.BoxGeometry(5, 75, 6);
       const towerMat = new THREE.MeshStandardMaterial({
         color: isAnyJammed ? 0xff0033 : 0xd8e2ec,
@@ -577,13 +516,11 @@ export class BosphorusScene {
       asiaTower.position.set(58, 45, loc.z);
       bridgeGroup.add(asiaTower);
 
-      // Asma Çelik Halatlar (Neon Işıklı)
       const cableMat = new THREE.LineBasicMaterial({
         color: isAnyJammed ? 0xff0044 : 0x00f0ff,
         linewidth: 2
       });
 
-      // Çelik eğrisi (Parabola)
       const curve = new THREE.QuadraticBezierCurve3(
         new THREE.Vector3(-58, 75, loc.z - 7),
         new THREE.Vector3(0, 28, loc.z - 7),
@@ -647,13 +584,11 @@ export class BosphorusScene {
     }
 
     if (this.isRaining) {
-      // Yoğun Cyberpunk Sis ve Yağmurlu Boğaz
       this.scene.fog.density = 0.0075;
       this.scene.fog.color.setHex(0x0e111a);
       this.renderer.toneMappingExposure = 0.95;
       this.ambientLight.color.setHex(0x1a1224);
     } else {
-      // Açık Neon Gecesi, Berrak Su
       this.scene.fog.density = 0.0022;
       this.scene.fog.color.setHex(0x060913);
       this.renderer.toneMappingExposure = 1.15;
@@ -728,7 +663,6 @@ export class BosphorusScene {
     const delta = this.clock.getDelta();
     const elapsedTime = this.clock.getElapsedTime();
 
-    // Su dalgası hareketi (Boğaz akıntısı)
     if (this.waterMesh) {
       const pos = this.waterMesh.geometry.attributes.position;
       for (let i = 0; i < pos.count; i++) {
@@ -740,12 +674,10 @@ export class BosphorusScene {
       this.waterMesh.geometry.attributes.position.needsUpdate = true;
     }
 
-    // Kız Kulesi Deniz Feneri Döner Işığı
     if (this.maidenBeacon) {
       this.maidenBeacon.rotation.y += 0.025;
     }
 
-    // Security Boundary Sentry Devriye Botu Hareketi ve Acil Durum Işığı
     if (this.coastGuardGroup) {
       this.coastGuardGroup.position.y = 0.5 + Math.sin(elapsedTime * 2.2) * 0.35;
       this.coastGuardGroup.rotation.z = Math.sin(elapsedTime * 1.8) * 0.035;
@@ -771,7 +703,6 @@ export class BosphorusScene {
       }
     }
 
-    // Yağmur Parçacıkları Animasyonu
     if (this.rainParticles && this.isRaining) {
       const pos = this.rainParticles.geometry.attributes.position;
       for (let i = 0; i < this.rainCount; i++) {
@@ -787,7 +718,6 @@ export class BosphorusScene {
       this.rainParticles.geometry.attributes.position.needsUpdate = true;
     }
 
-    // Kamera Yumuşak Uçuş (Lerp)
     if (this.cameraLerpTarget) {
       this.camera.position.lerp(this.cameraLerpTarget, 0.05);
       if (this.camera.position.distanceTo(this.cameraLerpTarget) < 2) {
@@ -801,10 +731,8 @@ export class BosphorusScene {
       }
     }
 
-    // Controls
     this.controls.update();
 
-    // Render
     this.renderer.render(this.scene, this.camera);
   }
 }

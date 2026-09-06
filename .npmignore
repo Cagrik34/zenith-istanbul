@@ -10,3 +10,4 @@ tests/
 coverage/
 .DS_Store
 Thumbs.db
+.zenith/

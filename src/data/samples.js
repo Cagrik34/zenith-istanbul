@@ -60,7 +60,6 @@ export const SAMPLE_REPOSITORIES = {
         isCore: false,
         healthScore: 50
       },
-      // ANADOLU YAKASI (BACKEND & SERVICES)
       {
         id: 'src/services/sessionManager.ts',
         name: 'sessionManager.ts',
@@ -100,7 +99,6 @@ export const SAMPLE_REPOSITORIES = {
         isCore: false,
         healthScore: 92
       },
-      // TARİHİ YARIMADA (CORE / UTILS)
       {
         id: 'src/config/env.ts',
         name: 'env.ts',
@@ -114,7 +112,6 @@ export const SAMPLE_REPOSITORIES = {
         isCore: true,
         healthScore: 100
       },
-      // PRENS ADALARI (DEAD CODE / KULLANILMAYAN DOSYALAR)
       {
         id: 'src/legacy/oldChartRenderer.js',
         name: 'oldChartRenderer.js',
@@ -135,7 +132,6 @@ export const SAMPLE_REPOSITORIES = {
     name: '🌐 Zenith Nexus (Hybrid RAG Engine)',
     description: 'Çağrı Giray KEŞAN imzalı hibrit RAG, SQLite FTS5 token matcher ve telemetri motorunun mimari şehir haritası.',
     modules: [
-      // Avrupa Yakası
       {
         id: 'src/ui/TelemetryDashboard.tsx',
         name: 'TelemetryDashboard.tsx',
@@ -175,7 +171,6 @@ export const SAMPLE_REPOSITORIES = {
         isCore: false,
         healthScore: 100
       },
-      // Anadolu Yakası
       {
         id: 'src/core/fts5Matcher.ts',
         name: 'fts5Matcher.ts',
@@ -215,7 +210,6 @@ export const SAMPLE_REPOSITORIES = {
         isCore: false,
         healthScore: 84
       },
-      // Tarihi Yarımada
       {
         id: 'src/config/nexusConfig.ts',
         name: 'nexusConfig.ts',
@@ -230,90 +224,6 @@ export const SAMPLE_REPOSITORIES = {
         healthScore: 98
       }
     ]
-  },
-
-  'vercel-ai-sdk': {
-    name: '▲ Vercel AI SDK (App Router Core)',
-    description: 'Vercel AI SDK mimarisi: streamText, generateObject, RSC streaming ve provider adaptörleri.',
-    modules: [
-      {
-        id: 'packages/ai/core/stream-text.ts',
-        name: 'stream-text.ts',
-        path: 'packages/ai/core/stream-text.ts',
-        loc: 1120,
-        sloc: 940,
-        complexity: 64,
-        imports: ['packages/ai/core/prompt.ts', 'packages/ai/providers/registry.ts'],
-        exports: ['streamText', 'StreamTextResult'],
-        district: { side: 'europe', district: 'Maslak', color: '#7000ff' },
-        isCore: true,
-        healthScore: 55
-      },
-      {
-        id: 'packages/ai/core/generate-text.ts',
-        name: 'generate-text.ts',
-        path: 'packages/ai/core/generate-text.ts',
-        loc: 650,
-        sloc: 530,
-        complexity: 35,
-        imports: ['packages/ai/core/prompt.ts'],
-        exports: ['generateText'],
-        district: { side: 'europe', district: 'Levent', color: '#00a8ff' },
-        isCore: false,
-        healthScore: 78
-      },
-      {
-        id: 'packages/ai/core/prompt.ts',
-        name: 'prompt.ts',
-        path: 'packages/ai/core/prompt.ts',
-        loc: 310,
-        sloc: 260,
-        complexity: 19,
-        imports: [],
-        exports: ['formatPrompt', 'validateMessages'],
-        district: { side: 'europe', district: 'Beşiktaş', color: '#00f0ff' },
-        isCore: false,
-        healthScore: 89
-      },
-      {
-        id: 'packages/ai/providers/registry.ts',
-        name: 'registry.ts',
-        path: 'packages/ai/providers/registry.ts',
-        loc: 480,
-        sloc: 410,
-        complexity: 27,
-        imports: ['packages/ai/providers/openai.ts', 'packages/ai/providers/anthropic.ts'],
-        exports: ['createProviderRegistry'],
-        district: { side: 'asia', district: 'Kadıköy', color: '#ff007f' },
-        isCore: false,
-        healthScore: 82
-      },
-      {
-        id: 'packages/ai/providers/openai.ts',
-        name: 'openai.ts',
-        path: 'packages/ai/providers/openai.ts',
-        loc: 790,
-        sloc: 670,
-        complexity: 48,
-        imports: [],
-        exports: ['createOpenAI'],
-        district: { side: 'asia', district: 'Ataşehir', color: '#ffaa00' },
-        isCore: false,
-        healthScore: 68
-      },
-      {
-        id: 'packages/ai/providers/anthropic.ts',
-        name: 'anthropic.ts',
-        path: 'packages/ai/providers/anthropic.ts',
-        loc: 680,
-        sloc: 580,
-        complexity: 41,
-        imports: [],
-        exports: ['createAnthropic'],
-        district: { side: 'asia', district: 'Üsküdar', color: '#ff5500' },
-        isCore: false,
-        healthScore: 74
-      }
-    ]
   }
 };
+

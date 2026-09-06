@@ -6,588 +6,22 @@
   <title>ZenithIstanbul — 3D Codebase Metropole & Autonomous Agent Command Deck</title>
   <meta name="description" content="İstanbul Boğazı ve meşhur trafiğinden esinlenen; Git repolarını 3D yaşayan bir şehre dönüştüren sıfır maliyetli kod mimarisi ve otonom ajan operasyon merkezi.">
   
-  <!-- Modern Google Fonts -->
+  
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=JetBrains+Mono:wght@400;600&family=Space+Grotesk:wght@400;600;700&display=swap" rel="stylesheet">
 
-  <style>
-    :root {
-      --bg-dark: #060913;
-      --panel-bg: rgba(10, 16, 31, 0.84);
-      --panel-border: rgba(0, 240, 255, 0.25);
-      --accent-cyan: #00f0ff;
-      --accent-pink: #ff007f;
-      --accent-gold: #e5c07b;
-      --accent-red: #ff1744;
-      --accent-green: #00e676;
-      --text-main: #f0f4fc;
-      --text-muted: #8899b5;
-    }
-
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
-
-    body, html {
-      width: 100%;
-      height: 100%;
-      overflow: hidden;
-      background-color: var(--bg-dark);
-      font-family: 'Space Grotesk', sans-serif;
-      color: var(--text-main);
-    }
-
-    #viewport-container {
-      width: 100vw;
-      height: 100vh;
-      position: absolute;
-      top: 0;
-      left: 0;
-      z-index: 1;
-    }
-
-    /* GLASSMORPHISM UI OVERLAY */
-    .ui-layer {
-      position: absolute;
-      z-index: 10;
-      pointer-events: none;
-      width: 100%;
-      height: 100%;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-      padding: 16px;
-    }
-
-    .interactive {
-      pointer-events: auto;
-    }
-
-    /* TOP HEADER BAR */
-    header.top-bar {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      background: var(--panel-bg);
-      border: 1px solid var(--panel-border);
-      backdrop-filter: blur(16px);
-      padding: 12px 20px;
-      border-radius: 14px;
-      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
-      gap: 16px;
-      flex-wrap: wrap;
-    }
-
-    .brand {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-
-    .brand-icon {
-      font-size: 26px;
-      filter: drop-shadow(0 0 10px var(--accent-cyan));
-    }
-
-    .brand-text h1 {
-      font-size: 19px;
-      font-weight: 700;
-      letter-spacing: 1px;
-      background: linear-gradient(90deg, #ffffff 0%, var(--accent-cyan) 60%, var(--accent-pink) 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-    }
-
-    .brand-text p {
-      font-size: 10px;
-      color: var(--text-muted);
-      letter-spacing: 0.5px;
-    }
-
-    .header-controls {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      flex-wrap: wrap;
-    }
-
-    /* GitHub Input Bar */
-    .github-fetch-bar {
-      display: flex;
-      align-items: center;
-      background: rgba(14, 23, 44, 0.85);
-      border: 1px solid rgba(0, 240, 255, 0.35);
-      border-radius: 8px;
-      padding: 2px 4px;
-    }
-
-    .github-fetch-bar input {
-      background: transparent;
-      border: none;
-      color: var(--text-main);
-      padding: 6px 10px;
-      font-size: 12px;
-      outline: none;
-      width: 170px;
-      font-family: 'JetBrains Mono', monospace;
-    }
-
-    .github-fetch-bar button {
-      background: var(--accent-cyan);
-      color: #060913;
-      border: none;
-      padding: 5px 10px;
-      border-radius: 6px;
-      font-size: 11px;
-      font-weight: 700;
-      cursor: pointer;
-      transition: all 0.2s;
-    }
-
-    .github-fetch-bar button:hover {
-      background: #ffffff;
-      box-shadow: 0 0 10px var(--accent-cyan);
-    }
-
-    select, button.btn-control {
-      background: rgba(16, 26, 48, 0.85);
-      border: 1px solid rgba(0, 240, 255, 0.35);
-      color: var(--text-main);
-      padding: 7px 12px;
-      border-radius: 8px;
-      font-family: 'Space Grotesk', sans-serif;
-      font-size: 12px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.2s ease;
-      outline: none;
-    }
-
-    select:hover, button.btn-control:hover {
-      border-color: var(--accent-cyan);
-      box-shadow: 0 0 12px rgba(0, 240, 255, 0.4);
-    }
-
-    button.btn-primary {
-      background: linear-gradient(135deg, rgba(0, 240, 255, 0.25), rgba(255, 0, 127, 0.25));
-      border: 1px solid var(--accent-cyan);
-    }
-
-    button.btn-report {
-      border-color: var(--accent-gold);
-      color: var(--accent-gold);
-    }
-
-    /* SEARCH BAR (CENTER TOP) */
-    .search-box {
-      display: flex;
-      align-items: center;
-      background: rgba(14, 23, 44, 0.8);
-      border: 1px solid rgba(0, 240, 255, 0.3);
-      border-radius: 8px;
-      padding: 2px 10px;
-    }
-
-    .search-box input {
-      background: transparent;
-      border: none;
-      color: var(--text-main);
-      font-size: 12px;
-      padding: 6px 4px;
-      outline: none;
-      width: 140px;
-      font-family: 'Space Grotesk', sans-serif;
-    }
-
-    /* MAIN WORKSPACE */
-    .workspace {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      flex: 1;
-      margin: 14px 0;
-      gap: 16px;
-      position: relative;
-    }
-
-    /* LEFT AKOM HUD */
-    .traffic-hud {
-      width: 320px;
-      background: var(--panel-bg);
-      border: 1px solid var(--panel-border);
-      backdrop-filter: blur(16px);
-      border-radius: 14px;
-      padding: 16px;
-      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-    }
-
-    .hud-title {
-      font-size: 12px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      color: var(--accent-cyan);
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    .gauge-wrapper {
-      display: flex;
-      align-items: center;
-      gap: 14px;
-      padding: 10px 12px;
-      background: rgba(6, 11, 24, 0.7);
-      border-radius: 10px;
-      border: 1px solid rgba(255, 255, 255, 0.06);
-    }
-
-    .gauge-dial {
-      width: 60px;
-      height: 60px;
-      border-radius: 50%;
-      border: 4px solid var(--accent-red);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 18px;
-      font-weight: 700;
-      color: var(--accent-red);
-      box-shadow: 0 0 16px rgba(255, 23, 68, 0.4);
-      transition: all 0.5s ease;
-    }
-
-    .gauge-info h3 {
-      font-size: 14px;
-      font-weight: 700;
-    }
-
-    .gauge-info p {
-      font-size: 11px;
-      color: var(--text-muted);
-      margin-top: 2px;
-    }
-
-    .incident-alert {
-      background: rgba(255, 23, 68, 0.12);
-      border-left: 3px solid var(--accent-red);
-      padding: 10px 12px;
-      border-radius: 6px;
-      font-size: 11px;
-      line-height: 1.4;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
-
-    .incident-alert .incident-title {
-      font-weight: 700;
-      color: var(--accent-red);
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-
-    .btn-dispatch {
-      background: var(--accent-red);
-      color: white;
-      border: none;
-      padding: 7px 12px;
-      border-radius: 6px;
-      font-size: 11px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 6px;
-      box-shadow: 0 0 14px rgba(255, 23, 68, 0.5);
-      transition: all 0.2s;
-    }
-
-    .btn-dispatch:hover {
-      background: #ff3d67;
-      transform: scale(1.02);
-    }
-
-    .stats-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 8px;
-    }
-
-    .stat-card {
-      background: rgba(14, 23, 44, 0.7);
-      padding: 8px 10px;
-      border-radius: 8px;
-      border: 1px solid rgba(255, 255, 255, 0.05);
-    }
-
-    .stat-card span {
-      font-size: 9px;
-      color: var(--text-muted);
-      display: block;
-      text-transform: uppercase;
-    }
-
-    .stat-card strong {
-      font-size: 15px;
-      color: var(--text-main);
-      margin-top: 2px;
-      display: block;
-    }
-
-    /* RIGHT INSPECTOR DRAWER */
-    .inspector-drawer {
-      width: 360px;
-      max-height: 80vh;
-      background: var(--panel-bg);
-      border: 1px solid var(--panel-border);
-      backdrop-filter: blur(16px);
-      border-radius: 14px;
-      padding: 16px;
-      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
-      display: none; /* Tıklanınca flex olur */
-      flex-direction: column;
-      gap: 12px;
-      overflow-y: auto;
-      animation: fadeIn 0.25s ease;
-    }
-
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateX(20px); }
-      to { opacity: 1; transform: translateX(0); }
-    }
-
-    .inspector-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-      padding-bottom: 8px;
-    }
-
-    .inspector-header h2 {
-      font-size: 14px;
-      font-weight: 700;
-      color: var(--accent-cyan);
-      word-break: break-all;
-    }
-
-    .btn-close {
-      background: none;
-      border: none;
-      color: var(--text-muted);
-      font-size: 18px;
-      cursor: pointer;
-    }
-
-    .metric-row {
-      display: flex;
-      justify-content: space-between;
-      font-size: 11px;
-      padding: 5px 0;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
-    }
-
-    .metric-row span {
-      color: var(--text-muted);
-    }
-
-    .badge-district {
-      font-size: 10px;
-      font-weight: 700;
-      padding: 2px 6px;
-      border-radius: 4px;
-      text-transform: uppercase;
-    }
-
-    .blast-radius-box {
-      background: rgba(255, 0, 127, 0.1);
-      border: 1px solid rgba(255, 0, 127, 0.3);
-      padding: 10px;
-      border-radius: 8px;
-      font-size: 11px;
-    }
-
-    .blast-radius-box strong {
-      color: var(--accent-pink);
-      display: block;
-      margin-bottom: 4px;
-    }
-
-    .code-preview-box {
-      background: #040711;
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      border-radius: 6px;
-      padding: 8px;
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 10px;
-      max-height: 140px;
-      overflow-y: auto;
-      color: #a4b3cc;
-      line-height: 1.4;
-      white-space: pre-wrap;
-    }
-
-    /* BOTTOM TERMINAL DRAWER */
-    .terminal-drawer {
-      width: 100%;
-      max-height: 160px;
-      background: rgba(8, 12, 22, 0.94);
-      border: 1px solid rgba(0, 240, 255, 0.3);
-      border-radius: 12px;
-      backdrop-filter: blur(14px);
-      padding: 10px 16px;
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 11px;
-      overflow-y: auto;
-      box-shadow: 0 4px 24px rgba(0, 0, 0, 0.7);
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-    }
-
-    .log-line {
-      display: flex;
-      gap: 8px;
-      line-height: 1.4;
-    }
-
-    .log-line.header { color: var(--accent-cyan); font-weight: 600; }
-    .log-line.warning { color: var(--accent-gold); }
-    .log-line.success { color: var(--accent-green); font-weight: 600; }
-    .log-line.highlight { color: var(--accent-pink); }
-    .log-line.info { color: #a4b3cc; }
-
-    /* 2D AKOM RADAR MINIMAP (BOTTOM RIGHT) */
-    .radar-container {
-      position: absolute;
-      bottom: 180px;
-      right: 18px;
-      width: 190px;
-      background: var(--panel-bg);
-      border: 1px solid var(--panel-border);
-      backdrop-filter: blur(16px);
-      border-radius: 12px;
-      padding: 10px;
-      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-      z-index: 15;
-    }
-
-    .radar-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      font-size: 10px;
-      font-weight: 700;
-      color: var(--accent-cyan);
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
-
-    #radar-canvas {
-      width: 100%;
-      height: 110px;
-      background: #040814;
-      border: 1px solid rgba(0, 240, 255, 0.2);
-      border-radius: 6px;
-      cursor: crosshair;
-    }
-
-    .radar-nav-pills {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 4px;
-    }
-
-    .radar-pill {
-      background: rgba(14, 23, 44, 0.85);
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      color: var(--text-main);
-      padding: 3px 6px;
-      border-radius: 4px;
-      font-size: 9px;
-      font-weight: 600;
-      text-align: center;
-      cursor: pointer;
-      transition: all 0.2s;
-    }
-
-    .radar-pill:hover {
-      border-color: var(--accent-cyan);
-      background: rgba(0, 240, 255, 0.15);
-      color: #ffffff;
-    }
-
-    /* MODAL FOR DIFF VIEWER */
-    .diff-modal-backdrop {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100vw;
-      height: 100vh;
-      background: rgba(4, 7, 16, 0.85);
-      backdrop-filter: blur(10px);
-      z-index: 100;
-      display: none;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .diff-modal {
-      width: 750px;
-      max-width: 90vw;
-      max-height: 85vh;
-      background: var(--panel-bg);
-      border: 1px solid var(--accent-cyan);
-      border-radius: 14px;
-      padding: 20px;
-      display: flex;
-      flex-direction: column;
-      gap: 14px;
-      box-shadow: 0 0 40px rgba(0, 240, 255, 0.3);
-    }
-
-    .diff-viewer {
-      background: #040711;
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      border-radius: 8px;
-      padding: 14px;
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 11px;
-      line-height: 1.5;
-      overflow-y: auto;
-      max-height: 50vh;
-      white-space: pre-wrap;
-    }
-
-    .diff-del { color: #ff1744; background: rgba(255, 23, 68, 0.1); display: block; }
-    .diff-add { color: #00e676; background: rgba(0, 230, 118, 0.1); display: block; }
-
-    #folder-input { display: none; }
-  </style>
+  <style>root--bg-dark#060913--panel-bgrgba(1016310.84)--panel-borderrgba(02402550.25)--accent-cyan#00f0ff--accent-pink#ff007f--accent-gold#e5c07b--accent-red#ff1744--accent-green#00e676--text-main#f0f4fc--text-muted#8899b5*box-sizingborder-boxmargin0padding0bodyhtmlwidth100%height100%overflowhiddenbackground-colorvar(--bg-dark)font-family'Space Grotesk'sans-serifcolorvar(--text-main)#viewport-containerwidth100vwheight100vhpositionabsolutetop0left0z-index1.ui-layerpositionabsolutez-index10pointer-eventsnonewidth100%height100%displayflexflex-directioncolumnjustify-contentspace-betweenpadding16px.interactivepointer-eventsautoheader.top-bardisplayflexjustify-contentspace-betweenalign-itemscenterbackgroundvar(--panel-bg)border1px solid var(--panel-border)backdrop-filterblur(16px)padding12px 20pxborder-radius14pxbox-shadow0 8px 32px rgba(0000.6)gap16pxflex-wrapwrap.branddisplayflexalign-itemscentergap12px.brand-iconfont-size26pxfilterdrop-shadow(0 0 10px var(--accent-cyan)).brand-text h1font-size19pxfont-weight700letter-spacing1pxbackgroundlinear-gradient(90deg#ffffff 0%var(--accent-cyan) 60%var(--accent-pink) 100%)-webkit-background-cliptext-webkit-text-fill-colortransparent.brand-text pfont-size10pxcolorvar(--text-muted)letter-spacing0.5px.header-controlsdisplayflexalign-itemscentergap10pxflex-wrapwrap.github-fetch-bardisplayflexalign-itemscenterbackgroundrgba(1423440.85)border1px solid rgba(02402550.35)border-radius8pxpadding2px 4px.github-fetch-bar inputbackgroundtransparentbordernonecolorvar(--text-main)padding6px 10pxfont-size12pxoutlinenonewidth170pxfont-family'JetBrains Mono'monospace.github-fetch-bar buttonbackgroundvar(--accent-cyan)color#060913bordernonepadding5px 10pxborder-radius6pxfont-size11pxfont-weight700cursorpointertransitionall 0.2s.github-fetch-bar buttonhoverbackground#ffffffbox-shadow0 0 10px var(--accent-cyan)selectbutton.btn-controlbackgroundrgba(1626480.85)border1px solid rgba(02402550.35)colorvar(--text-main)padding7px 12pxborder-radius8pxfont-family'Space Grotesk'sans-seriffont-size12pxfont-weight600cursorpointertransitionall 0.2s easeoutlinenoneselecthoverbutton.btn-controlhoverborder-colorvar(--accent-cyan)box-shadow0 0 12px rgba(02402550.4)button.btn-primarybackgroundlinear-gradient(135degrgba(02402550.25)rgba(25501270.25))border1px solid var(--accent-cyan)button.btn-reportborder-colorvar(--accent-gold)colorvar(--accent-gold).search-boxdisplayflexalign-itemscenterbackgroundrgba(1423440.8)border1px solid rgba(02402550.3)border-radius8pxpadding2px 10px.search-box inputbackgroundtransparentbordernonecolorvar(--text-main)font-size12pxpadding6px 4pxoutlinenonewidth140pxfont-family'Space Grotesk'sans-serif.workspacedisplayflexjustify-contentspace-betweenalign-itemsflex-startflex1margin14px 0gap16pxpositionrelative.traffic-hudwidth320pxmax-height88vhoverflow-yautobackgroundvar(--panel-bg)border1px solid var(--panel-border)backdrop-filterblur(16px)border-radius14pxpadding16pxbox-shadow0 8px 32px rgba(0000.6)displayflexflex-directioncolumngap12px.drift-panelmargin-top4pxborder-top1px solid rgba(2552552550.08)padding-top8px.drift-headerdisplayflexjustify-contentspace-betweenalign-itemscentercursorpointeruser-selectnonepadding2px 0.drift-history-itemdisplayflexjustify-contentspace-betweenalign-itemscenterpadding4px 6pxbackgroundrgba(2552552550.03)border1px solid rgba(2552552550.05)border-radius4pxfont-size10pxcursorpointertransitionall 0.15s ease.drift-history-itemhoverbackgroundrgba(02402550.08)border-colorrgba(02402550.25).drift-history-item.activebackgroundrgba(02402550.15)border-colorvar(--accent-cyan).hud-titlefont-size12pxfont-weight700text-transformuppercaseletter-spacing1pxcolorvar(--accent-cyan)displayflexjustify-contentspace-betweenalign-itemscenter.gauge-wrapperdisplayflexalign-itemscentergap14pxpadding10px 12pxbackgroundrgba(611240.7)border-radius10pxborder1px solid rgba(2552552550.06).gauge-dialwidth60pxheight60pxborder-radius50%border4px solid var(--accent-red)displayflexalign-itemscenterjustify-contentcenterfont-size18pxfont-weight700colorvar(--accent-red)box-shadow0 0 16px rgba(25523680.4)transitionall 0.5s ease.gauge-info h3font-size14pxfont-weight700.gauge-info pfont-size11pxcolorvar(--text-muted)margin-top2px.incident-alertbackgroundrgba(25523680.12)border-left3px solid var(--accent-red)padding10px 12pxborder-radius6pxfont-size11pxline-height1.4displayflexflex-directioncolumngap8px.incident-alert .incident-titlefont-weight700colorvar(--accent-red)displayflexalign-itemscentergap6px.btn-dispatchbackgroundvar(--accent-red)colorwhitebordernonepadding7px 12pxborder-radius6pxfont-size11pxfont-weight700text-transformuppercaseletter-spacing0.5pxcursorpointerdisplayflexalign-itemscenterjustify-contentcentergap6pxbox-shadow0 0 14px rgba(25523680.5)transitionall 0.2s.btn-dispatchhoverbackground#ff3d67transformscale(1.02).stats-griddisplaygridgrid-template-columns1fr 1frgap8px.stat-cardbackgroundrgba(1423440.7)padding8px 10pxborder-radius8pxborder1px solid rgba(2552552550.05).stat-card spanfont-size9pxcolorvar(--text-muted)displayblocktext-transformuppercase.stat-card strongfont-size15pxcolorvar(--text-main)margin-top2pxdisplayblock.inspector-drawerwidth360pxmax-height80vhbackgroundvar(--panel-bg)border1px solid var(--panel-border)backdrop-filterblur(16px)border-radius14pxpadding16pxbox-shadow0 8px 32px rgba(0000.6)displaynoneflex-directioncolumngap12pxoverflow-yautoanimationfadeIn 0.25s ease@keyframes fadeInfromopacity0transformtranslateX(20px)toopacity1transformtranslateX(0).inspector-headerdisplayflexjustify-contentspace-betweenalign-itemscenterborder-bottom1px solid rgba(2552552550.08)padding-bottom8px.inspector-header h2font-size14pxfont-weight700colorvar(--accent-cyan)word-breakbreak-all.btn-closebackgroundnonebordernonecolorvar(--text-muted)font-size18pxcursorpointer.metric-rowdisplayflexjustify-contentspace-betweenfont-size11pxpadding5px 0border-bottom1px solid rgba(2552552550.04).metric-row spancolorvar(--text-muted).badge-districtfont-size10pxfont-weight700padding2px 6pxborder-radius4pxtext-transformuppercase.blast-radius-boxbackgroundrgba(25501270.1)border1px solid rgba(25501270.3)padding10pxborder-radius8pxfont-size11px.blast-radius-box strongcolorvar(--accent-pink)displayblockmargin-bottom4px.code-preview-boxbackground#040711border1px solid rgba(2552552550.08)border-radius6pxpadding8pxfont-family'JetBrains Mono'monospacefont-size10pxmax-height140pxoverflow-yautocolor#a4b3ccline-height1.4white-spacepre-wrap.terminal-drawerwidth100%max-height160pxbackgroundrgba(812220.94)border1px solid rgba(02402550.3)border-radius12pxbackdrop-filterblur(14px)padding10px 16pxfont-family'JetBrains Mono'monospacefont-size11pxoverflow-yautobox-shadow0 4px 24px rgba(0000.7)displayflexflex-directioncolumngap4px.log-linedisplayflexgap8pxline-height1.4.log-line.headercolorvar(--accent-cyan)font-weight600.log-line.warningcolorvar(--accent-gold).log-line.successcolorvar(--accent-green)font-weight600.log-line.highlightcolorvar(--accent-pink).log-line.infocolor#a4b3cc.radar-containerpositionabsolutebottom180pxright18pxwidth190pxbackgroundvar(--panel-bg)border1px solid var(--panel-border)backdrop-filterblur(16px)border-radius12pxpadding10pxbox-shadow0 8px 32px rgba(0000.6)displayflexflex-directioncolumngap6pxz-index15.radar-headerdisplayflexjustify-contentspace-betweenalign-itemscenterfont-size10pxfont-weight700colorvar(--accent-cyan)text-transformuppercaseletter-spacing0.5px#radar-canvaswidth100%height110pxbackground#040814border1px solid rgba(02402550.2)border-radius6pxcursorcrosshair.radar-nav-pillsdisplaygridgrid-template-columns1fr 1frgap4px.radar-pillbackgroundrgba(1423440.85)border1px solid rgba(2552552550.08)colorvar(--text-main)padding3px 6pxborder-radius4pxfont-size9pxfont-weight600text-aligncentercursorpointertransitionall 0.2s.radar-pillhoverborder-colorvar(--accent-cyan)backgroundrgba(02402550.15)color#ffffff.diff-modal-backdroppositionfixedtop0left0width100vwheight100vhbackgroundrgba(47160.85)backdrop-filterblur(10px)z-index100displaynonealign-itemscenterjustify-contentcenter.diff-modalwidth750pxmax-width90vwmax-height85vhbackgroundvar(--panel-bg)border1px solid var(--accent-cyan)border-radius14pxpadding20pxdisplayflexflex-directioncolumngap14pxbox-shadow0 0 40px rgba(02402550.3).diff-viewerbackground#040711border1px solid rgba(2552552550.1)border-radius8pxpadding14pxfont-family'JetBrains Mono'monospacefont-size11pxline-height1.5overflow-yautomax-height50vhwhite-spacepre-wrap.diff-delcolor#ff1744backgroundrgba(25523680.1)displayblock.diff-addcolor#00e676backgroundrgba(02301180.1)displayblock#folder-inputdisplaynone</style>
 </head>
 <body>
 
-  <!-- 3D Canvas -->
+  
   <div id="viewport-container"></div>
 
-  <!-- UI Layer -->
+  
   <div class="ui-layer">
     
-    <!-- Top Bar -->
+    
     <header class="top-bar interactive">
       <div class="brand">
         <div class="brand-icon">🌉</div>
@@ -597,57 +31,57 @@
         </div>
       </div>
 
-      <!-- Quick Search Bar -->
+      
       <div class="search-box">
         <span style="font-size: 12px; margin-right: 4px;">🔍</span>
         <input type="text" id="input-search" placeholder="Search Module / Sector...">
       </div>
 
       <div class="header-controls">
-        <!-- Live GitHub Fetcher -->
+        
         <div class="github-fetch-bar" title="Transform public GitHub repository into 3D architectural city">
           <input type="text" id="input-github-repo" placeholder="owner/repo (e.g. expressjs/express)">
           <button id="btn-fetch-github">Ingest & Parse</button>
         </div>
 
-        <!-- Sample Dropdown -->
+        
         <select id="sample-select">
           <option value="circular-jam-demo">🚨 Cyclic Deadlock Scenario (Tarjan SCC)</option>
           <option value="zenith-nexus">🌐 Zenith Nexus (Hybrid RAG Topology)</option>
           <option value="vercel-ai-sdk">▲ Vercel AI SDK (App Router Core)</option>
         </select>
 
-        <!-- Yerel Klasör & Canlı Proje Yeniden Tara -->
+        
         <input type="file" id="folder-input" webkitdirectory directory multiple>
         <button id="btn-open-folder" class="btn-control btn-primary">📁 Ingest Directory</button>
         <button id="btn-rescan-project" class="btn-control" style="background: rgba(0, 240, 255, 0.15); border-color: var(--accent-cyan); color: var(--accent-cyan);" title="Rescan Local Project (Shortcut: R)">🔄 Rescan AST</button>
 
-        <!-- Rapor İndir & PR Yorumu -->
+        
         <button id="btn-download-report" class="btn-control btn-report" title="Export Architectural Markdown Telemetry">📊 Export Report</button>
         <button id="btn-copy-pr-comment" class="btn-control" title="Copy PR Gatekeeper Status Markdown">💬 PR Bot Status</button>
 
-        <!-- Live SSE Status Indicator -->
+        
         <div id="live-sse-indicator" style="display: inline-flex; align-items: center; gap: 6px; font-size: 10px; color: var(--accent-green); background: rgba(0, 230, 118, 0.1); border: 1px solid rgba(0, 230, 118, 0.3); padding: 4px 8px; border-radius: 6px;">
           <span style="width: 6px; height: 6px; border-radius: 50%; background: var(--accent-green); box-shadow: 0 0 6px var(--accent-green);"></span>
           <span>LIVE WATCHER</span>
         </div>
 
-        <!-- Ses Aç/Kapat (Mute/Unmute) Toggle -->
+        
         <button id="btn-toggle-audio" class="btn-control" title="Toggle Spatial Audio Synthesizer">🔇 Audio: Muted</button>
       </div>
     </header>
 
-    <!-- Center Workspace -->
+    
     <div class="workspace">
       
-      <!-- Architectural Telemetry & Topology HUD (Left) -->
+      
       <aside class="traffic-hud interactive">
         <div class="hud-title">
           <span>Architectural Telemetry & Topology HUD</span>
           <span style="font-size: 9px; color: var(--accent-green);">● TELEMETRY LIVE</span>
         </div>
 
-        <!-- LOD / GÖRSEL FİLTRE ÇUBUĞU (Anti-Spaghetti Selector) -->
+        
         <div style="display: flex; gap: 4px; background: rgba(6, 11, 24, 0.7); padding: 4px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.06);">
           <button id="btn-filter-all" class="btn-filter active" style="flex: 1; padding: 4px 6px; font-size: 10px; background: var(--accent-cyan); color: #060913; border: none; border-radius: 4px; font-weight: 700; cursor: pointer;">All</button>
           <button id="btn-filter-cycles" class="btn-filter" style="flex: 1; padding: 4px 6px; font-size: 10px; background: transparent; color: var(--text-muted); border: none; border-radius: 4px; font-weight: 700; cursor: pointer;">🚨 SCC Cycles</button>
@@ -662,7 +96,7 @@
           </div>
         </div>
 
-        <!-- Atmospheric & Meteorological Telemetry Badge -->
+        
         <div class="weather-badge" id="akom-weather-badge">
           <span id="weather-icon" style="font-size: 16px;">✨</span>
           <div>
@@ -671,7 +105,7 @@
           </div>
         </div>
 
-        <!-- Döngüsel Kilit Alarm Kutusu -->
+        
         <div class="incident-alert" id="incident-box" style="display: none;">
           <div class="incident-title">🚨 CRITICAL: Cyclic Deadlock Detected (Tarjan SCC Violation in Bridge Ingress)</div>
           <div id="incident-desc">Directed acyclic graph invariant broken across ingress bridge modules.</div>
@@ -680,18 +114,18 @@
           </button>
         </div>
 
-        <!-- Client-Side Leak Detector / Boundary Violation Sentry Alert -->
+        
         <div class="incident-alert" id="security-alert-box" style="display: none; border-color: #ff9100; background: rgba(255, 145, 0, 0.1);">
           <div class="incident-title" style="color: #ff9100;">🛡️ Secret & Boundary Violation Sentry Alert!</div>
           <div id="security-alert-desc" style="color: #ffe0b2;">Client-Side Security Boundary Breached (Exposed Secret / Forbidden Module)</div>
         </div>
 
-        <!-- Refactor Diff Butonu -->
+        
         <button id="btn-view-diff" class="btn-control btn-primary" style="display: none; width: 100%;">
           📄 Review Unified Remediation Patch (Git Diff)
         </button>
 
-        <!-- Stats -->
+        
         <div class="stats-grid">
           <div class="stat-card">
             <span>Total Modules</span>
@@ -714,9 +148,40 @@
             <strong id="stat-dead">0</strong>
           </div>
         </div>
+
+        
+        <div class="drift-panel" id="drift-panel">
+          <div class="drift-header" id="drift-toggle-header">
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <span style="font-size: 11px; font-weight: 700; color: var(--accent-cyan);">📈 Architecture Drift</span>
+              <span id="drift-badge-count" style="font-size: 9px; padding: 1px 5px; border-radius: 4px; background: rgba(0, 240, 255, 0.15); color: var(--accent-cyan); font-weight: 700;">0</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <button id="btn-snapshot-return" class="btn-control" style="display: none; font-size: 8px; padding: 2px 6px; background: rgba(0, 230, 118, 0.2); border-color: var(--accent-green); color: var(--accent-green);" title="Reset HUD to live telemetry">↩ Live</button>
+              <span id="drift-toggle-icon" style="font-size: 10px; color: var(--text-muted); transition: transform 0.2s;">▼</span>
+            </div>
+          </div>
+
+          <div class="drift-body" id="drift-body" style="margin-top: 8px;">
+            
+            <div id="drift-chart-wrapper" style="position: relative; width: 100%; height: 80px; background: rgba(6, 11, 24, 0.6); border: 1px solid rgba(255, 255, 255, 0.06); border-radius: 6px; overflow: hidden;">
+              <svg id="drift-svg" width="100%" height="100%" viewBox="0 0 280 80" preserveAspectRatio="none" style="display: block;"></svg>
+              <div id="drift-tooltip" style="display: none; position: absolute; background: rgba(6, 11, 24, 0.96); border: 1px solid var(--accent-cyan); border-radius: 6px; padding: 5px 8px; font-size: 10px; pointer-events: none; z-index: 50; box-shadow: 0 4px 16px rgba(0,0,0,0.6); min-width: 125px;"></div>
+            </div>
+
+            
+            <div style="display: flex; justify-content: space-between; font-size: 9px; color: var(--text-muted); margin: 6px 0; padding: 0 2px;">
+              <span style="display: inline-flex; align-items: center; gap: 4px;"><span style="width: 8px; height: 2px; background: var(--accent-cyan); display: inline-block; border-radius: 1px;"></span> Traffic Index</span>
+              <span style="display: inline-flex; align-items: center; gap: 4px;"><span style="width: 8px; height: 2px; background: var(--accent-red); display: inline-block; border-radius: 1px;"></span> Cyclic Deadlocks</span>
+            </div>
+
+            
+            <div id="drift-history-list" style="max-height: 90px; overflow-y: auto; display: flex; flex-direction: column; gap: 3px; padding-right: 2px;"></div>
+          </div>
+        </div>
       </aside>
 
-      <!-- Building Inspector (Right) -->
+      
       <aside class="inspector-drawer interactive" id="inspector-drawer">
         <div class="inspector-header">
           <h2 id="inspect-name">Module</h2>
@@ -743,32 +208,32 @@
           <strong id="inspect-health">-</strong>
         </div>
 
-        <!-- Blast Radius -->
+        
         <div class="blast-radius-box" id="inspect-blast-box">
           <strong>⚡ Topological Blast Radius:</strong>
           <div id="inspect-blast-desc">-</div>
         </div>
 
-        <!-- Client-Side Security Boundary Sentry Box -->
+        
         <div class="blast-radius-box" id="inspect-security-box" style="display: none; border-color: #ff9100; background: rgba(255, 145, 0, 0.12);">
           <strong style="color: #ff9100;">🛡️ Client-Side Security Boundary Violation (CWE Alert):</strong>
           <div id="inspect-security-desc" style="color: #ffe0b2; font-size: 11px; margin-top: 4px;">-</div>
         </div>
 
-        <!-- Extracted Functions -->
+        
         <div class="metric-row" style="flex-direction: column; gap: 4px;">
           <span>AST Exported Signatures:</span>
           <div id="inspect-functions" style="font-size: 10px; color: var(--accent-cyan); font-family: monospace;">-</div>
         </div>
 
-        <!-- Code Snippet -->
+        
         <div class="metric-row" style="flex-direction: column; gap: 4px;">
           <span>Source Code Buffer:</span>
           <div class="code-preview-box" id="inspect-code-preview">// Loading module source...</div>
         </div>
       </aside>
 
-      <!-- 2D Topological Minimap & Sector Radar (Bottom Right) -->
+      
       <div class="radar-container interactive">
         <div class="radar-header">
           <span>📡 Topological Sector Radar</span>
@@ -787,7 +252,7 @@
 
     </div>
 
-    <!-- Agent Stream Terminal (Bottom) -->
+    
     <div class="terminal-drawer interactive" id="terminal-drawer">
       <div class="log-line header">🌉 [ZENITH-ISTANBUL] Telemetry Engine Online. Hardware-Accelerated WebGL Context Initialized.</div>
       <div class="log-line info">📡 System operational. Streaming real-time telemetry, AST graph parsing, and autonomous agent dispatch bridge.</div>
@@ -795,7 +260,7 @@
 
   </div>
 
-  <!-- DIFF VIEWER MODAL -->
+  
   <div class="diff-modal-backdrop interactive" id="diff-modal">
     <div class="diff-modal">
       <div style="display: flex; justify-content: space-between; align-items: center;">
@@ -811,7 +276,7 @@
     </div>
   </div>
 
-  <!-- APPLICATION SCRIPT -->
+  
   <script type="module">
     import { CodebaseParser } from './src/core/ast-parser.js';
     import { TrafficEngine } from './src/core/traffic-engine.js';
@@ -821,7 +286,6 @@
     import { AgentDispatcher } from './src/agent/agent-dispatcher.js';
     import { SAMPLE_REPOSITORIES } from './src/data/samples.js';
 
-    // Global Instances
     const parser = new CodebaseParser();
     const trafficEngine = new TrafficEngine();
     const hud = new TrafficHUD();
@@ -836,7 +300,6 @@
 
     const trafficParticles = new TrafficParticles(bosphorusScene.scene);
 
-    // Terminal Logger
     const terminalDrawer = document.getElementById('terminal-drawer');
     function logToTerminal(text, type = 'info') {
       const line = document.createElement('div');
@@ -846,7 +309,6 @@
       terminalDrawer.scrollTop = terminalDrawer.scrollHeight;
     }
 
-    // Agent Dispatcher Instance
     const dispatcher = new AgentDispatcher(
       (text, type) => logToTerminal(text, type),
       (generatedDiff, refactorPayload) => {
@@ -859,7 +321,6 @@
       }
     );
 
-    // Inspector Drawer Elements
     const inspectorDrawer = document.getElementById('inspector-drawer');
     const inspectName = document.getElementById('inspect-name');
     const inspectDistrict = document.getElementById('inspect-district');
@@ -879,14 +340,12 @@
       inspectComplexity.textContent = mod.complexity;
       inspectHealth.textContent = `${mod.healthScore} / 100`;
 
-      // AST Fonksiyonları
       if (mod.functions && mod.functions.length > 0) {
         inspectFunctions.textContent = mod.functions.map(f => `ƒ ${f}()`).join(', ');
       } else {
         inspectFunctions.textContent = 'Özel fonksiyon ayrıştırılmadı';
       }
 
-      // Blast Radius Hesabı
       const blast = trafficEngine.calculateBlastRadius(mod.id);
       inspectBlastDesc.innerHTML = `
         Risk Seviyesi: <strong>${blast.riskLevel}</strong><br>
@@ -894,7 +353,6 @@
         Bağlı Olduğu (Imports): ${blast.directDependencies.length} modül
       `;
 
-      // Client-Side Security Boundary Exposures Sentry
       const secBox = document.getElementById('inspect-security-box');
       const secDesc = document.getElementById('inspect-security-desc');
       if (mod.securityLeaks && mod.securityLeaks.length > 0) {
@@ -911,10 +369,8 @@
         secBox.style.display = 'none';
       }
 
-      // Source Code Buffer
       inspectCodePreview.textContent = mod.content || `// ${mod.name}\n// LOC: ${mod.loc}, Complexity: ${mod.complexity}\n// Sector: ${mod.district.district}\n\nexport const ${mod.name.replace(/\.[^/.]+$/, '')} = {\n  status: 'active'\n};`;
 
-      // 3D Neon Laser Trajectories
       bosphorusScene.drawLaserConnections(mod, trafficEngine);
 
       inspectorDrawer.style.display = 'flex';
@@ -926,7 +382,6 @@
       bosphorusScene.clearLaserConnections();
     });
 
-    // Atmospheric & Meteorological Telemetry Fetcher
     async function fetchEnvironmentTelemetry(hasGraphIssues, density) {
       const weatherIcon = document.getElementById('weather-icon');
       const weatherTitle = document.getElementById('weather-title');
@@ -963,7 +418,6 @@
         }
       } catch (e) {}
 
-      // Fallback if offline
       if (hasGraphIssues) {
         weatherIcon.textContent = '🌧️';
         weatherTitle.textContent = 'Atmosphere: Low Inversion Fog';
@@ -977,21 +431,17 @@
       }
     }
 
-    // Refresh UI & HUD Telemetry
     function refreshCityUI() {
       const report = trafficEngine.generateTelemetryReport();
 
-      // Rebuild 3D City Metropole
       bosphorusScene.buildCity(
         Array.from(trafficEngine.modules.values()),
         trafficEngine.bridges,
         trafficEngine.circularChains
       );
 
-      // Traffic Particles State
       trafficParticles.setTrafficState(report.circularDependencies > 0);
 
-      // Telemetry Gauge
       const dial = document.getElementById('gauge-dial');
       dial.textContent = `%${report.density}`;
 
@@ -1015,7 +465,6 @@
         incidentBox.style.display = 'none';
       }
 
-      // Security Boundary Sentry Alert Box
       const secAlertBox = document.getElementById('security-alert-box');
       const secAlertDesc = document.getElementById('security-alert-desc');
       if (report.securityLeakCount > 0) {
@@ -1025,14 +474,11 @@
         secAlertBox.style.display = 'none';
       }
 
-      // 3D Atmosphere & Sentry Patrol Vessel
       const hasIssues = report.circularDependencies > 0 || report.density >= 60 || report.securityLeakCount > 0;
       bosphorusScene.setAtmosphere(hasIssues, report.density, report.securityLeakCount > 0);
 
-      // Atmospheric Telemetry
       fetchEnvironmentTelemetry(hasIssues, report.density);
 
-      // Telemetry Stats Grid
       document.getElementById('stat-modules').textContent = report.totalModules;
       document.getElementById('stat-cycles').textContent = report.circularDependencies;
       document.getElementById('stat-bridges').textContent = trafficEngine.bridges.length;
@@ -1040,7 +486,6 @@
       document.getElementById('stat-dead').textContent = report.deadCodeCount;
     }
 
-    // Sample Repo Yükleyici
     function loadSample(sampleKey) {
       const sample = SAMPLE_REPOSITORIES[sampleKey];
       if (!sample) return;
@@ -1055,7 +500,6 @@
       }
     }
 
-    // Ajanı Görevlendir Butonu
     document.getElementById('btn-dispatch-agent').addEventListener('click', () => {
       const incidentData = {
         chain: trafficEngine.circularChains[0] || []
@@ -1063,19 +507,16 @@
       dispatcher.dispatchRefactorAgent(incidentData, trafficEngine);
     });
 
-    // Sample Seçimi
     document.getElementById('sample-select').addEventListener('change', (e) => {
       loadSample(e.target.value);
     });
 
-    // Vapur Düdüğü Butonu
     document.getElementById('btn-vapur-dudugu').addEventListener('click', () => {
       hud.playVapurDudugu();
       logToTerminal('🚢 [BOĞAZ HATTI] Şehir Hatları Vapuru Karaköy-Kadıköy Seferinde Düdük Çaldı.', 'info');
       setTimeout(() => hud.playSeagull(), 1200);
     });
 
-    // CANLI GITHUB REPOSU ANALİZİ
     document.getElementById('btn-fetch-github').addEventListener('click', async () => {
       const repoInput = document.getElementById('input-github-repo').value.trim();
       if (!repoInput) {
@@ -1116,7 +557,6 @@
       }
     });
 
-    // DOSYA / SEMT ARAMA (SEARCH & FOCUS)
     document.getElementById('input-search').addEventListener('input', (e) => {
       const query = e.target.value.toLowerCase().trim();
       if (!query) {
@@ -1137,7 +577,6 @@
       }
     });
 
-    // RAPOR İNDİR (MARKDOWN EXPORT)
     document.getElementById('btn-download-report').addEventListener('click', () => {
       const md = trafficEngine.exportArchitectureReportMarkdown();
       const blob = new Blob([md], { type: 'text/markdown;charset=utf-8;' });
@@ -1150,7 +589,6 @@
       logToTerminal('📊 [RAPOR İNDİRİLDİ] "zenith-istanbul-mimari-rapor.md" bilgisayarınıza kaydedildi.', 'success');
     });
 
-    // REFRACTOR DIFF GÖRÜNTÜLEYİCİ
     const diffModal = document.getElementById('diff-modal');
     const diffContent = document.getElementById('diff-viewer-content');
 
@@ -1174,7 +612,6 @@
       alert('Git yaması panoya kopyalandı!');
     });
 
-    // CANLI YAMAYI KODA VE DİSKE UYGULA (APPLY PATCH LIVE)
     document.getElementById('btn-apply-patch-live').addEventListener('click', async () => {
       if (!lastRefactorPayload || !lastRefactorPayload.files) {
         alert('Uygulanacak yama bulunamadı.');
@@ -1201,20 +638,17 @@
         logToTerminal('ℹ️ [BELLEK İÇİ MODU] Canlı HTTP API yerine tarayıcı hafızasında yama uygulandı.', 'info');
       }
 
-      // 2. Bellek İçi Modülleri ve AST Motorunu Güncelle
       for (const file of lastRefactorPayload.files) {
         const parsed = parser.parseModule(file.path, file.content);
         trafficEngine.modules.set(parsed.id, parsed);
       }
 
-      // Döngüsel bağımlılık kenarlarını temizle
       trafficEngine.circularChains = [];
       for (const bridge of trafficEngine.bridges) {
         bridge.isJammed = false;
       }
       trafficEngine.calculateTrafficDensity();
 
-      // 3D Şehri ve Trafiği Yeniden Çiz
       refreshCityUI();
       hud.playSuccessChime();
       hud.playVapurDudugu();
@@ -1227,7 +661,6 @@
         : '✅ Yama başarıyla uygulandı ve AST motoru senkronize edildi!\nKöprü trafiği akıyor.');
     });
 
-    // SES AÇ/KAPAT (MUTE TOGGLE)
     let isAudioMuted = true;
     const btnToggleAudio = document.getElementById('btn-toggle-audio');
     btnToggleAudio.addEventListener('click', () => {
@@ -1245,7 +678,6 @@
       }
     });
 
-    // PR YORUMU KOPYALA (CI BOT ÇIKTISI)
     document.getElementById('btn-copy-pr-comment').addEventListener('click', () => {
       const prComment = trafficEngine.generatePrCommentMarkdown();
       navigator.clipboard.writeText(prComment);
@@ -1253,7 +685,6 @@
       logToTerminal('💬 [PR BOTU] GitHub telemetri yorumu panoya kopyalandı.', 'success');
     });
 
-    // LOD / SPAGETTI ŞEHİR GÖRSEL FİLTRELERİ
     const btnFilterAll = document.getElementById('btn-filter-all');
     const btnFilterCycles = document.getElementById('btn-filter-cycles');
     const btnFilterBridges = document.getElementById('btn-filter-bridges');
@@ -1298,7 +729,6 @@
       logToTerminal(`🌉 [LOD FİLTRE] Sadece Boğaz Köprüsü'nü kullanan ${bridgeModIds.size} bina filtrelendi.`, 'info');
     });
 
-    // Yerel Klasör Seçimi (Zero-cloud, Safe, Local Parsing)
     const folderInput = document.getElementById('folder-input');
     document.getElementById('btn-open-folder').addEventListener('click', () => {
       folderInput.click();
@@ -1332,7 +762,6 @@
       }
     });
 
-    // 2D AKOM RADAR ÇİZİMİ & ETKİLEŞİMİ
     const radarCanvas = document.getElementById('radar-canvas');
     const radarCtx = radarCanvas.getContext('2d');
 
@@ -1343,7 +772,6 @@
 
       radarCtx.clearRect(0, 0, w, h);
 
-      // 1. Zemin & Boğaz Kanalı
       radarCtx.fillStyle = '#040814';
       radarCtx.fillRect(0, 0, w, h);
 
@@ -1356,18 +784,15 @@
       radarCtx.closePath();
       radarCtx.fill();
 
-      // 2. Köprüler
       const hasJam = trafficEngine.circularChains.length > 0;
       radarCtx.strokeStyle = hasJam ? '#ff1744' : '#00f0ff';
       radarCtx.lineWidth = 2;
 
-      // 15 Temmuz Köprüsü
       radarCtx.beginPath();
       radarCtx.moveTo(w * 0.36, h * 0.45);
       radarCtx.lineTo(w * 0.64, h * 0.45);
       radarCtx.stroke();
 
-      // 3. Modül LED Noktaları
       const cycleIds = new Set(trafficEngine.circularChains.flat());
       for (const mod of trafficEngine.modules.values()) {
         if (!mod.worldPosition) continue;
@@ -1390,20 +815,16 @@
         }
       }
 
-      // 4. Özel İstanbul Simgeleri (Kız Kulesi & Galata Kulesi)
-      // Kız Kulesi (Boğaz Ortası)
       radarCtx.fillStyle = '#00ffff';
       radarCtx.beginPath();
       radarCtx.arc(w * 0.50, h * 0.55, 3.2, 0, Math.PI * 2);
       radarCtx.fill();
 
-      // Galata Kulesi (Karaköy/Beyoğlu)
       radarCtx.fillStyle = '#ffd700';
       radarCtx.beginPath();
       radarCtx.arc(w * 0.32, h * 0.65, 3.5, 0, Math.PI * 2);
       radarCtx.fill();
 
-      // 5. Kamera Bakış Konumu (Sarı Gösterge)
       if (bosphorusScene.camera) {
         const camX = Math.max(6, Math.min(w - 6, ((bosphorusScene.camera.position.x + 300) / 600) * w));
         const camY = Math.max(6, Math.min(h - 6, ((bosphorusScene.camera.position.z + 300) / 600) * h));
@@ -1415,7 +836,6 @@
       }
     }
 
-    // Radara Tıklayınca Semte Uç (Interactive Camera Fly-To)
     radarCanvas.addEventListener('click', (e) => {
       const rect = radarCanvas.getBoundingClientRect();
       const clickX = (e.clientX - rect.left) / rect.width;
@@ -1435,14 +855,124 @@
       }
     });
 
-    // Radar Navigasyon Hapları (Pills)
     document.querySelectorAll('.radar-pill').forEach(pill => {
       pill.addEventListener('click', () => {
         bosphorusScene.flyToDistrict(pill.dataset.target);
       });
     });
 
-    // CANLI ÇALIŞMA ALANI YENİDEN TARAMA (RESCAN)
+    let driftHistory = [];
+    let activeSnapshotIndex = null;
+    let isDriftCollapsed = false;
+
+    const driftToggleHeader = document.getElementById('drift-toggle-header');
+    const driftBody = document.getElementById('drift-body');
+    const driftToggleIcon = document.getElementById('drift-toggle-icon');
+    const btnSnapshotReturn = document.getElementById('btn-snapshot-return');
+
+    if (driftToggleHeader) {
+      driftToggleHeader.addEventListener('click', (e) => {
+        if (e.target && e.target.id === 'btn-snapshot-return') return;
+        isDriftCollapsed = !isDriftCollapsed;
+        driftBody.style.display = isDriftCollapsed ? 'none' : 'block';
+        driftToggleIcon.textContent = isDriftCollapsed ? '▶' : '▼';
+      });
+    }
+
+    if (btnSnapshotReturn) {
+      btnSnapshotReturn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        activeSnapshotIndex = null;
+        btnSnapshotReturn.style.display = 'none';
+        refreshCityUI();
+        renderDriftUI();
+      });
+    }
+
+    function inspectSnapshotInHUD(rec, index) {
+      activeSnapshotIndex = index;
+      if (btnSnapshotReturn) btnSnapshotReturn.style.display = 'inline-block';
+
+      const dial = document.getElementById('gauge-dial');
+      dial.textContent = `%${rec.trafficIndex}`;
+
+      const title = document.getElementById('gauge-status-title');
+      const desc = document.getElementById('gauge-status-desc');
+      const incidentBox = document.getElementById('incident-box');
+
+      if (rec.cyclicDeadlocks > 0) {
+        dial.style.borderColor = '#ff1744';
+        dial.style.color = '#ff1744';
+        dial.style.boxShadow = '0 0 16px rgba(255, 23, 68, 0.4)';
+        title.textContent = 'SNAPSHOT: Cyclic Deadlock';
+        desc.textContent = `${rec.cyclicDeadlocks} Tarjan SCC Invariants (${rec.gitCommit || 'HEAD'})`;
+        incidentBox.style.display = 'flex';
+      } else {
+        dial.style.borderColor = '#00e676';
+        dial.style.color = '#00e676';
+        dial.style.boxShadow = '0 0 16px rgba(0, 230, 118, 0.4)';
+        title.textContent = 'SNAPSHOT: Topology Nominal';
+        desc.textContent = `Recorded: ${rec.timestamp ? new Date(rec.timestamp).toLocaleTimeString() : 'N/A'} (Commit: ${rec.gitCommit || 'HEAD'})`;
+        incidentBox.style.display = 'none';
+      }
+
+      document.getElementById('stat-modules').textContent = rec.totalModules || 0;
+      document.getElementById('stat-cycles').textContent = rec.cyclicDeadlocks || 0;
+      document.getElementById('stat-bridges').textContent = rec.totalEdges || '-';
+      document.getElementById('stat-leaks').textContent = rec.securityExposures || 0;
+      document.getElementById('stat-dead').textContent = rec.isolatedModules || 0;
+
+      renderDriftUI();
+    }
+
+    async function loadDriftHistory() {
+      try {
+        const res = await fetch('/api/history');
+        if (res.ok) {
+          const data = await res.json();
+          if (data.success && Array.isArray(data.history)) {
+            driftHistory = data.history;
+            renderDriftUI();
+          }
+        }
+      } catch (e) {}
+    }
+
+    function renderDriftUI() {
+      const badgeCount = document.getElementById('drift-badge-count');
+      if (badgeCount) badgeCount.textContent = driftHistory.length;
+
+      const svg = document.getElementById('drift-svg');
+      const tooltip = document.getElementById('drift-tooltip');
+      const list = document.getElementById('drift-history-list');
+
+      hud.renderDriftChart(svg, tooltip, driftHistory, activeSnapshotIndex, (rec, idx) => {
+        inspectSnapshotInHUD(rec, idx);
+      });
+
+      hud.renderHistoryList(list, driftHistory, activeSnapshotIndex, (rec, idx) => {
+        inspectSnapshotInHUD(rec, idx);
+      });
+    }
+
+    async function persistScanSnapshot(report) {
+      if (activeSnapshotIndex !== null) return;
+      try {
+        await fetch('/api/scan', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            trafficIndex: report.trafficIndex ?? report.density,
+            cyclicDeadlocks: report.circularDependencies,
+            securityExposures: report.securityLeakCount,
+            isolatedModules: report.deadCodeCount,
+            totalModules: report.totalModules,
+            totalEdges: trafficEngine.bridges ? trafficEngine.bridges.length : 0
+          })
+        });
+      } catch (e) {}
+    }
+
     async function rescanLiveProject() {
       try {
         logToTerminal('🔄 [LIVE AUDIT] Re-scanning active workspace modules...', 'header');
@@ -1453,6 +983,8 @@
           logToTerminal(`✅ [AUDIT COMPLETE] "${data.targetDir}" (${data.modules.length} modules ingested into DAG topology).`, 'success');
           trafficEngine.loadModules(data.modules);
           refreshCityUI();
+          persistScanSnapshot(trafficEngine.generateTelemetryReport());
+          loadDriftHistory();
         } else {
           logToTerminal('⚠️ No auditable JS/TS modules located in target directory.', 'warning');
         }
@@ -1461,7 +993,6 @@
       }
     }
 
-    // REAL-TIME SERVER-SENT EVENTS (SSE) WATCHER
     function initLiveSseWatcher() {
       try {
         const eventSource = new EventSource('/api/events');
@@ -1480,6 +1011,8 @@
             if (data.type === 'file-change') {
               logToTerminal(`⚡ [REAL-TIME WATCHER] File mutation detected in "${data.file}". Rebuilding AST graph...`, 'highlight');
               rescanLiveProject();
+            } else if (data.type === 'history-updated') {
+              loadDriftHistory();
             }
           } catch (e) {}
         };
@@ -1504,7 +1037,6 @@
       }
     });
 
-    // Animasyon Döngüsüne Parçacık ve Radar Güncellemesini Ekle
     function updateParticlesLoop() {
       requestAnimationFrame(updateParticlesLoop);
       trafficParticles.update();
@@ -1512,14 +1044,12 @@
     }
     updateParticlesLoop();
 
-    // Akıllı İlk Yükleme:
-    // 1. Eğer standalone export modunda gömülü veri varsa:
     if (window.__ZENITH_EMBEDDED_MODULES__ && window.__ZENITH_EMBEDDED_MODULES__.length > 0) {
       logToTerminal(`📦 [STANDALONE MİMARİ RAPORU] Gömülü ${window.__ZENITH_EMBEDDED_MODULES__.length} kod modülü yüklendi.`, 'header');
       trafficEngine.loadModules(window.__ZENITH_EMBEDDED_MODULES__);
       refreshCityUI();
+      loadDriftHistory();
     } else {
-      // 2. Canlı CLI sunucusu (/api/project-modules) üzerinden otomatik tara:
       fetch('/api/project-modules')
         .then(res => res.json())
         .then(data => {
@@ -1527,12 +1057,16 @@
             logToTerminal(`🚀 [CANLI PROJE BAŞLATILDI] "${data.targetDir}" dizinindeki ${data.modules.length} modül 3D İstanbul şehrine yerleştirildi.`, 'header');
             trafficEngine.loadModules(data.modules);
             refreshCityUI();
+            persistScanSnapshot(trafficEngine.generateTelemetryReport());
+            loadDriftHistory();
           } else {
             loadSample('circular-jam-demo');
+            loadDriftHistory();
           }
         })
         .catch(() => {
           loadSample('circular-jam-demo');
+          loadDriftHistory();
         });
     }
   </script>

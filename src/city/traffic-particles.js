@@ -22,7 +22,6 @@ export class TrafficParticles {
     const positions = new Float32Array(this.particleCount * 3);
     const colors = new Float32Array(this.particleCount * 3);
 
-    // 15 Temmuz (Z: -30) ve FSM (Z: 60) köprü hatları
     const bridgeZCoordinates = [-30, 60];
 
     for (let i = 0; i < this.particleCount; i++) {
@@ -35,7 +34,6 @@ export class TrafficParticles {
       positions[i * 3 + 1] = y;
       positions[i * 3 + 2] = z;
 
-      // Hız ve yön (Avrupa'dan Anadolu'ya veya tersi)
       this.particles.push({
         x,
         y,
@@ -45,7 +43,6 @@ export class TrafficParticles {
         baseColor: i % 2 === 0 ? new THREE.Color(0x00f0ff) : new THREE.Color(0xffaa00)
       });
 
-      // Başlangıç rengi
       colors[i * 3] = 0.0;
       colors[i * 3 + 1] = 0.94;
       colors[i * 3 + 2] = 1.0;
@@ -54,7 +51,6 @@ export class TrafficParticles {
     geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
     geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
 
-    // Glow noktaları için özel materyal
     const mat = new THREE.PointsMaterial({
       size: 4.5,
       vertexColors: true,
@@ -81,21 +77,17 @@ export class TrafficParticles {
       const p = this.particles[i];
 
       if (this.isJammed) {
-        // Trafik Kilitlendi! Hız %90 düşer, araçlar birbirine yapışır (Kırmızı alarm)
         p.x += p.speed * 0.08;
-        // Kırmızı / Turuncu alarm renkleri
         colors[i * 3] = 1.0;
         colors[i * 3 + 1] = 0.08;
         colors[i * 3 + 2] = 0.15;
       } else {
-        // Akıcı Trafik! Hızlı yeşil ve mavi veri paketleri
         p.x += p.speed;
         colors[i * 3] = 0.0;
         colors[i * 3 + 1] = 0.95;
         colors[i * 3 + 2] = 0.55;
       }
 
-      // Köprünün sonuna gelince başa dön
       if (p.x > 60) {
         p.x = -60;
       } else if (p.x < -60) {

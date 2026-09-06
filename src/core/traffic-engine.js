@@ -28,24 +28,20 @@ export class TrafficEngine {
     this.deadCodeModules = [];
     this.securityLeaks = [];
 
-    // 1. Modül indeksleme
     for (const mod of parsedModules) {
       this.modules.set(mod.id, mod);
       this.adjacencyList.set(mod.id, new Set());
       this.reverseAdjacencyList.set(mod.id, new Set());
     }
 
-    // 2. Kenar (Edge / Import) bağlantılarını kurma & Barrel Flattening
     for (const mod of parsedModules) {
       for (const rawImport of mod.imports) {
         if (rawImport.startsWith('vendor:')) continue;
 
-        // Hedef modülü bul
         const targetId = this.findMatchingModuleId(rawImport);
         if (targetId && targetId !== mod.id) {
           const targetMod = this.modules.get(targetId);
 
-          // Barrel File Flattening: Eğer hedef bir barrel file ise doğrudan alt modüllere bağla
           if (targetMod && targetMod.isBarrel && targetMod.imports.length > 0) {
             for (const subImport of targetMod.imports) {
               const subTargetId = this.findMatchingModuleId(subImport);
@@ -66,19 +62,14 @@ export class TrafficEngine {
       }
     }
 
-    // 3. Döngüsel Bağımlılıkları (Circular Dependencies) İteratif Tarjan SCC ile bul
     this.detectCircularDependenciesTarjanIterative();
 
-    // 4. İki yaka arasındaki Boğaz Köprülerini çıkar (Avrupa <-> Anadolu)
     this.detectBosphorusBridges();
 
-    // 5. Ölü Kodları (Dead Code / Unused Modules) tespit et -> Isolated Subgraphs
     this.detectDeadCode();
 
-    // 6. Client-Side Leak Detector: Sır ve Güvenlik Sınırı İhlallerini Topla
     this.detectSecurityLeaks();
 
-    // 7. İstanbul Trafik Yoğunluk İndeksini Hesapla
     this.calculateTrafficDensity();
   }
 
@@ -110,7 +101,6 @@ export class TrafficEngine {
     for (const startNode of this.modules.keys()) {
       if (indices.has(startNode)) continue;
 
-      // Açık çağrı yığını (Explicit call stack)
       const callStack = [{
         v: startNode,
         neighbors: Array.from(this.adjacencyList.get(startNode) || []),
@@ -131,7 +121,6 @@ export class TrafficEngine {
           const w = top.neighbors[top.neighborIdx++];
 
           if (!indices.has(w)) {
-            // Ziyaret edilmemiş komşu: Yeni çerçeveyi yığına it
             indices.set(w, index);
             lowlink.set(w, index);
             index++;
@@ -144,11 +133,9 @@ export class TrafficEngine {
               neighborIdx: 0
             });
           } else if (onStack.get(w)) {
-            // Komşu yığında, döngü tespit edildi!
             lowlink.set(v, Math.min(lowlink.get(v), indices.get(w)));
           }
         } else {
-          // Bu düğümün tüm komşuları tamamlandı, geri dönüş (Post-order processing)
           callStack.pop();
 
           if (callStack.length > 0) {
@@ -156,7 +143,6 @@ export class TrafficEngine {
             lowlink.set(parent, Math.min(lowlink.get(parent), lowlink.get(v)));
           }
 
-          // v kök düğüm ise SCC'yi çıkar
           if (lowlink.get(v) === indices.get(v)) {
             const scc = [];
             let w;
@@ -174,7 +160,6 @@ export class TrafficEngine {
       }
     }
 
-    // Döngü zincirlerini formatla
     this.circularChains = sccs.map(scc => [...scc, scc[0]]);
   }
 
@@ -196,7 +181,6 @@ export class TrafficEngine {
                                 (sourceMod.district.side === 'asia' && targetMod.district.side === 'europe');
 
         if (isCrossBoundary) {
-          // Bu bağlantı bir Boğaz Köprüsü üzerinden akıyor
           const isJammed = this.isEdgeInCircularDependency(sourceId, targetId);
 
           this.bridges.push({
@@ -232,7 +216,6 @@ export class TrafficEngine {
       if (mod.isCore) continue; // index/app dosyaları kök olduğu için hariç
       const incoming = this.reverseAdjacencyList.get(id);
       if (!incoming || incoming.size === 0) {
-        // Kimse bu modülü import etmiyor -> Adalar'a sürgün!
         mod.district = { side: 'islands', district: 'Prens Adaları', color: '#64748b' };
         this.deadCodeModules.push(mod);
       }
@@ -268,7 +251,6 @@ export class TrafficEngine {
       totalEdges += targets.size;
     }
 
-    // Compute |SCC Edges| (Directed edges connecting nodes inside the same cycle)
     let sccEdges = 0;
     const sccNodeSets = (this.sccs || []).map(scc => new Set(scc));
     for (const [sourceId, targets] of this.adjacencyList.entries()) {
@@ -282,7 +264,6 @@ export class TrafficEngine {
       }
     }
 
-    // Cross-boundary imports across logical layers (Europe <-> Asia bridge ingress)
     const crossBoundaryImports = this.bridges.length;
 
     if (totalEdges === 0) {
@@ -350,7 +331,6 @@ export class TrafficEngine {
     const directDependents = Array.from(this.reverseAdjacencyList.get(moduleId) || []);
     const directDependencies = Array.from(this.adjacencyList.get(moduleId) || []);
 
-    // 2. Derece etki alanı (Transit etkilenenler)
     const transitDependents = new Set();
     for (const dep of directDependents) {
       const secondTier = this.reverseAdjacencyList.get(dep);

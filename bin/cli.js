@@ -18,23 +18,21 @@ import { spawn, exec } from 'child_process';
 import { CodebaseParser } from '../src/core/ast-parser.js';
 import { TrafficEngine } from '../src/core/traffic-engine.js';
 import { AgentDispatcher } from '../src/agent/agent-dispatcher.js';
+import { HistoryStore } from '../src/core/history-store.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const projectRoot = path.resolve(__dirname, '..');
 
-// CLI Arguments
 const args = process.argv.slice(2);
 const isCI = args.includes('--ci') || args.includes('-c');
 const failOnCycle = args.includes('--fail-on-cycle');
 const failOnLeak = args.includes('--fail-on-leak');
 const isJson = args.includes('--json');
 
-// HTML Standalone Export Flag (--export-html [file-name])
 const exportHtmlIdx = args.indexOf('--export-html');
 const exportHtmlPath = exportHtmlIdx !== -1 ? (args[exportHtmlIdx + 1] || 'zenith-istanbul-report.html') : null;
 
-// Target Directory
 const targetArg = args.find((a, i) => !a.startsWith('-') && (exportHtmlIdx === -1 || i !== exportHtmlIdx + 1)) || '.';
 const targetDir = path.resolve(targetArg);
 const posixTargetDir = targetDir.replace(/\\/g, '/');
@@ -61,7 +59,7 @@ function scanAndParseDirectory(dir) {
       const relativePath = path.relative(dir, fullPath).replace(/\\/g, '/');
 
       if (entry.isDirectory()) {
-        if (!['node_modules', '.git', 'dist', 'build', '.next', '.turbo', '.idea', 'coverage', '.cache'].includes(entry.name)) {
+        if (!['node_modules', '.git', 'dist', 'build', '.next', '.turbo', '.idea', 'coverage', '.cache', '.zenith'].includes(entry.name)) {
           scan(fullPath);
         }
       } else if (entry.isFile() && parser.isAuditableFile(relativePath)) {
@@ -104,7 +102,6 @@ function runExportHtml() {
   const templatePath = path.join(projectRoot, 'index.html');
   let htmlContent = fs.readFileSync(templatePath, 'utf8');
 
-  // Inject embedded module JSON
   const injection = `<script>window.__ZENITH_EMBEDDED_MODULES__ = ${JSON.stringify(parsedModules)};</script>\n</head>`;
   htmlContent = htmlContent.replace('</head>', injection);
 
@@ -128,11 +125,19 @@ async function runHeadlessCI() {
     process.exit(0);
   }
 
-  // Execute Traffic Engine and Tarjan SCC Graph Analysis
   engine.loadModules(parsedModules);
   const report = engine.generateTelemetryReport();
 
-  // Format and Output Results
+  const historyStore = new HistoryStore(targetDir);
+  const persistedRecord = historyStore.recordScan({
+    trafficIndex: report.trafficIndex,
+    cyclicDeadlocks: report.circularDependencies,
+    securityExposures: report.securityLeakCount,
+    isolatedModules: report.deadCodeModules,
+    totalModules: report.totalModules,
+    totalEdges: report.totalEdges
+  });
+
   if (isJson) {
     console.log(JSON.stringify(report, null, 2));
   } else {
@@ -140,7 +145,8 @@ async function runHeadlessCI() {
     console.log(prComment);
   }
 
-  // Gatekeeper Evaluation: Circular Dependencies (--fail-on-cycle)
+  console.log(`\x1b[36m[Zenith Local-First]\x1b[0m Architecture drift snapshot persisted to .zenith/ (ID: ${persistedRecord.id})`);
+
   let hasFailed = false;
   if (failOnCycle && report.circularDependencies > 0) {
     console.error(`\n\x1b[31m❌ [CI GATEKEEPER FAILED] CRITICAL: Cyclic Deadlock Detected (Tarjan SCC Violation in Bridge Ingress: ${report.circularDependencies} cycle invariants)\x1b[0m`);
@@ -148,7 +154,6 @@ async function runHeadlessCI() {
     hasFailed = true;
   }
 
-  // Gatekeeper Evaluation: Client-Side Security Boundary Leaks (--fail-on-leak)
   if (failOnLeak && report.securityLeakCount > 0) {
     console.error(`\n\x1b[31m❌ [CI GATEKEEPER FAILED] CRITICAL: Client-Side Security Boundary Violation Detected (${report.securityLeakCount} leaked server secrets or backend packages)\x1b[0m`);
     console.error(`\x1b[31m   PR deployment blocked. Remove server secrets and backend ORM imports from client bundles.\x1b[0m\n`);
@@ -169,19 +174,7 @@ async function runHeadlessCI() {
  * 3. INTERACTIVE 3D WEBGEL SERVER MODE
  */
 function runInteractiveServer() {
-  console.log(`
-\x1b[36m   ______           _ _   _     _____     _                  _             _ 
-  |___  /          (_) | | |   |_   _|   | |                | |           | |
-     / / ___ _ __   _| |_| |__   | |  ___| |_ __ _ _ __  ___| |_   _ _ __ | |
-    / / / _ \\ '_ \\ | | __| '_ \\  | | / __| __/ _\` | '_ \\/ __| | | | | '_ \\| |
-   / /_|  __/ | | || | |_| | | |_| |_\\__ \\ || (_| | | | \\__ \\ | |_| | |_) | |
-  /_____\\___|_| |_||_|\\__|_| |_|_____|___/\\__\\__,_|_| |_|___/_|\\__,_| .__/|_|
-                                                                      | |     
-                                                                      |_|     \x1b[0m
-  \x1b[35m🌉 3D Codebase Metropole & Autonomous Agent Command Deck\x1b[0m
-  \x1b[33m📍 Target Directory:\x1b[0m ${posixTargetDir}
-  \x1b[32m🚀 Telemetry Server Online:\x1b[0m http://localhost:${PORT}
-`);
+  console.log(`\n\x1b[36m🌉 ZenithIstanbul\x1b[0m — \x1b[35m3D Codebase Metropole & Autonomous Agent Command Deck\x1b[0m\n\x1b[33m📍 Target:\x1b[0m ${posixTargetDir}\n\x1b[32m🚀 Telemetry Server Online:\x1b[0m http://localhost:${PORT}\n`);
 
   const mimeTypes = {
     '.html': 'text/html; charset=utf-8',
@@ -193,14 +186,15 @@ function runInteractiveServer() {
     '.svg': 'image/svg+xml'
   };
 
-  // Cross-Platform Recursive Watcher (Linux inotify + Windows/macOS)
+  const historyStore = new HistoryStore(targetDir);
+
   const sseClients = new Set();
   const activeWatchers = new Map();
   let watchDebounceTimer = null;
 
   const ignoredDirs = new Set([
     'node_modules', '.git', 'dist', 'build', '.next', '.turbo', 
-    '.idea', 'coverage', '.cache', 'tmp'
+    '.idea', 'coverage', '.cache', 'tmp', '.zenith'
   ]);
 
   function broadcastChange(normalizedPath) {
@@ -221,10 +215,53 @@ function runInteractiveServer() {
     }, 300);
   }
 
+  function garbageCollectWatchers() {
+    for (const [dirPath, watcher] of activeWatchers.entries()) {
+      if (!fs.existsSync(dirPath)) {
+        try {
+          watcher.close();
+        } catch (e) {}
+        activeWatchers.delete(dirPath);
+      }
+    }
+  }
+
+  function closeAllWatchers() {
+    for (const [dirPath, watcher] of activeWatchers.entries()) {
+      try {
+        watcher.close();
+      } catch (e) {}
+    }
+    activeWatchers.clear();
+  }
+
+  process.once('SIGINT', () => {
+    closeAllWatchers();
+    process.exit(0);
+  });
+  process.once('SIGTERM', () => {
+    closeAllWatchers();
+    process.exit(0);
+  });
+  process.once('exit', () => {
+    closeAllWatchers();
+  });
+
   function attachDirWatcher(dir) {
     if (activeWatchers.has(dir)) return;
     try {
       const watcher = fs.watch(dir, (eventType, filename) => {
+        if (!fs.existsSync(dir)) {
+          try { watcher.close(); } catch (e) {}
+          activeWatchers.delete(dir);
+          garbageCollectWatchers();
+          return;
+        }
+
+        if (eventType === 'rename') {
+          garbageCollectWatchers();
+        }
+
         if (!filename) return;
         const normalized = filename.replace(/\\/g, '/');
         if (ignoredDirs.has(normalized)) return;
@@ -232,7 +269,6 @@ function runInteractiveServer() {
         const fullPath = path.join(dir, filename);
         const relPath = path.relative(targetDir, fullPath).replace(/\\/g, '/');
 
-        // Dynamically attach watcher if a new subdirectory was created
         try {
           if (fs.existsSync(fullPath) && fs.statSync(fullPath).isDirectory()) {
             const baseName = path.basename(fullPath);
@@ -245,9 +281,13 @@ function runInteractiveServer() {
         broadcastChange(relPath);
       });
 
+      watcher.on('error', () => {
+        try { watcher.close(); } catch (e) {}
+        activeWatchers.delete(dir);
+      });
+
       activeWatchers.set(dir, watcher);
     } catch (err) {
-      // Permission or inaccessible directory fallback
     }
   }
 
@@ -267,10 +307,8 @@ function runInteractiveServer() {
     }
   }
 
-  // Cross-platform recursive watch: handles Linux inotify per-directory constraints
   recursiveDirectoryWalk(targetDir);
 
-  // Open-Meteo Cache
   const WEATHER_CACHE_TTL = 10 * 60 * 1000;
   let weatherCache = { data: null, timestamp: 0 };
 
@@ -317,7 +355,6 @@ function runInteractiveServer() {
   }
 
   const server = http.createServer(async (req, res) => {
-    // CORS Headers
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
@@ -328,7 +365,6 @@ function runInteractiveServer() {
       return;
     }
 
-    // 1. LIVE PROJECT MODULE SCANNER (/api/project-modules)
     if (req.method === 'GET' && req.url === '/api/project-modules') {
       try {
         const parsed = scanAndParseDirectory(targetDir);
@@ -341,7 +377,6 @@ function runInteractiveServer() {
       return;
     }
 
-    // 2. LIVE SSE STREAM (/api/events)
     if (req.method === 'GET' && req.url === '/api/events') {
       res.writeHead(200, {
         'Content-Type': 'text/event-stream',
@@ -358,7 +393,6 @@ function runInteractiveServer() {
       return;
     }
 
-    // 3. ENVIRONMENT & METEOROLOGY TELEMETRY (/api/environment)
     if (req.method === 'GET' && req.url === '/api/environment') {
       try {
         const envData = await fetchEnvironment();
@@ -371,7 +405,68 @@ function runInteractiveServer() {
       return;
     }
 
-    // 4. AUTONOMOUS AGENT DISPATCH BRIDGE (/api/dispatch-agent)
+    if (req.method === 'GET' && req.url === '/api/history') {
+      try {
+        const history = historyStore.getHistory(30);
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ success: true, history }));
+      } catch (err) {
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ success: false, error: err.message }));
+      }
+      return;
+    }
+
+    if (req.method === 'POST' && req.url === '/api/scan') {
+      let body = '';
+      req.on('data', chunk => { body += chunk; });
+      req.on('end', () => {
+        try {
+          let metrics = {};
+          if (body.trim()) {
+            try { metrics = JSON.parse(body); } catch (e) {}
+          }
+
+          if (metrics.trafficIndex === undefined || metrics.totalModules === undefined) {
+            const parsed = scanAndParseDirectory(targetDir);
+            const engine = new TrafficEngine();
+            engine.loadModules(parsed);
+            const rep = engine.generateTelemetryReport();
+            metrics = {
+              trafficIndex: rep.trafficIndex,
+              cyclicDeadlocks: rep.circularDependencies,
+              securityExposures: rep.securityLeakCount,
+              isolatedModules: rep.deadCodeModules,
+              totalModules: rep.totalModules,
+              totalEdges: rep.totalEdges
+            };
+          }
+
+          const record = historyStore.recordScan(metrics);
+
+          const ssePayload = JSON.stringify({
+            type: 'history-updated',
+            timestamp: Date.now(),
+            record
+          });
+          for (const client of sseClients) {
+            try {
+              client.write(`data: ${ssePayload}\n\n`);
+            } catch (e) {
+              sseClients.delete(client);
+            }
+          }
+
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ success: true, record }));
+        } catch (err) {
+          res.writeHead(500, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ success: false, error: err.message }));
+        }
+      });
+      return;
+    }
+
     if (req.method === 'POST' && req.url === '/api/dispatch-agent') {
       let body = '';
       req.on('data', chunk => { body += chunk; });
@@ -382,7 +477,6 @@ function runInteractiveServer() {
           const srcId = sourceId || chain[0] || 'src/services/userService.ts';
           const tgtId = targetId || chain[1] || 'src/ui/AuthModal.tsx';
 
-          // Probe Ollama
           let cliAvailable = false;
           try {
             await new Promise((resolve, reject) => {
@@ -430,7 +524,7 @@ function runInteractiveServer() {
           res.writeHead(200, { 'Content-Type': 'application/json' });
           res.end(JSON.stringify({
             success: true,
-            engine: cliAvailable ? 'OLLAMA_HOST_IPC' : 'LEXICAL_CONTRACT_EXTRACTOR',
+            engine: cliAvailable ? 'OLLAMA_HOST_IPC' : 'BALANCED_BRACE_CONTRACT_EXTRACTOR',
             ...codemod
           }));
         } catch (err) {
@@ -441,7 +535,6 @@ function runInteractiveServer() {
       return;
     }
 
-    // 5. LIVE CODE MODIFICATION PATCH (/api/apply-patch)
     if (req.method === 'POST' && req.url === '/api/apply-patch') {
       let body = '';
       req.on('data', chunk => { body += chunk; });
