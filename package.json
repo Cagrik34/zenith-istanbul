@@ -3,9 +3,12 @@
   "version": "1.0.0",
   "description": "3D Codebase Metropole & Autonomous Agent Command Deck — Inspired by Istanbul's Bosphorus & Notorious Traffic",
   "main": "index.html",
+  "bin": {
+    "zenith-istanbul": "./bin/cli.js"
+  },
   "scripts": {
-    "dev": "npx -y serve -l 3000 .",
-    "start": "npx -y serve -l 3000 ."
+    "dev": "node bin/cli.js",
+    "start": "node bin/cli.js"
   },
   "keywords": [
     "code-visualization",

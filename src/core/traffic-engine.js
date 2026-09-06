@@ -268,3 +268,29 @@ export class TrafficEngine {
     md += `---\n*Rapor ZenithIstanbul tarafından yerel olarak üretilmiştir. Hiçbir kod dışarı sızdırılmamıştır.*\n`;
     return md;
   }
+
+  /**
+   * GitHub Actions / CI PR Botu için temiz Markdown yorum özeti
+   */
+  generatePrCommentMarkdown() {
+    const report = this.generateAkomReport();
+    const isClean = report.circularDependencies === 0;
+
+    let comment = `## 🌉 ZenithIstanbul — 3D Codebase PR Telemetrisi\n\n`;
+    comment += `| Metrik | Değer | Durum |\n`;
+    comment += `|---|:---:|---|\n`;
+    comment += `| **Boğaziçi Trafik Endeksi** | **%${report.density}** | ${isClean ? '🟢 Akıcı' : '🚨 KİLİTLENDİ'} |\n`;
+    comment += `| **Döngüsel Kilitler (SCC)** | **${report.circularDependencies}** | ${isClean ? '✅ Temiz' : '⚠️ Döngü Var'} |\n`;
+    comment += `| **Boğaz Köprü Geçişleri** | **${this.bridges.length}** | 🌉 API Bağlantısı |\n`;
+    comment += `| **Prens Adaları (Ölü Kod)** | **${report.deadCodeCount}** | ${report.deadCodeCount === 0 ? '✅ Temiz' : 'ℹ️ İzole Modül'} |\n\n`;
+
+    if (!isClean) {
+      comment += `> 🚨 **DİKKAT:** Bu PR Boğaziçi Köprülerinde kilitlenmeye yol açan döngüsel bağımlılık içeriyor! Lütfen refactor ajanıyla ortak tipleri decoupled kontrat katmanına taşıyın.\n\n`;
+    } else {
+      comment += `> ✨ **ONAYLANDI:** Mimari trafik akıcı. 15 Temmuz ve FSM köprülerinde hiçbir döngüsel darboğaz tespit edilmedi.\n\n`;
+    }
+
+    comment += `*ZenithIstanbul Client-Side Zero-Cloud Engine ile doğrulandı.*`;
+    return comment;
+  }
+}

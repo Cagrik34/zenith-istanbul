@@ -66,7 +66,7 @@ export class CodebaseParser {
     const functions = this.extractFunctions(content);
 
     // İstanbul Bölgesi Tayini (Frontend/Avrupa vs Backend/Anadolu)
-    const district = this.assignDistrict(filePath);
+    const district = this.assignDistrict(filePath, content);
 
     return {
       id: filePath,
@@ -207,32 +207,60 @@ export class CodebaseParser {
   }
 
   /**
-   * Dosya yoluna göre İstanbul semtini ve yakasını atar
+   * Dosya içeriği ve yoluna göre İstanbul semtini ve yakasını akıllıca tayin eder
+   * Next.js App Router, 'use client', 'use server' ve Node built-in heuristikleri
    */
-  assignDistrict(filePath) {
+  assignDistrict(filePath, content = '') {
     const p = filePath.toLowerCase();
+    const cleanContent = content ? content.slice(0, 1000).toLowerCase() : '';
 
-    // Avrupa Yakası (Frontend, UI, Components, Hooks, Pages, Styles)
+    // 1. Next.js Direktifleri (En yüksek öncelik)
+    if (cleanContent.includes("'use client'") || cleanContent.includes('"use client"')) {
+      return { side: 'europe', district: 'Levent (Client Component)', color: '#00a8ff' };
+    }
+    if (cleanContent.includes("'use server'") || cleanContent.includes('"use server"')) {
+      return { side: 'asia', district: 'Kadıköy (Server Action)', color: '#ff007f' };
+    }
+
+    // 2. Node.js Built-in & Backend Kütüphaneleri (Anadolu Yakası)
+    const backendLibs = ['fs', 'path', 'crypto', 'child_process', 'stream', 'http', 'https', 'cluster', 'prisma', 'drizzle', 'pg', 'mongoose', 'redis', 'next/headers', 'next/server'];
+    const hasBackendImport = backendLibs.some(lib => cleanContent.includes(`from '${lib}'`) || cleanContent.includes(`from "${lib}"`) || cleanContent.includes(`require('${lib}')`));
+    if (hasBackendImport) {
+      return { side: 'asia', district: 'Ataşehir (Infrastructure)', color: '#ffaa00' };
+    }
+
+    // 3. Dosya uzantı ve isim konvensiyonları
+    if (p.includes('.client.') || p.endsWith('.css') || p.endsWith('.scss') || p.includes('tailwind')) {
+      return { side: 'europe', district: 'Beşiktaş (UI)', color: '#00f0ff' };
+    }
+    if (p.includes('.server.') || p.includes('.action.') || p.includes('route.ts') || p.includes('route.js')) {
+      return { side: 'asia', district: 'Üsküdar (API Route)', color: '#ff5500' };
+    }
+
+    // 4. Klasör Yapısı Heuristiği (Avrupa: UI / Pages / Components)
     if (p.includes('components') || p.includes('ui') || p.includes('views') || p.includes('pages') || p.includes('app/') || p.includes('hooks') || p.includes('styles')) {
-      if (p.includes('button') || p.includes('card') || p.includes('modal')) return { side: 'europe', district: 'Beşiktaş', color: '#00f0ff' };
-      if (p.includes('pages') || p.includes('routes')) return { side: 'europe', district: 'Levent', color: '#00a8ff' };
+      if (p.includes('button') || p.includes('card') || p.includes('modal') || p.includes('badge')) return { side: 'europe', district: 'Beşiktaş', color: '#00f0ff' };
+      if (p.includes('pages') || p.includes('routes') || p.includes('layout')) return { side: 'europe', district: 'Levent', color: '#00a8ff' };
       return { side: 'europe', district: 'Maslak', color: '#7000ff' };
     }
 
-    // Anadolu Yakası (Backend, Services, Database, API, Core, Auth, Storage)
+    // 5. Klasör Yapısı Heuristiği (Anadolu: Backend / Services / DB)
     if (p.includes('server') || p.includes('api') || p.includes('services') || p.includes('db') || p.includes('database') || p.includes('models') || p.includes('controllers')) {
-      if (p.includes('db') || p.includes('models')) return { side: 'asia', district: 'Kadıköy', color: '#ff007f' };
+      if (p.includes('db') || p.includes('models') || p.includes('schema')) return { side: 'asia', district: 'Kadıköy', color: '#ff007f' };
       if (p.includes('auth') || p.includes('security')) return { side: 'asia', district: 'Üsküdar', color: '#ff5500' };
       return { side: 'asia', district: 'Ataşehir', color: '#ffaa00' };
     }
 
-    // Tarihi Yarımada (Temel yapı taşları, config, legacy primitives)
+    // 6. Tarihi Yarımada (Temel yapı taşları, config, types, core)
     if (p.includes('config') || p.includes('core') || p.includes('types') || p.includes('utils') || p.includes('helpers')) {
       return { side: 'historic', district: 'Tarihi Yarımada', color: '#e5c07b' };
     }
 
-    // Varsayılan: Yola göre Avrupa veya Anadolu'ya dağıt
-    return { side: 'europe', district: 'Şişli', color: '#00e676' };
+    // Varsayılan: Uzantıya göre dağıt (.tsx -> Avrupa, .ts -> Anadolu)
+    if (p.endsWith('.tsx') || p.endsWith('.jsx')) {
+      return { side: 'europe', district: 'Şişli', color: '#00e676' };
+    }
+    return { side: 'asia', district: 'Ümraniye', color: '#ff8800' };
   }
 
   isCoreModule(filePath) {

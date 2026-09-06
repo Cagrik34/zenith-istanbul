@@ -558,11 +558,12 @@
         <input type="file" id="folder-input" webkitdirectory directory multiple>
         <button id="btn-open-folder" class="btn-control btn-primary">📁 Klasör Tara</button>
 
-        <!-- Rapor İndir -->
+        <!-- Rapor İndir & PR Yorumu -->
         <button id="btn-download-report" class="btn-control btn-report" title="Detaylı Mimari Raporu Markdown İndir">📊 Raporu İndir</button>
+        <button id="btn-copy-pr-comment" class="btn-control" title="GitHub PR Bot Yorumunu Kopyala">💬 PR Yorumu</button>
 
-        <!-- Vapur Sesi -->
-        <button id="btn-vapur-dudugu" class="btn-control">🚢 Vapur Düdüğü</button>
+        <!-- Ses Aç/Kapat (Mute/Unmute) Toggle -->
+        <button id="btn-toggle-audio" class="btn-control" title="Ambiyans Seslerini Aç/Kapat">🔇 Ses: Kapalı</button>
       </div>
     </header>
 
@@ -574,6 +575,13 @@
         <div class="hud-title">
           <span>İBB AKOM Trafik Panosu</span>
           <span style="font-size: 9px; color: var(--accent-green);">● CANLI</span>
+        </div>
+
+        <!-- LOD / GÖRSEL FİLTRE ÇUBUĞU (Spagetti Şehir Önleyici) -->
+        <div style="display: flex; gap: 4px; background: rgba(6, 11, 24, 0.7); padding: 4px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.06);">
+          <button id="btn-filter-all" class="btn-filter active" style="flex: 1; padding: 4px 6px; font-size: 10px; background: var(--accent-cyan); color: #060913; border: none; border-radius: 4px; font-weight: 700; cursor: pointer;">Tümü</button>
+          <button id="btn-filter-cycles" class="btn-filter" style="flex: 1; padding: 4px 6px; font-size: 10px; background: transparent; color: var(--text-muted); border: none; border-radius: 4px; font-weight: 700; cursor: pointer;">🚨 Kilitler</button>
+          <button id="btn-filter-bridges" class="btn-filter" style="flex: 1; padding: 4px 6px; font-size: 10px; background: transparent; color: var(--text-muted); border: none; border-radius: 4px; font-weight: 700; cursor: pointer;">🌉 Köprüler</button>
         </div>
 
         <div class="gauge-wrapper">
@@ -964,19 +972,76 @@
       alert('Git yaması panoya kopyalandı!');
     });
 
-    document.getElementById('btn-download-patch').addEventListener('click', () => {
-      const blob = new Blob([lastRefactorDiff], { type: 'text/plain;charset=utf-8;' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'zenith-refactor.patch';
-      a.click();
-      URL.revokeObjectURL(url);
+    // SES AÇ/KAPAT (MUTE TOGGLE)
+    let isAudioMuted = true;
+    const btnToggleAudio = document.getElementById('btn-toggle-audio');
+    btnToggleAudio.addEventListener('click', () => {
+      isAudioMuted = !isAudioMuted;
+      hud.audioEnabled = !isAudioMuted;
+      if (!isAudioMuted) {
+        btnToggleAudio.textContent = '🔊 Ses: Açık';
+        btnToggleAudio.style.borderColor = 'var(--accent-green)';
+        btnToggleAudio.style.color = 'var(--accent-green)';
+        hud.playVapurDudugu();
+      } else {
+        btnToggleAudio.textContent = '🔇 Ses: Kapalı';
+        btnToggleAudio.style.borderColor = 'rgba(0, 240, 255, 0.35)';
+        btnToggleAudio.style.color = 'var(--text-main)';
+      }
     });
 
-    function escapeHtml(str) {
-      return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    // PR YORUMU KOPYALA (CI BOT ÇIKTISI)
+    document.getElementById('btn-copy-pr-comment').addEventListener('click', () => {
+      const prComment = trafficEngine.generatePrCommentMarkdown();
+      navigator.clipboard.writeText(prComment);
+      alert('GitHub PR Botu formatında mimari telemetri yorumu panoya kopyalandı! PR açıklamasına yapıştırabilirsiniz.');
+      logToTerminal('💬 [PR BOTU] GitHub telemetri yorumu panoya kopyalandı.', 'success');
+    });
+
+    // LOD / SPAGETTI ŞEHİR GÖRSEL FİLTRELERİ
+    const btnFilterAll = document.getElementById('btn-filter-all');
+    const btnFilterCycles = document.getElementById('btn-filter-cycles');
+    const btnFilterBridges = document.getElementById('btn-filter-bridges');
+
+    function setFilterActive(activeBtn) {
+      [btnFilterAll, btnFilterCycles, btnFilterBridges].forEach(b => {
+        b.style.background = 'transparent';
+        b.style.color = 'var(--text-muted)';
+      });
+      activeBtn.style.background = 'var(--accent-cyan)';
+      activeBtn.style.color = '#060913';
     }
+
+    btnFilterAll.addEventListener('click', () => {
+      setFilterActive(btnFilterAll);
+      bosphorusScene.buildingObjects.forEach(b => b.visible = true);
+      bosphorusScene.clearLaserConnections();
+      logToTerminal('🏙️ [GÖRÜNÜM] Tüm şehir binaları ve semtler gösteriliyor.', 'info');
+    });
+
+    btnFilterCycles.addEventListener('click', () => {
+      setFilterActive(btnFilterCycles);
+      const cycleIds = new Set(trafficEngine.circularChains.flat());
+      bosphorusScene.buildingObjects.forEach(b => {
+        const mod = bosphorusScene.buildingsMeshMap.get(b);
+        b.visible = mod && cycleIds.has(mod.id);
+      });
+      logToTerminal(`🚨 [LOD FİLTRE] Sadece döngüsel kilide sebep olan ${cycleIds.size} bina filtrelendi.`, 'warning');
+    });
+
+    btnFilterBridges.addEventListener('click', () => {
+      setFilterActive(btnFilterBridges);
+      const bridgeModIds = new Set();
+      trafficEngine.bridges.forEach(br => {
+        bridgeModIds.add(br.sourceId);
+        bridgeModIds.add(br.targetId);
+      });
+      bosphorusScene.buildingObjects.forEach(b => {
+        const mod = bosphorusScene.buildingsMeshMap.get(b);
+        b.visible = mod && bridgeModIds.has(mod.id);
+      });
+      logToTerminal(`🌉 [LOD FİLTRE] Sadece Boğaz Köprüsü'nü kullanan ${bridgeModIds.size} bina filtrelendi.`, 'info');
+    });
 
     // Yerel Klasör Seçimi (Zero-cloud, Safe, Local Parsing)
     const folderInput = document.getElementById('folder-input');
