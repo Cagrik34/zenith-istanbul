@@ -26,7 +26,16 @@ export class BosphorusScene {
 
     this.waterMesh = null;
     this.clock = new THREE.Clock();
-    this.activeTheme = 'night'; // 'night', 'sunset', 'cyberpunk'
+    this.activeTheme = 'night';
+
+    // Hava Durumu & Sis Motoru (Rain & Fog)
+    this.rainParticles = null;
+    this.isRaining = true;
+    this.rainCount = 1800;
+
+    // Kamera Uçuş Animasyonu (Smooth Lerp)
+    this.cameraLerpTarget = null;
+    this.controlsLerpTarget = null;
 
     this.init();
   }
@@ -34,7 +43,7 @@ export class BosphorusScene {
   init() {
     // 1. Scene
     this.scene = new THREE.Scene();
-    this.scene.background = new THREE.Color(0x060913); // Deep night sky
+    this.scene.background = new THREE.Color(0x060913);
     this.scene.fog = new THREE.FogExp2(0x060913, 0.0035);
 
     // 2. Camera
@@ -42,7 +51,7 @@ export class BosphorusScene {
     this.camera = new THREE.PerspectiveCamera(50, aspect, 1, 3000);
     this.camera.position.set(0, 280, 420);
 
-    // 3. Renderer (High performance WebGL with tone mapping & antialiasing)
+    // 3. Renderer
     this.renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
     this.renderer.setSize(this.container.clientWidth, this.container.clientHeight);
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
@@ -56,7 +65,7 @@ export class BosphorusScene {
     this.controls = new OrbitControls(this.camera, this.renderer.domElement);
     this.controls.enableDamping = true;
     this.controls.dampingFactor = 0.05;
-    this.controls.maxPolarAngle = Math.PI / 2.05; // Yerin altına inmesin
+    this.controls.maxPolarAngle = Math.PI / 2.05;
     this.controls.minDistance = 50;
     this.controls.maxDistance = 1200;
     this.controls.target.set(0, 20, 0);
@@ -67,11 +76,14 @@ export class BosphorusScene {
     // 6. Boğaz Coğrafyası (Su, Kıyılar, Adalar)
     this.createBosphorusTerrain();
 
-    // 7. Event Listeners
+    // 7. Yağmur & Sis Parçacık Sistemi
+    this.setupRainSystem();
+
+    // 8. Event Listeners
     window.addEventListener('resize', () => this.onWindowResize());
     this.renderer.domElement.addEventListener('pointerdown', (e) => this.onPointerDown(e));
 
-    // 8. Render Loop Başlat
+    // 9. Render Loop Başlat
     this.animate();
   }
 
@@ -419,6 +431,74 @@ export class BosphorusScene {
     this.bridgeMeshes = [];
   }
 
+  setupRainSystem() {
+    const rainGeo = new THREE.BufferGeometry();
+    const positions = new Float32Array(this.rainCount * 3);
+    for (let i = 0; i < this.rainCount; i++) {
+      positions[i * 3] = (Math.random() - 0.5) * 800;
+      positions[i * 3 + 1] = Math.random() * 320;
+      positions[i * 3 + 2] = (Math.random() - 0.5) * 800;
+    }
+    rainGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+
+    const rainMat = new THREE.PointsMaterial({
+      color: 0x88bbff,
+      size: 2.2,
+      transparent: true,
+      opacity: 0.65,
+      blending: THREE.AdditiveBlending
+    });
+
+    this.rainParticles = new THREE.Points(rainGeo, rainMat);
+    this.rainParticles.visible = this.isRaining;
+    this.scene.add(this.rainParticles);
+  }
+
+  /**
+   * Kod sağlığına göre atmosferi değiştirir (Sis, Yağmur, Gece berraklığı)
+   */
+  setAtmosphere(isJammed, trafficDensity = 50) {
+    this.isRaining = isJammed || trafficDensity >= 60;
+    if (this.rainParticles) {
+      this.rainParticles.visible = this.isRaining;
+    }
+
+    if (this.isRaining) {
+      // Yoğun Cyberpunk Sis ve Yağmurlu Boğaz
+      this.scene.fog.density = 0.0075;
+      this.scene.fog.color.setHex(0x0e111a);
+      this.renderer.toneMappingExposure = 0.95;
+      this.ambientLight.color.setHex(0x1a1224);
+    } else {
+      // Açık Neon Gecesi, Berrak Su
+      this.scene.fog.density = 0.0022;
+      this.scene.fog.color.setHex(0x060913);
+      this.renderer.toneMappingExposure = 1.15;
+      this.ambientLight.color.setHex(0x101b38);
+    }
+  }
+
+  /**
+   * 2D Radardan veya HUD'dan tıklanan semte yumuşakça uçar (Camera Lerp)
+   */
+  flyToDistrict(districtKey) {
+    const coords = {
+      'maslak': { x: -180, y: 30, z: -160, camX: -180, camY: 160, camZ: 40 },
+      'levent': { x: -120, y: 20, z: -40, camX: -120, camY: 130, camZ: 140 },
+      'besiktas': { x: -80, y: 15, z: 60, camX: -80, camY: 110, camZ: 220 },
+      'bridge': { x: 0, y: 25, z: -10, camX: 0, camY: 120, camZ: 180 },
+      'kadikoy': { x: 140, y: 20, z: -40, camX: 140, camY: 130, camZ: 140 },
+      'uskudar': { x: 100, y: 20, z: 80, camX: 100, camY: 120, camZ: 240 },
+      'atasehir': { x: 180, y: 25, z: -160, camX: 180, camY: 150, camZ: 20 },
+      'historic': { x: -180, y: 15, z: 280, camX: -180, camY: 100, camZ: 420 },
+      'islands': { x: 100, y: 10, z: 340, camX: 100, camY: 90, camZ: 480 }
+    };
+
+    const target = coords[districtKey] || coords['bridge'];
+    this.controlsLerpTarget = new THREE.Vector3(target.x, target.y, target.z);
+    this.cameraLerpTarget = new THREE.Vector3(target.camX, target.camY, target.camZ);
+  }
+
   onPointerDown(event) {
     const rect = this.renderer.domElement.getBoundingClientRect();
     this.mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
@@ -434,7 +514,6 @@ export class BosphorusScene {
       }
 
       if (topGroup.userData && topGroup.userData.module) {
-        // Kamerayı seçilen binaya doğru yumuşakça yaklaştır
         this.focusOnBuilding(topGroup.position);
         if (this.onBuildingClick) {
           this.onBuildingClick(topGroup.userData.module);
@@ -444,7 +523,8 @@ export class BosphorusScene {
   }
 
   focusOnBuilding(pos) {
-    this.controls.target.set(pos.x, pos.y, pos.z);
+    this.controlsLerpTarget = new THREE.Vector3(pos.x, pos.y, pos.z);
+    this.cameraLerpTarget = new THREE.Vector3(pos.x, pos.y + 60, pos.z + 90);
   }
 
   onWindowResize() {
@@ -468,11 +548,40 @@ export class BosphorusScene {
       for (let i = 0; i < pos.count; i++) {
         const u = pos.getX(i);
         const v = pos.getY(i);
-        // Akıntı formülü
         const z = Math.sin(u * 0.05 + elapsedTime * 1.5) * Math.cos(v * 0.05 + elapsedTime * 1.2) * 1.2;
         pos.setZ(i, z);
       }
       this.waterMesh.geometry.attributes.position.needsUpdate = true;
+    }
+
+    // Yağmur Parçacıkları Animasyonu
+    if (this.rainParticles && this.isRaining) {
+      const pos = this.rainParticles.geometry.attributes.position;
+      for (let i = 0; i < this.rainCount; i++) {
+        let y = pos.getY(i) - 5.5;
+        let x = pos.getX(i) - 0.8;
+        if (y < 0) {
+          y = 300;
+          x = (Math.random() - 0.5) * 800;
+        }
+        pos.setY(i, y);
+        pos.setX(i, x);
+      }
+      this.rainParticles.geometry.attributes.position.needsUpdate = true;
+    }
+
+    // Kamera Yumuşak Uçuş (Lerp)
+    if (this.cameraLerpTarget) {
+      this.camera.position.lerp(this.cameraLerpTarget, 0.05);
+      if (this.camera.position.distanceTo(this.cameraLerpTarget) < 2) {
+        this.cameraLerpTarget = null;
+      }
+    }
+    if (this.controlsLerpTarget) {
+      this.controls.target.lerp(this.controlsLerpTarget, 0.05);
+      if (this.controls.target.distanceTo(this.controlsLerpTarget) < 1) {
+        this.controlsLerpTarget = null;
+      }
     }
 
     // Controls

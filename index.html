@@ -468,6 +468,69 @@
     .log-line.highlight { color: var(--accent-pink); }
     .log-line.info { color: #a4b3cc; }
 
+    /* 2D AKOM RADAR MINIMAP (BOTTOM RIGHT) */
+    .radar-container {
+      position: absolute;
+      bottom: 180px;
+      right: 18px;
+      width: 190px;
+      background: var(--panel-bg);
+      border: 1px solid var(--panel-border);
+      backdrop-filter: blur(16px);
+      border-radius: 12px;
+      padding: 10px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      z-index: 15;
+    }
+
+    .radar-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 10px;
+      font-weight: 700;
+      color: var(--accent-cyan);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    #radar-canvas {
+      width: 100%;
+      height: 110px;
+      background: #040814;
+      border: 1px solid rgba(0, 240, 255, 0.2);
+      border-radius: 6px;
+      cursor: crosshair;
+    }
+
+    .radar-nav-pills {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 4px;
+    }
+
+    .radar-pill {
+      background: rgba(14, 23, 44, 0.85);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      color: var(--text-main);
+      padding: 3px 6px;
+      border-radius: 4px;
+      font-size: 9px;
+      font-weight: 600;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .radar-pill:hover {
+      border-color: var(--accent-cyan);
+      background: rgba(0, 240, 255, 0.15);
+      color: #ffffff;
+    }
+
     /* MODAL FOR DIFF VIEWER */
     .diff-modal-backdrop {
       position: fixed;
@@ -592,6 +655,15 @@
           </div>
         </div>
 
+        <!-- AKOM Hava Durumu ve Sis Rozeti -->
+        <div id="weather-badge" style="display: flex; align-items: center; gap: 8px; background: rgba(6, 11, 24, 0.7); padding: 8px 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.06); font-size: 11px;">
+          <span id="weather-icon" style="font-size: 16px;">🌧️</span>
+          <div>
+            <div id="weather-title" style="font-weight: 700; color: var(--accent-cyan);">AKOM Boğaz Meteorolojisi</div>
+            <div id="weather-desc" style="color: var(--text-muted); font-size: 10px;">Yoğun Sis & Sağanak (Kilit Alarmı)</div>
+          </div>
+        </div>
+
         <div class="incident-alert" id="incident-box">
           <div class="incident-title">🚨 15 Temmuz Şehitler Köprüsü Kilit!</div>
           <div id="incident-desc">AuthModal ➔ sessionManager ➔ userService döngüsü köprüyü kilitledi.</div>
@@ -671,6 +743,21 @@
           <div class="code-preview-box" id="inspect-code-preview">// Kod içeriği yükleniyor...</div>
         </div>
       </aside>
+
+      <!-- 2D AKOM Radar Minimap (Bottom Right) -->
+      <div class="radar-container interactive">
+        <div class="radar-header">
+          <span>📡 Boğaz Radarı</span>
+          <span style="color: var(--accent-green); font-size: 8px;">● 360°</span>
+        </div>
+        <canvas id="radar-canvas" width="170" height="110"></canvas>
+        <div class="radar-nav-pills">
+          <div class="radar-pill" data-target="maslak">Maslak</div>
+          <div class="radar-pill" data-target="bridge">Köprü</div>
+          <div class="radar-pill" data-target="kadikoy">Kadıköy</div>
+          <div class="radar-pill" data-target="historic">Suriçi</div>
+        </div>
+      </div>
 
     </div>
 
@@ -832,6 +919,27 @@
         title.textContent = 'Trafik Akıcı';
         desc.textContent = 'Köprüler ve Maslak Açık';
         incidentBox.style.display = 'none';
+      }
+
+      // 3D Hava Durumu & Sis Atmosferini Güncelle
+      const hasIssues = report.circularDependencies > 0 || report.density >= 60;
+      bosphorusScene.setAtmosphere(hasIssues, report.density);
+
+      // AKOM Meteoroloji Rozeti Güncellemesi
+      const weatherIcon = document.getElementById('weather-icon');
+      const weatherTitle = document.getElementById('weather-title');
+      const weatherDesc = document.getElementById('weather-desc');
+
+      if (hasIssues) {
+        weatherIcon.textContent = '🌧️';
+        weatherTitle.textContent = 'Boğaz Sis & Yağış';
+        weatherDesc.textContent = 'Yoğun Sis & Kilit Alarmı';
+        weatherTitle.style.color = 'var(--accent-red)';
+      } else {
+        weatherIcon.textContent = '✨';
+        weatherTitle.textContent = 'Açık Neon Gecesi';
+        weatherDesc.textContent = 'Trafik Akıcı, Sis Dağıldı';
+        weatherTitle.style.color = 'var(--accent-green)';
       }
 
       // İstatistikler
@@ -1133,10 +1241,108 @@
       }
     });
 
-    // Animasyon Döngüsüne Parçacık Güncellemesini Ekle
+    // 2D AKOM RADAR ÇİZİMİ & ETKİLEŞİMİ
+    const radarCanvas = document.getElementById('radar-canvas');
+    const radarCtx = radarCanvas.getContext('2d');
+
+    function drawRadar() {
+      if (!radarCanvas || !radarCtx) return;
+      const w = radarCanvas.width;
+      const h = radarCanvas.height;
+
+      radarCtx.clearRect(0, 0, w, h);
+
+      // 1. Zemin & Boğaz Kanalı
+      radarCtx.fillStyle = '#040814';
+      radarCtx.fillRect(0, 0, w, h);
+
+      radarCtx.fillStyle = 'rgba(0, 240, 255, 0.12)';
+      radarCtx.beginPath();
+      radarCtx.moveTo(w * 0.44, 0);
+      radarCtx.bezierCurveTo(w * 0.46, h * 0.35, w * 0.48, h * 0.65, w * 0.45, h);
+      radarCtx.lineTo(w * 0.55, h);
+      radarCtx.bezierCurveTo(w * 0.58, h * 0.65, w * 0.56, h * 0.35, w * 0.54, 0);
+      radarCtx.closePath();
+      radarCtx.fill();
+
+      // 2. Köprüler
+      const hasJam = trafficEngine.circularChains.length > 0;
+      radarCtx.strokeStyle = hasJam ? '#ff1744' : '#00f0ff';
+      radarCtx.lineWidth = 2;
+
+      // 15 Temmuz Köprüsü
+      radarCtx.beginPath();
+      radarCtx.moveTo(w * 0.36, h * 0.45);
+      radarCtx.lineTo(w * 0.64, h * 0.45);
+      radarCtx.stroke();
+
+      // 3. Modül LED Noktaları
+      const cycleIds = new Set(trafficEngine.circularChains.flat());
+      for (const mod of trafficEngine.modules.values()) {
+        if (!mod.worldPosition) continue;
+
+        const rx = Math.max(8, Math.min(w - 8, ((mod.worldPosition.x + 300) / 600) * w));
+        const ry = Math.max(8, Math.min(h - 8, ((mod.worldPosition.z + 300) / 600) * h));
+
+        const isCycle = cycleIds.has(mod.id);
+        radarCtx.fillStyle = isCycle ? '#ff1744' : (mod.district.color || '#00f0ff');
+
+        radarCtx.beginPath();
+        radarCtx.arc(rx, ry, isCycle ? 3.5 : 2, 0, Math.PI * 2);
+        radarCtx.fill();
+
+        if (isCycle) {
+          radarCtx.strokeStyle = 'rgba(255, 23, 68, 0.6)';
+          radarCtx.beginPath();
+          radarCtx.arc(rx, ry, 5.5, 0, Math.PI * 2);
+          radarCtx.stroke();
+        }
+      }
+
+      // 4. Kamera Bakış Konumu (Sarı Gösterge)
+      if (bosphorusScene.camera) {
+        const camX = Math.max(6, Math.min(w - 6, ((bosphorusScene.camera.position.x + 300) / 600) * w));
+        const camY = Math.max(6, Math.min(h - 6, ((bosphorusScene.camera.position.z + 300) / 600) * h));
+
+        radarCtx.fillStyle = '#ffeb3b';
+        radarCtx.beginPath();
+        radarCtx.arc(camX, camY, 2.5, 0, Math.PI * 2);
+        radarCtx.fill();
+      }
+    }
+
+    // Radara Tıklayınca Semte Uç (Interactive Camera Fly-To)
+    radarCanvas.addEventListener('click', (e) => {
+      const rect = radarCanvas.getBoundingClientRect();
+      const clickX = (e.clientX - rect.left) / rect.width;
+      const clickY = (e.clientY - rect.top) / rect.height;
+
+      if (clickY > 0.72) {
+        if (clickX < 0.5) bosphorusScene.flyToDistrict('historic');
+        else bosphorusScene.flyToDistrict('islands');
+      } else if (clickX < 0.44) {
+        if (clickY < 0.38) bosphorusScene.flyToDistrict('maslak');
+        else bosphorusScene.flyToDistrict('besiktas');
+      } else if (clickX > 0.56) {
+        if (clickY < 0.38) bosphorusScene.flyToDistrict('atasehir');
+        else bosphorusScene.flyToDistrict('kadikoy');
+      } else {
+        bosphorusScene.flyToDistrict('bridge');
+      }
+    });
+
+    // Radar Navigasyon Hapları (Pills)
+    document.querySelectorAll('.radar-pill').forEach(pill => {
+      pill.addEventListener('click', () => {
+        bosphorusScene.flyToDistrict(pill.dataset.target);
+      });
+    });
+
+    // Animasyon Döngüsüne Parçacık ve Radar Güncellemesini Ekle
     function updateParticlesLoop() {
       requestAnimationFrame(updateParticlesLoop);
       trafficParticles.update();
+      drawRadar();
     }
     updateParticlesLoop();
 
