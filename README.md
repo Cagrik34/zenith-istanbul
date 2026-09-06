@@ -32,11 +32,11 @@ ZenithIstanbul procedurally maps JavaScript/TypeScript codebases into an interac
 
 ## 📐 Mathematical Traffic Index
 
-$$\text{Traffic Index} = \min\left(100, \operatorname{round}\left(\frac{|\text{SCC Edges}| \times 3 + |\text{Cross-Boundary Imports}|}{|\text{Total Edges}|} \times 100\right)\right)$$
+$$\text{Traffic Index} = \min\left(100, \text{round}\left(\frac{|\text{SCC Edges}| \times 3 + |\text{Cross-Boundary Imports}|}{|\text{Total Edges}|} \times 100\right)\right)$$
 
-- **$|\text{SCC Edges}|$:** Edges participating in strongly connected component cycles.
-- **$|\text{Cross-Boundary Imports}|$:** Coupling bridging client and server spheres.
-- **$\text{Traffic Index} = 0$:** Clean Directed Acyclic Graph (DAG) topology.
+- **`|SCC Edges|`**: Edges participating in strongly connected component cycles.
+- **`|Cross-Boundary Imports|`**: Coupling bridging client and server spheres.
+- **`Traffic Index = 0`**: Clean Directed Acyclic Graph (DAG) topology.
 
 ---
 

@@ -1,0 +1,23 @@
+name: Zenith Gatekeeper
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  audit:
+    name: Headless Architecture & Security Audit
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Codebase
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Run Zenith Gatekeeper CI
+        run: node bin/cli.js --ci --fail-on-cycle --fail-on-leak .
