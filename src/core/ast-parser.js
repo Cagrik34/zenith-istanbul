@@ -159,7 +159,12 @@ export class CodebaseParser {
 
   /**
    * Client-Side Leak Detector & Secret Boundary Sentry (Zero-Tolerance Security Audit)
-   * Enforces CWE-200 (Information Exposure) and CWE-598 (Client-Side Sensitive Data Leakage).
+   * Enforces MITRE standards:
+   *  - CWE-668: Exposure of Resource to Wrong Sphere (Client-Side Backend Dependency Ingress)
+   *  - CWE-1061: Insufficient Encapsulation
+   *  - CWE-200: Exposure of Sensitive Information to an Unauthorized Actor
+   *  - CWE-798: Use of Hard-coded Credentials
+   *  - CWE-321: Use of Hard-coded Cryptographic Key
    * @param {string} filePath - Relative file path
    * @param {string} content - Raw source code
    * @param {Array<string>} imports - Extracted module imports
@@ -171,7 +176,7 @@ export class CodebaseParser {
     const isClientModule = p.includes('components/') || p.includes('ui/') || p.includes('views/') || 
                            p.includes('pages/') || p.includes('.client.') || content.includes("'use client'") || content.includes('"use client"');
 
-    // 1. Client-Side Ingress Violation: Forbidden Node.js Core and Server ORM packages
+    // 1. Client-Side Ingress Violation: Forbidden Node.js Core and Server ORM packages (CWE-668 / CWE-1061)
     if (isClientModule) {
       const forbiddenPackages = [
         'fs', 'fs/promises', 'child_process', 'cluster', 'net', 'tls', 'dns', 'worker_threads', 'dgram',
@@ -191,28 +196,30 @@ export class CodebaseParser {
 
             violations.push({
               type: 'BOUNDARY_VIOLATION_INGRESS',
-              rule: 'CWE-598: Client-Side Server Package Ingress',
+              cwe: 'CWE-668',
+              rule: 'CWE-668: Exposure of Resource to Wrong Sphere (Encapsulation Breach: CWE-1061)',
               severity: 'CRITICAL',
               target: pkg,
               file: filePath,
               line,
               col,
               location: `${filePath}:${line}:${col}`,
-              message: `Server-only package [${pkg}] imported into client module [${filePath}:${line}:${col}]. High risk of bundle inflation and server API leakage.`
+              message: `CWE-668 / CWE-1061 Violation: Server-only package [${pkg}] exposed in client module [${filePath}:${line}:${col}]. Severe boundary breach.`
             });
           }
         }
       }
     }
 
-    // 2. Secret Telemetry Scan: Leaked Environment Variables
+    // 2. Secret Telemetry Scan: Leaked Environment Variables (CWE-200)
     const secretEnvRegex = /\b(?:process\.env\.(?:[A-Z0-9_]*(?:SECRET|KEY|PASSWORD|TOKEN|DATABASE_URL|PRISMA_URL|AUTH_SECRET|OPENAI_API_KEY|AWS_SECRET_ACCESS_KEY|STRIPE_SECRET_KEY)[A-Z0-9_]*))\b/g;
     let envMatch;
     while ((envMatch = secretEnvRegex.exec(content)) !== null) {
       const { line, col } = this.calculateLineCol(content, envMatch.index);
       violations.push({
         type: 'SECRET_EXPOSURE_ENV',
-        rule: 'CWE-200: Exposure of Sensitive Information in Client Bundle',
+        cwe: 'CWE-200',
+        rule: 'CWE-200: Exposure of Sensitive Information to an Unauthorized Actor',
         severity: 'CRITICAL',
         target: envMatch[0],
         file: filePath,
@@ -223,13 +230,14 @@ export class CodebaseParser {
       });
     }
 
-    // 3. Raw Private Key Headers & Cloud Credential Patterns
+    // 3. Raw Private Key Headers & Cloud Credential Patterns (CWE-321)
     const privateKeyRegex = /-----BEGIN (?:[A-Z0-9_-]+\s+)?PRIVATE KEY-----/g;
     let keyMatch;
     while ((keyMatch = privateKeyRegex.exec(content)) !== null) {
       const { line, col } = this.calculateLineCol(content, keyMatch.index);
       violations.push({
         type: 'CRYPTO_KEY_EXPOSURE',
+        cwe: 'CWE-321',
         rule: 'CWE-321: Use of Hard-coded Cryptographic Key',
         severity: 'EMERGENCY',
         target: 'PRIVATE_KEY_HEADER',
@@ -241,13 +249,14 @@ export class CodebaseParser {
       });
     }
 
-    // 4. AWS Access Key Pattern (AKIA...)
+    // 4. AWS Access Key Pattern (AKIA... - CWE-798)
     const awsKeyRegex = /\bAKIA[0-9A-Z]{16}\b/g;
     let awsMatch;
     while ((awsMatch = awsKeyRegex.exec(content)) !== null) {
       const { line, col } = this.calculateLineCol(content, awsMatch.index);
       violations.push({
         type: 'CLOUD_CREDENTIAL_EXPOSURE',
+        cwe: 'CWE-798',
         rule: 'CWE-798: Use of Hard-coded Cloud Credentials',
         severity: 'EMERGENCY',
         target: awsMatch[0].slice(0, 8) + '********',

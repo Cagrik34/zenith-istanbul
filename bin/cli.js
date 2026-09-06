@@ -193,43 +193,82 @@ function runInteractiveServer() {
     '.svg': 'image/svg+xml'
   };
 
-  // SSE Watcher State
+  // Cross-Platform Recursive Watcher (Linux inotify + Windows/macOS)
   const sseClients = new Set();
+  const activeWatchers = new Map();
   let watchDebounceTimer = null;
 
-  try {
-    fs.watch(targetDir, { recursive: true }, (eventType, filename) => {
-      if (!filename) return;
-      const normalized = filename.replace(/\\/g, '/');
-      if (
-        normalized.includes('node_modules') ||
-        normalized.includes('.git') ||
-        normalized.includes('.next') ||
-        normalized.includes('dist') ||
-        normalized.includes('build') ||
-        normalized.includes('.cache') ||
-        normalized.includes('coverage')
-      ) return;
+  const ignoredDirs = new Set([
+    'node_modules', '.git', 'dist', 'build', '.next', '.turbo', 
+    '.idea', 'coverage', '.cache', 'tmp'
+  ]);
 
-      if (watchDebounceTimer) clearTimeout(watchDebounceTimer);
-      watchDebounceTimer = setTimeout(() => {
-        const payload = JSON.stringify({
-          type: 'file-change',
-          file: normalized,
-          timestamp: Date.now()
-        });
-        for (const client of sseClients) {
-          try {
-            client.write(`data: ${payload}\n\n`);
-          } catch (e) {
-            sseClients.delete(client);
-          }
+  function broadcastChange(normalizedPath) {
+    if (watchDebounceTimer) clearTimeout(watchDebounceTimer);
+    watchDebounceTimer = setTimeout(() => {
+      const payload = JSON.stringify({
+        type: 'file-change',
+        file: normalizedPath,
+        timestamp: Date.now()
+      });
+      for (const client of sseClients) {
+        try {
+          client.write(`data: ${payload}\n\n`);
+        } catch (e) {
+          sseClients.delete(client);
         }
-      }, 300);
-    });
-  } catch (err) {
-    console.warn('[WATCHER] Live file watcher fallback mode active:', err.message);
+      }
+    }, 300);
   }
+
+  function attachDirWatcher(dir) {
+    if (activeWatchers.has(dir)) return;
+    try {
+      const watcher = fs.watch(dir, (eventType, filename) => {
+        if (!filename) return;
+        const normalized = filename.replace(/\\/g, '/');
+        if (ignoredDirs.has(normalized)) return;
+
+        const fullPath = path.join(dir, filename);
+        const relPath = path.relative(targetDir, fullPath).replace(/\\/g, '/');
+
+        // Dynamically attach watcher if a new subdirectory was created
+        try {
+          if (fs.existsSync(fullPath) && fs.statSync(fullPath).isDirectory()) {
+            const baseName = path.basename(fullPath);
+            if (!ignoredDirs.has(baseName)) {
+              attachDirWatcher(fullPath);
+            }
+          }
+        } catch (e) {}
+
+        broadcastChange(relPath);
+      });
+
+      activeWatchers.set(dir, watcher);
+    } catch (err) {
+      // Permission or inaccessible directory fallback
+    }
+  }
+
+  function recursiveDirectoryWalk(current) {
+    attachDirWatcher(current);
+    let entries = [];
+    try {
+      entries = fs.readdirSync(current, { withFileTypes: true });
+    } catch (e) {
+      return;
+    }
+
+    for (const entry of entries) {
+      if (entry.isDirectory() && !ignoredDirs.has(entry.name)) {
+        recursiveDirectoryWalk(path.join(current, entry.name));
+      }
+    }
+  }
+
+  // Cross-platform recursive watch: handles Linux inotify per-directory constraints
+  recursiveDirectoryWalk(targetDir);
 
   // Open-Meteo Cache
   const WEATHER_CACHE_TTL = 10 * 60 * 1000;
@@ -386,12 +425,12 @@ function runInteractiveServer() {
 
           const sourceMod = parser.parseModule(srcId, srcContent);
           const targetMod = parser.parseModule(tgtId, tgtContent);
-          const codemod = dispatcher.executeAstCodemod(sourceMod, targetMod, [srcId, tgtId]);
+          const codemod = dispatcher.extractLexicalContracts(sourceMod, targetMod, [srcId, tgtId]);
 
           res.writeHead(200, { 'Content-Type': 'application/json' });
           res.end(JSON.stringify({
             success: true,
-            engine: cliAvailable ? 'OLLAMA_HOST_IPC' : 'DETERMINISTIC_AST_CODEMOD',
+            engine: cliAvailable ? 'OLLAMA_HOST_IPC' : 'LEXICAL_CONTRACT_EXTRACTOR',
             ...codemod
           }));
         } catch (err) {

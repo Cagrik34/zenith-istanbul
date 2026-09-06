@@ -20,7 +20,7 @@ Instead of passive tables or static graph visualizers, **ZenithIstanbul** proced
 | **Anadolu Yakası (Asian Side)** | Backend / Services / Database / Core Engine | Industrial infrastructure blocks (Kadıköy, Üsküdar, Ataşehir). |
 | **Kız Kulesi (Maiden's Tower)** | API Gateway / Middleware / Proxy (`middleware.ts`) | Cylindrical stone tower in the strait with dual rotating beacons. |
 | **Galata Kulesi (Galata Tower)** | Root Entry Point (`index.ts`, `main.tsx`, `App.tsx`) | Towering master structure with observation deck anchoring historical dependencies. |
-| **Security Boundary Sentry** | Client-Side Leak Detector (CWE-200 / CWE-798) | Sentry patrol boat bobbing in the strait with visual alert strobes upon detected secret or ORM leaks. |
+| **Security Boundary Sentry** | Client-Side Leak Detector (CWE-668 / CWE-200 / CWE-798) | Sentry patrol boat bobbing in the strait with visual alert strobes upon detected secret or ORM leaks. |
 | **15 Temmuz & FSM Bridges** | Ingress API Gateway & Cross-Boundary Imports | Suspension bridges with luminous cables connecting European and Asian subsystems. |
 | **Bridge Cyclic Deadlock** | **Tarjan Strongly Connected Component (SCC)** | Directed cycles trigger visual red alert, bridge ingress deadlocks, and alarm audio. |
 | **Maslak High-Rises** | Monolithic Modules (1000+ LOC / High Cyclomatic Complexity) | Skyscrapers scaling dynamically with line counts and branch complexity. |
@@ -43,14 +43,14 @@ $$\text{Traffic Index} = \min\left(100, \operatorname{round}\left(\frac{|\text{S
 
 ---
 
-## 🤖 Autonomous Agent Dispatch & Real Codemod Engine
+## 🤖 Autonomous Agent Dispatch & Lexical Contract Extractor
 
 ZenithIstanbul provides an interactive remediation bridge for cyclic invariants:
 1. **Detection:** When Tarjan's algorithm identifies a cycle (e.g., `AuthModal ➔ sessionManager ➔ userService ➔ AuthModal`), the Ingress Bridge deadlocks.
 2. **Dispatch Protocol:** Clicking **`⚡ Dispatch Autonomous Remediation Agent`** executes:
    - Queries the local process bridge (`POST /api/dispatch-agent`) to probe local LLM CLI tools (`ollama`, `aider`, `claude-code`).
-   - If offline or CLI unconfigured, executes the deterministic built-in AST codemod engine.
-   - Synthesizes an independent contract file (`src/contracts/[target].contract.ts`), extracts exported types and interfaces, and rewrites the offending import statements.
+   - If offline or CLI unconfigured, executes the deterministic built-in **Lexical / Regex-based Contract Extractor**.
+   - Synthesizes an independent contract file (`src/contracts/[target].contract.ts`), extracts exported types and multiline generic interfaces, and rewrites the offending import statements.
    - Computes a formal unified git diff (`.patch`).
 3. **Live File Patching:** Clicking **`🛠️ Apply Remediation Patch to Disk`** writes changes to disk (`POST /api/apply-patch`), refreshes the AST graph, clears Tarjan SCC cycles, and turns the bridge emerald green.
 
@@ -58,11 +58,11 @@ ZenithIstanbul provides an interactive remediation bridge for cyclic invariants:
 
 ## 🛡️ Zero-Tolerance Security Boundary Sentry
 
-Client-side modules (directories containing `client`, `ui`, `components`, or files containing `'use client'`) are audited against strict enterprise rules:
-- **CWE-200 (Information Exposure):** Leaked server environment variables (`DATABASE_URL`, `AWS_SECRET`, `JWT_SECRET`).
-- **CWE-798 (Hardcoded Credentials):** Hardcoded AWS access keys (`AKIA...`), private key headers (`-----BEGIN PRIVATE KEY-----`), and JWT tokens.
-- **CWE-598 (Forbidden Server Core Imports):** Direct client imports of Node.js core modules (`fs`, `child_process`, `net`, `tls`, `cluster`, `worker_threads`).
-- **CWE-321 (Leaked Server ORM Packages):** Client imports of backend database engines (`@prisma/client`, `typeorm`, `pg`, `ioredis`).
+Client-side modules (directories containing `client`, `ui`, `components`, or files containing `'use client'`) are audited against strict MITRE enterprise standards:
+- **CWE-668 (Exposure of Resource to Wrong Sphere / CWE-1061 Encapsulation Breach):** Client-side ingress of forbidden Node.js core modules (`fs`, `child_process`, `net`, `tls`, `cluster`, `worker_threads`) and backend database ORM engines (`@prisma/client`, `typeorm`, `pg`, `ioredis`).
+- **CWE-200 (Exposure of Sensitive Information):** Leaked server environment variables (`DATABASE_URL`, `AWS_SECRET`, `JWT_SECRET`).
+- **CWE-798 (Use of Hard-coded Credentials):** Hardcoded AWS access keys (`AKIA...`), and JWT tokens.
+- **CWE-321 (Use of Hard-coded Cryptographic Key):** Hardcoded private encryption key blocks (`-----BEGIN PRIVATE KEY-----`).
 - **Exact Coordinates:** HUD and Inspector display exact 1-indexed `file:line:col` coordinates for remediation.
 
 ---

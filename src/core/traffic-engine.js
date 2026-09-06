@@ -452,7 +452,7 @@ export class TrafficEngine {
     comment += `| **Zero In-Degree Isolated Modules** | **${report.deadCodeCount}** | ${report.deadCodeCount === 0 ? '✅ 100% Referenced' : 'ℹ️ Isolated Subgraph'} |\n\n`;
 
     if (report.securityLeakCount > 0) {
-      comment += `> 🚨 **SECURITY SENTRY FAILURE:** ${report.securityLeakCount} client-side files breach security boundaries (CWE-200 / CWE-598 violation). Server secrets or backend ORMs leaked into client bundle.\n\n`;
+      comment += `> 🚨 **SECURITY SENTRY FAILURE:** ${report.securityLeakCount} client-side files breach architectural security boundaries (CWE-668 / CWE-1061 or CWE-200 violation). Server secrets or backend dependencies exposed in client bundle.\n\n`;
     }
 
     if (report.circularDependencies > 0) {
