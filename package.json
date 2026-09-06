@@ -2,8 +2,8 @@
   "name": "zenith-istanbul",
   "version": "1.0.0",
   "type": "module",
-  "description": "3D Codebase Metropole & Autonomous Agent Command Deck — Inspired by Istanbul's Bosphorus & Notorious Traffic",
-  "main": "index.html",
+  "description": "3D Codebase Metropole, Tarjan SCC Engine & Architectural Gatekeeper",
+  "main": "./bin/cli.js",
   "bin": {
     "zenith-istanbul": "./bin/cli.js"
   },
@@ -12,31 +12,37 @@
     "src/",
     "index.html",
     "serve.js",
-    "README.md"
+    "README.md",
+    "LICENSE"
   ],
   "scripts": {
     "dev": "node bin/cli.js",
-    "start": "node bin/cli.js"
+    "start": "node bin/cli.js",
+    "test": "node bin/cli.js --ci --fail-on-cycle --fail-on-leak ."
   },
   "keywords": [
-    "code-visualization",
+    "ast",
+    "architecture",
     "threejs",
     "webgl",
-    "ast",
-    "circular-dependency",
     "tarjan-scc",
-    "istanbul",
-    "bosphorus",
-    "agentic-ai",
-    "multi-agent",
-    "developer-tools",
-    "munder-difflin",
-    "zenith"
+    "circular-dependency",
+    "codebase-visualizer",
+    "ci-gatekeeper",
+    "static-analysis",
+    "sre"
   ],
-  "author": "Çağrı Giray KEŞAN (https://github.com/Cagrik34)",
+  "author": "Çağrı Giray Keşan <cagrigiraykesan@gmail.com>",
   "license": "MIT",
   "repository": {
     "type": "git",
     "url": "https://github.com/Cagrik34/zenith-istanbul.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Cagrik34/zenith-istanbul/issues"
+  },
+  "homepage": "https://github.com/Cagrik34/zenith-istanbul#readme",
+  "engines": {
+    "node": ">=18.0.0"
   }
 }
