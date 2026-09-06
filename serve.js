@@ -2,6 +2,7 @@ import http from 'http';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { CodebaseParser } from './src/core/ast-parser.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -16,6 +17,39 @@ const mimeTypes = {
   '.svg': 'image/svg+xml'
 };
 
+function scanAndParseDirectory(dir) {
+  const parser = new CodebaseParser();
+  const filesToAudit = [];
+
+  function scan(current) {
+    let entries = [];
+    try { entries = fs.readdirSync(current, { withFileTypes: true }); } catch (e) { return; }
+    for (const entry of entries) {
+      const fullPath = path.join(current, entry.name);
+      const relativePath = path.relative(dir, fullPath).replace(/\\/g, '/');
+      if (entry.isDirectory()) {
+        if (!['node_modules', '.git', 'dist', 'build', '.next', '.turbo', '.idea', 'coverage', '.cache'].includes(entry.name)) {
+          scan(fullPath);
+        }
+      } else if (entry.isFile() && parser.isAuditableFile(relativePath)) {
+        filesToAudit.push({ fullPath, relativePath });
+      }
+    }
+  }
+
+  scan(dir);
+
+  const parsed = [];
+  for (const { fullPath, relativePath } of filesToAudit) {
+    try {
+      const content = fs.readFileSync(fullPath, 'utf8');
+      parsed.push(parser.parseModule(relativePath, content));
+    } catch (e) {}
+  }
+
+  return parsed;
+}
+
 const server = http.createServer((req, res) => {
   // CORS Headers
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -25,6 +59,19 @@ const server = http.createServer((req, res) => {
   if (req.method === 'OPTIONS') {
     res.writeHead(204);
     res.end();
+    return;
+  }
+
+  // 1. CANLI ÇALIŞMA ALANI MODÜLLERİNİ GETİR (/api/project-modules)
+  if (req.method === 'GET' && req.url === '/api/project-modules') {
+    try {
+      const parsed = scanAndParseDirectory(__dirname);
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ success: true, targetDir: __dirname.replace(/\\/g, '/'), count: parsed.length, modules: parsed }));
+    } catch (err) {
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ success: false, error: err.message }));
+    }
     return;
   }
 

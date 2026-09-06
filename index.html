@@ -614,12 +614,13 @@
         <select id="sample-select">
           <option value="circular-jam-demo">🚨 18:00 Boğaz Trafik Kilidi (Demo)</option>
           <option value="zenith-nexus">🌐 Zenith Nexus (Hybrid RAG)</option>
-          <option value="vercel-ai-sdk">▲ Vercel AI SDK (App Router)</option>
+          <option value="vercel-ai-sdk">▲ Vercel AI SDK</option>
         </select>
 
-        <!-- Yerel Klasör -->
+        <!-- Yerel Klasör & Canlı Proje Yeniden Tara -->
         <input type="file" id="folder-input" webkitdirectory directory multiple>
         <button id="btn-open-folder" class="btn-control btn-primary">📁 Klasör Tara</button>
+        <button id="btn-rescan-project" class="btn-control" style="background: rgba(0, 240, 255, 0.15); border-color: var(--accent-cyan); color: var(--accent-cyan);" title="Projeyi Canlı Olarak Yeniden Tara (Kısayol: R)">🔄 Yeniden Tara</button>
 
         <!-- Rapor İndir & PR Yorumu -->
         <button id="btn-download-report" class="btn-control btn-report" title="Detaylı Mimari Raporu Markdown İndir">📊 Raporu İndir</button>
@@ -655,8 +656,8 @@
           </div>
         </div>
 
-        <!-- AKOM Hava Durumu ve Sis Rozeti -->
-        <div id="weather-badge" style="display: flex; align-items: center; gap: 8px; background: rgba(6, 11, 24, 0.7); padding: 8px 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.06); font-size: 11px;">
+        <!-- AKOM Meteoroloji Rozeti -->
+        <div class="weather-badge" id="akom-weather-badge">
           <span id="weather-icon" style="font-size: 16px;">🌧️</span>
           <div>
             <div id="weather-title" style="font-weight: 700; color: var(--accent-cyan);">AKOM Boğaz Meteorolojisi</div>
@@ -664,12 +665,19 @@
           </div>
         </div>
 
+        <!-- Döngüsel Kilit Alarm Kutusu -->
         <div class="incident-alert" id="incident-box">
           <div class="incident-title">🚨 15 Temmuz Şehitler Köprüsü Kilit!</div>
           <div id="incident-desc">AuthModal ➔ sessionManager ➔ userService döngüsü köprüyü kilitledi.</div>
           <button class="btn-dispatch" id="btn-dispatch-agent">
             <span>⚡ Ajanı Görevlendir (Refactor Et)</span>
           </button>
+        </div>
+
+        <!-- Sahil Güvenlik Kaçakçılık Alarmı -->
+        <div class="incident-alert" id="security-alert-box" style="display: none; border-color: #ff9100; background: rgba(255, 145, 0, 0.1);">
+          <div class="incident-title" style="color: #ff9100;">🛡️ Boğaz Sahil Güvenlik Alarmı!</div>
+          <div id="security-alert-desc" style="color: #ffe0b2;">Sunucu sırrı veya DB paketi istemciye sızdı!</div>
         </div>
 
         <!-- Refactor Diff Butonu (Ajan çözünce aktifleşir) -->
@@ -690,6 +698,10 @@
           <div class="stat-card">
             <span>Köprü Importları</span>
             <strong id="stat-bridges">3</strong>
+          </div>
+          <div class="stat-card">
+            <span>Sahil Güvenlik (Leak)</span>
+            <strong id="stat-leaks" style="color: #ff9100;">0</strong>
           </div>
           <div class="stat-card">
             <span>Prens Adaları (Dead)</span>
@@ -731,6 +743,12 @@
           <div id="inspect-blast-desc">Bu bina değişirse 3 bina doğrudan etkilenir.</div>
         </div>
 
+        <!-- Sahil Güvenlik Sızıntı Kutusu -->
+        <div class="blast-radius-box" id="inspect-security-box" style="display: none; border-color: #ff9100; background: rgba(255, 145, 0, 0.12);">
+          <strong style="color: #ff9100;">🛡️ Sahil Güvenlik Güvenlik Uyarısı:</strong>
+          <div id="inspect-security-desc" style="color: #ffe0b2; font-size: 11px; margin-top: 4px;">-</div>
+        </div>
+
         <!-- Extracted Functions -->
         <div class="metric-row" style="flex-direction: column; gap: 4px;">
           <span>AST Fonksiyonları:</span>
@@ -753,6 +771,8 @@
         <canvas id="radar-canvas" width="170" height="110"></canvas>
         <div class="radar-nav-pills">
           <div class="radar-pill" data-target="maslak">Maslak</div>
+          <div class="radar-pill" data-target="galata" style="color: #ffd700;">Galata</div>
+          <div class="radar-pill" data-target="maiden" style="color: #00ffff;">Kız Kulesi</div>
           <div class="radar-pill" data-target="bridge">Köprü</div>
           <div class="radar-pill" data-target="kadikoy">Kadıköy</div>
           <div class="radar-pill" data-target="historic">Suriçi</div>
@@ -868,6 +888,16 @@
         Bağlı Olduğu (Imports): ${blast.directDependencies.length} modül
       `;
 
+      // Sahil Güvenlik Sızıntı Kontrolü
+      const secBox = document.getElementById('inspect-security-box');
+      const secDesc = document.getElementById('inspect-security-desc');
+      if (mod.securityLeaks && mod.securityLeaks.length > 0) {
+        secDesc.innerHTML = mod.securityLeaks.map(l => `<strong>[${escapeHtml(l.type)}]</strong> ${escapeHtml(l.message)}`).join('<br>');
+        secBox.style.display = 'block';
+      } else {
+        secBox.style.display = 'none';
+      }
+
       // Kod Önizlemesi
       inspectCodePreview.textContent = mod.content || `// ${mod.name}\n// Satır: ${mod.loc}, Karmaşıklık: ${mod.complexity}\n// Bölge: ${mod.district.district}\n\nexport const ${mod.name.replace(/\.[^/.]+$/, '')} = {\n  status: 'active'\n};`;
 
@@ -921,9 +951,19 @@
         incidentBox.style.display = 'none';
       }
 
-      // 3D Hava Durumu & Sis Atmosferini Güncelle
-      const hasIssues = report.circularDependencies > 0 || report.density >= 60;
-      bosphorusScene.setAtmosphere(hasIssues, report.density);
+      // Sahil Güvenlik Alarm Kutusu
+      const secAlertBox = document.getElementById('security-alert-box');
+      const secAlertDesc = document.getElementById('security-alert-desc');
+      if (report.securityLeakCount > 0) {
+        secAlertDesc.textContent = `${report.securityLeakCount} istemci dosyasında sunucu sırrı / backend DB paketi tespit edildi!`;
+        secAlertBox.style.display = 'flex';
+      } else {
+        secAlertBox.style.display = 'none';
+      }
+
+      // 3D Hava Durumu, Sis ve Sahil Güvenlik Botunu Güncelle
+      const hasIssues = report.circularDependencies > 0 || report.density >= 60 || report.securityLeakCount > 0;
+      bosphorusScene.setAtmosphere(hasIssues, report.density, report.securityLeakCount > 0);
 
       // AKOM Meteoroloji Rozeti Güncellemesi
       const weatherIcon = document.getElementById('weather-icon');
@@ -933,7 +973,7 @@
       if (hasIssues) {
         weatherIcon.textContent = '🌧️';
         weatherTitle.textContent = 'Boğaz Sis & Yağış';
-        weatherDesc.textContent = 'Yoğun Sis & Kilit Alarmı';
+        weatherDesc.textContent = report.securityLeakCount > 0 ? 'Sahil Güvenlik & Kilit Alarmı' : 'Yoğun Sis & Kilit Alarmı';
         weatherTitle.style.color = 'var(--accent-red)';
       } else {
         weatherIcon.textContent = '✨';
@@ -946,6 +986,7 @@
       document.getElementById('stat-modules').textContent = report.totalModules;
       document.getElementById('stat-cycles').textContent = report.circularDependencies;
       document.getElementById('stat-bridges').textContent = trafficEngine.bridges.length;
+      document.getElementById('stat-leaks').textContent = report.securityLeakCount;
       document.getElementById('stat-dead').textContent = report.deadCodeCount;
     }
 
@@ -1299,7 +1340,20 @@
         }
       }
 
-      // 4. Kamera Bakış Konumu (Sarı Gösterge)
+      // 4. Özel İstanbul Simgeleri (Kız Kulesi & Galata Kulesi)
+      // Kız Kulesi (Boğaz Ortası)
+      radarCtx.fillStyle = '#00ffff';
+      radarCtx.beginPath();
+      radarCtx.arc(w * 0.50, h * 0.55, 3.2, 0, Math.PI * 2);
+      radarCtx.fill();
+
+      // Galata Kulesi (Karaköy/Beyoğlu)
+      radarCtx.fillStyle = '#ffd700';
+      radarCtx.beginPath();
+      radarCtx.arc(w * 0.32, h * 0.65, 3.5, 0, Math.PI * 2);
+      radarCtx.fill();
+
+      // 5. Kamera Bakış Konumu (Sarı Gösterge)
       if (bosphorusScene.camera) {
         const camX = Math.max(6, Math.min(w - 6, ((bosphorusScene.camera.position.x + 300) / 600) * w));
         const camY = Math.max(6, Math.min(h - 6, ((bosphorusScene.camera.position.z + 300) / 600) * h));
@@ -1338,6 +1392,35 @@
       });
     });
 
+    // CANLI ÇALIŞMA ALANI YENİDEN TARAMA (RESCAN)
+    async function rescanLiveProject() {
+      try {
+        logToTerminal('🔄 [CANLI TARAMA] Yerel çalışma alanı taranıyor...', 'header');
+        const res = await fetch('/api/project-modules');
+        if (!res.ok) throw new Error('API bağlantısı kurulamadı');
+        const data = await res.json();
+        if (data.modules && data.modules.length > 0) {
+          logToTerminal(`✅ [TARAMA TAMAMLANDI] "${data.targetDir}" dizinindeki ${data.modules.length} modül yüklendi.`, 'success');
+          trafficEngine.loadModules(data.modules);
+          refreshCityUI();
+        } else {
+          logToTerminal('⚠️ Taranan dizinde JS/TS modülü bulunamadı.', 'warning');
+        }
+      } catch (e) {
+        logToTerminal('ℹ️ Canlı CLI sunucusu aktif değil. (Statik veya offline mod)', 'info');
+      }
+    }
+
+    const btnRescan = document.getElementById('btn-rescan-project');
+    if (btnRescan) {
+      btnRescan.addEventListener('click', rescanLiveProject);
+    }
+    window.addEventListener('keydown', (e) => {
+      if ((e.key === 'r' || e.key === 'R') && document.activeElement.tagName !== 'INPUT') {
+        rescanLiveProject();
+      }
+    });
+
     // Animasyon Döngüsüne Parçacık ve Radar Güncellemesini Ekle
     function updateParticlesLoop() {
       requestAnimationFrame(updateParticlesLoop);
@@ -1346,8 +1429,29 @@
     }
     updateParticlesLoop();
 
-    // İlk Yükleme: Circular Jam Demosu ile başla
-    loadSample('circular-jam-demo');
+    // Akıllı İlk Yükleme:
+    // 1. Eğer standalone export modunda gömülü veri varsa:
+    if (window.__ZENITH_EMBEDDED_MODULES__ && window.__ZENITH_EMBEDDED_MODULES__.length > 0) {
+      logToTerminal(`📦 [STANDALONE MİMARİ RAPORU] Gömülü ${window.__ZENITH_EMBEDDED_MODULES__.length} kod modülü yüklendi.`, 'header');
+      trafficEngine.loadModules(window.__ZENITH_EMBEDDED_MODULES__);
+      refreshCityUI();
+    } else {
+      // 2. Canlı CLI sunucusu (/api/project-modules) üzerinden otomatik tara:
+      fetch('/api/project-modules')
+        .then(res => res.json())
+        .then(data => {
+          if (data.modules && data.modules.length > 0) {
+            logToTerminal(`🚀 [CANLI PROJE BAŞLATILDI] "${data.targetDir}" dizinindeki ${data.modules.length} modül 3D İstanbul şehrine yerleştirildi.`, 'header');
+            trafficEngine.loadModules(data.modules);
+            refreshCityUI();
+          } else {
+            loadSample('circular-jam-demo');
+          }
+        })
+        .catch(() => {
+          loadSample('circular-jam-demo');
+        });
+    }
   </script>
 </body>
 </html>

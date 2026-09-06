@@ -12,6 +12,7 @@ export class TrafficEngine {
     this.bridges = []; // Cross-boundary bridges (Europe <-> Asia)
     this.trafficDensity = 15; // Percentage (0 - 100)
     this.deadCodeModules = []; // Modules with 0 incoming imports (Prens Adaları)
+    this.securityLeaks = []; // İstemciye sızan sunucu paketleri ve ortam değişkenleri (Sahil Güvenlik)
   }
 
   /**
@@ -25,6 +26,7 @@ export class TrafficEngine {
     this.circularChains = [];
     this.bridges = [];
     this.deadCodeModules = [];
+    this.securityLeaks = [];
 
     // 1. Modül indeksleme
     for (const mod of parsedModules) {
@@ -73,7 +75,10 @@ export class TrafficEngine {
     // 5. Ölü Kodları (Dead Code / Unused Modules) tespit et -> Prens Adaları
     this.detectDeadCode();
 
-    // 6. İstanbul Trafik Yoğunluk İndeksini Hesapla
+    // 6. Sahil Güvenlik: İstemciye Sızan Sunucu Sırları & Yasaklı Paketleri Topla
+    this.detectSecurityLeaks();
+
+    // 7. İstanbul Trafik Yoğunluk İndeksini Hesapla
     this.calculateTrafficDensity();
   }
 
@@ -235,6 +240,25 @@ export class TrafficEngine {
   }
 
   /**
+   * Sahil Güvenlik: İstemci bileşenlerine sızan sunucu paketleri ve secret anahtarlarını topla
+   */
+  detectSecurityLeaks() {
+    this.securityLeaks = [];
+    for (const mod of this.modules.values()) {
+      if (mod.securityLeaks && mod.securityLeaks.length > 0) {
+        for (const leak of mod.securityLeaks) {
+          this.securityLeaks.push({
+            moduleId: mod.id,
+            moduleName: mod.name,
+            district: mod.district.district,
+            ...leak
+          });
+        }
+      }
+    }
+  }
+
+  /**
    * İBB / AKOM tarzı İstanbul Trafik Yoğunluk İndeksi hesabı (%0 - %100)
    */
   calculateTrafficDensity() {
@@ -246,6 +270,9 @@ export class TrafficEngine {
     // Kilitli köprüler
     const jammedBridges = this.bridges.filter(b => b.isJammed).length;
     density += jammedBridges * 20;
+
+    // Sahil Güvenlik alarmları (Hassas anahtar / paket kaçakçılığı)
+    density += this.securityLeaks.length * 15;
 
     // Yüksek karmaşıklık monolitleri
     let highComplexityCount = 0;
@@ -268,6 +295,9 @@ export class TrafficEngine {
     if (this.trafficDensity >= 70) {
       statusText = '🚨 ŞEHİR GENELİ KİLİT! Köprülerde Dairesel Bağımlılık Alarmı';
       alertLevel = 'critical';
+    } else if (this.securityLeaks.length > 0) {
+      statusText = `🚨 SAHİL GÜVENLİK ALARMI! ${this.securityLeaks.length} Hassas Sunucu Sızıntısı Tespit Edildi`;
+      alertLevel = 'warning';
     } else if (this.trafficDensity >= 40) {
       statusText = '⚠️ Yoğun Trafik: Maslak ve Köprü Bağlantılarında Yavaşlama';
       alertLevel = 'warning';
@@ -281,6 +311,8 @@ export class TrafficEngine {
       circularDependencies: this.circularChains.length,
       jammedBridges: jammedCount,
       deadCodeCount: this.deadCodeModules.length,
+      securityLeaks: this.securityLeaks,
+      securityLeakCount: this.securityLeaks.length,
       chains: this.circularChains
     };
   }
@@ -332,7 +364,18 @@ export class TrafficEngine {
     md += `**Toplam Modül Sayısı:** ${report.totalModules}\n`;
     md += `**Döngüsel Kilit (Circular SCC):** ${report.circularDependencies}\n`;
     md += `**Boğaz Köprüsü Importları:** ${this.bridges.length}\n`;
+    md += `**Sahil Güvenlik Alarmları (Security Leaks):** ${report.securityLeakCount}\n`;
     md += `**Prens Adaları (Ölü Kodlar):** ${report.deadCodeCount}\n\n`;
+
+    if (report.securityLeakCount > 0) {
+      md += `## 🚨 Sahil Güvenlik Kaçakçılık Radarı (Security Leaks)\n`;
+      md += `| İstemci Dosyası | Sızan Hedef / Paket | Güvenlik Uyarısı |\n`;
+      md += `|---|---|---|\n`;
+      report.securityLeaks.forEach(leak => {
+        md += `| \`${leak.moduleName}\` | **${leak.target}** | ${leak.message} |\n`;
+      });
+      md += `\n`;
+    }
 
     md += `## 🚨 Döngüsel Bağımlılık Zincirleri (Tarjan SCC)\n`;
     if (this.circularChains.length === 0) {
@@ -351,6 +394,8 @@ export class TrafficEngine {
     md += `| **Beşiktaş / Şişli** | Avrupa | ${Array.from(this.modules.values()).filter(m => m.district.district.includes('Beşiktaş') || m.district.district.includes('Şişli')).length} | UI bileşenleri ve arayüz elemanları |\n`;
     md += `| **Kadıköy / Üsküdar** | Anadolu | ${Array.from(this.modules.values()).filter(m => m.district.side === 'asia').length} | Veri tabanı, servisler ve backend katmanı |\n`;
     md += `| **Tarihi Yarımada** | Çekirdek | ${Array.from(this.modules.values()).filter(m => m.district.side === 'historic').length} | Kadim konfigürasyon ve temel tipler |\n`;
+    md += `| **Kız Kulesi** | Boğaz İçi | ${Array.from(this.modules.values()).filter(m => m.district.isLandmark === 'maiden_tower').length} | API Gateway / Middleware Köprüsü |\n`;
+    md += `| **Galata Kulesi** | Avrupa | ${Array.from(this.modules.values()).filter(m => m.district.isLandmark === 'galata_tower').length} | Kök Başlangıç Noktası (Root Entrypoint) |\n`;
     md += `| **Prens Adaları** | İzole | ${report.deadCodeCount} | Çağrılmayan ölü kodlar |\n\n`;
 
     md += `---\n*Rapor ZenithIstanbul tarafından yerel olarak üretilmiştir. Hiçbir kod dışarı sızdırılmamıştır.*\n`;
@@ -362,20 +407,27 @@ export class TrafficEngine {
    */
   generatePrCommentMarkdown() {
     const report = this.generateAkomReport();
-    const isClean = report.circularDependencies === 0;
+    const isClean = report.circularDependencies === 0 && report.securityLeakCount === 0;
 
     let comment = `## 🌉 ZenithIstanbul — 3D Codebase PR Telemetrisi\n\n`;
     comment += `| Metrik | Değer | Durum |\n`;
     comment += `|---|:---:|---|\n`;
     comment += `| **Boğaziçi Trafik Endeksi** | **%${report.density}** | ${isClean ? '🟢 Akıcı' : '🚨 KİLİTLENDİ'} |\n`;
-    comment += `| **Döngüsel Kilitler (SCC)** | **${report.circularDependencies}** | ${isClean ? '✅ Temiz' : '⚠️ Döngü Var'} |\n`;
+    comment += `| **Döngüsel Kilitler (SCC)** | **${report.circularDependencies}** | ${report.circularDependencies === 0 ? '✅ Temiz' : '⚠️ Döngü Var'} |\n`;
+    comment += `| **Sahil Güvenlik (Kaçak Sızıntı)** | **${report.securityLeakCount}** | ${report.securityLeakCount === 0 ? '🛡️ Güvenli' : '🚨 Sızıntı Var!'} |\n`;
     comment += `| **Boğaz Köprü Geçişleri** | **${this.bridges.length}** | 🌉 API Bağlantısı |\n`;
     comment += `| **Prens Adaları (Ölü Kod)** | **${report.deadCodeCount}** | ${report.deadCodeCount === 0 ? '✅ Temiz' : 'ℹ️ İzole Modül'} |\n\n`;
 
-    if (!isClean) {
-      comment += `> 🚨 **DİKKAT:** Bu PR Boğaziçi Köprülerinde kilitlenmeye yol açan döngüsel bağımlılık içeriyor! Lütfen refactor ajanıyla ortak tipleri decoupled kontrat katmanına taşıyın.\n\n`;
-    } else {
-      comment += `> ✨ **ONAYLANDI:** Mimari trafik akıcı. 15 Temmuz ve FSM köprülerinde hiçbir döngüsel darboğaz tespit edilmedi.\n\n`;
+    if (report.securityLeakCount > 0) {
+      comment += `> 🚨 **SAHİL GÜVENLİK ALARMI:** ${report.securityLeakCount} istemci dosyasında sunucu sırları veya backend DB paketleri tespit edildi!\n\n`;
+    }
+
+    if (report.circularDependencies > 0) {
+      comment += `> ⚠️ **DİKKAT:** Bu PR Boğaziçi Köprülerinde kilitlenmeye yol açan döngüsel bağımlılık içeriyor!\n\n`;
+    }
+
+    if (isClean) {
+      comment += `> ✨ **ONAYLANDI:** Mimari trafik akıcı. 15 Temmuz ve FSM köprülerinde hiçbir döngüsel darboğaz ve güvenlik sızıntısı tespit edilmedi.\n\n`;
     }
 
     comment += `*ZenithIstanbul Client-Side Zero-Cloud Engine ile doğrulandı.*`;

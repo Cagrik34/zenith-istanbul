@@ -26,77 +26,112 @@ const projectRoot = path.resolve(__dirname, '..');
 const args = process.argv.slice(2);
 const isCI = args.includes('--ci') || args.includes('-c');
 const failOnCycle = args.includes('--fail-on-cycle');
+const failOnLeak = args.includes('--fail-on-leak');
 const isJson = args.includes('--json');
 
-// Hedef dizini belirle (Bayrak olmayan ilk argüman veya '.')
-const targetArg = args.find(a => !a.startsWith('-')) || '.';
+// HTML Dışa Aktarma Bayrağı (--export-html [dosya-adi])
+const exportHtmlIdx = args.indexOf('--export-html');
+const exportHtmlPath = exportHtmlIdx !== -1 ? (args[exportHtmlIdx + 1] || 'zenith-istanbul-report.html') : null;
+
+// Hedef dizini belirle (Bayrak veya değer olmayan ilk argüman veya '.')
+const targetArg = args.find((a, i) => !a.startsWith('-') && (exportHtmlIdx === -1 || i !== exportHtmlIdx + 1)) || '.';
 const targetDir = path.resolve(targetArg);
 const posixTargetDir = targetDir.replace(/\\/g, '/');
 
 const PORT = parseInt(process.env.PORT, 10) || 4173;
 
 /**
- * 1. HEADLESS CI MODU (--ci)
+ * Kod Dizinini Tarar ve AST Ayrıştırması Yapar
  */
-if (isCI) {
-  runHeadlessCI();
-} else {
-  runInteractiveServer();
-}
-
-async function runHeadlessCI() {
+function scanAndParseDirectory(dir) {
   const parser = new CodebaseParser();
-  const engine = new TrafficEngine();
-
-  // 1. Dizin İçindeki Kod Dosyalarını POSIX Hijyeniyle Tara
   const filesToAudit = [];
-  function scanDir(dir) {
+
+  function scan(current) {
     let entries = [];
     try {
-      entries = fs.readdirSync(dir, { withFileTypes: true });
+      entries = fs.readdirSync(current, { withFileTypes: true });
     } catch (e) {
       return;
     }
 
     for (const entry of entries) {
-      const fullPath = path.join(dir, entry.name);
-      const relativePath = path.relative(targetDir, fullPath).replace(/\\/g, '/');
+      const fullPath = path.join(current, entry.name);
+      const relativePath = path.relative(dir, fullPath).replace(/\\/g, '/');
 
       if (entry.isDirectory()) {
-        if (!['node_modules', '.git', 'dist', 'build', '.next', '.turbo', '.idea'].includes(entry.name)) {
-          scanDir(fullPath);
+        if (!['node_modules', '.git', 'dist', 'build', '.next', '.turbo', '.idea', 'coverage', '.cache'].includes(entry.name)) {
+          scan(fullPath);
         }
-      } else if (entry.isFile()) {
-        if (parser.isAuditableFile(relativePath)) {
-          filesToAudit.push({ fullPath, relativePath });
-        }
+      } else if (entry.isFile() && parser.isAuditableFile(relativePath)) {
+        filesToAudit.push({ fullPath, relativePath });
       }
     }
   }
 
-  scanDir(targetDir);
+  scan(dir);
 
-  if (filesToAudit.length === 0) {
+  const parsed = [];
+  for (const { fullPath, relativePath } of filesToAudit) {
+    try {
+      const content = fs.readFileSync(fullPath, 'utf8');
+      parsed.push(parser.parseModule(relativePath, content));
+    } catch (e) {}
+  }
+
+  return parsed;
+}
+
+/**
+ * Giriş Noktası Akış Yönlendiricisi
+ */
+if (exportHtmlPath) {
+  runExportHtml();
+} else if (isCI) {
+  runHeadlessCI();
+} else {
+  runInteractiveServer();
+}
+
+/**
+ * 1. STANDALONE HTML MİMARİ RAPORU AKTARICI (--export-html)
+ */
+function runExportHtml() {
+  console.log(`\x1b[36m[ZenithIstanbul]\x1b[0m "${posixTargetDir}" taranıyor ve 3D Standalone HTML raporu üretiliyor...`);
+  const parsedModules = scanAndParseDirectory(targetDir);
+
+  const templatePath = path.join(projectRoot, 'index.html');
+  let htmlContent = fs.readFileSync(templatePath, 'utf8');
+
+  // Gömülü modül JSON verisini enjekte et
+  const injection = `<script>window.__ZENITH_EMBEDDED_MODULES__ = ${JSON.stringify(parsedModules)};</script>\n</head>`;
+  htmlContent = htmlContent.replace('</head>', injection);
+
+  const outPath = path.resolve(exportHtmlPath);
+  fs.writeFileSync(outPath, htmlContent, 'utf8');
+
+  console.log(`\x1b[32m✔ [BAŞARILI] 3D Standalone HTML mimari raporu dışa aktarıldı:\x1b[0m \x1b[36m${outPath}\x1b[0m`);
+  console.log(`   Herhangi bir tarayıcıda doğrudan çift tıklayarak açabilirsiniz. Sıfır sunucu kurulumu gerektirir.\n`);
+  process.exit(0);
+}
+
+/**
+ * 2. HEADLESS CI MODU (--ci)
+ */
+async function runHeadlessCI() {
+  const engine = new TrafficEngine();
+  const parsedModules = scanAndParseDirectory(targetDir);
+
+  if (parsedModules.length === 0) {
     console.error(`\x1b[33m[ZenithIstanbul CI] Uyarı: "${posixTargetDir}" dizininde taranacak JS/TS kod dosyası bulunamadı.\x1b[0m`);
     process.exit(0);
   }
 
-  // 2. Kod Modüllerini Ayrıştır
-  const parsedModules = [];
-  for (const { fullPath, relativePath } of filesToAudit) {
-    try {
-      const content = fs.readFileSync(fullPath, 'utf8');
-      parsedModules.push(parser.parseModule(relativePath, content));
-    } catch (e) {
-      // Okunamayan dosyaları atla
-    }
-  }
-
-  // 3. Trafik Motorunu ve Tarjan SCC Çizge Analizini Koş
+  // Trafik Motorunu ve Tarjan SCC Çizge Analizini Koş
   engine.loadModules(parsedModules);
   const report = engine.generateAkomReport();
 
-  // 4. Çıktıyı Formatla ve Yazdır
+  // Çıktıyı Formatla ve Yazdır
   if (isJson) {
     console.log(JSON.stringify(report, null, 2));
   } else {
@@ -104,21 +139,32 @@ async function runHeadlessCI() {
     console.log(prComment);
   }
 
-  // 5. Gatekeeper Denetimi (--fail-on-cycle)
+  // Gatekeeper Denetimi: Döngüsel Bağımlılık (--fail-on-cycle)
+  let hasFailed = false;
   if (failOnCycle && report.circularDependencies > 0) {
     console.error(`\n\x1b[31m❌ [CI GATEKEEPER FAILED] Boğaziçi Köprülerinde ${report.circularDependencies} döngüsel bağımlılık (SCC) tespit edildi!\x1b[0m`);
     console.error(`\x1b[31m   PR engellendi. Lütfen döngüsel bağımlılıkları refactor edin.\x1b[0m\n`);
+    hasFailed = true;
+  }
+
+  // Gatekeeper Denetimi: Sahil Güvenlik Sızıntısı (--fail-on-leak)
+  if (failOnLeak && report.securityLeakCount > 0) {
+    console.error(`\n\x1b[31m❌ [CI GATEKEEPER FAILED] Sahil Güvenlik: ${report.securityLeakCount} istemci dosyasında sunucu sırrı veya backend paketi tespit edildi!\x1b[0m`);
+    hasFailed = true;
+  }
+
+  if (hasFailed) {
     process.exit(1);
   } else {
-    if (failOnCycle) {
-      console.log(`\n\x1b[32m✔ [CI GATEKEEPER PASSED] Boğaziçi trafiği akıcı. Sıfır döngüsel kilit.\x1b[0m\n`);
+    if (failOnCycle || failOnLeak) {
+      console.log(`\n\x1b[32m✔ [CI GATEKEEPER PASSED] Boğaziçi trafiği akıcı. Sıfır kilit, sıfır sızıntı.\x1b[0m\n`);
     }
     process.exit(0);
   }
 }
 
 /**
- * 2. İNTERAKTİF 3D WEBGEL SUNUCU MODU
+ * 3. İNTERAKTİF 3D WEBGEL SUNUCU MODU
  */
 function runInteractiveServer() {
   console.log(`
@@ -157,7 +203,20 @@ function runInteractiveServer() {
       return;
     }
 
-    // 1. CANLI YAMA UYGULAMA API ENDPOINT'İ
+    // 1. ÇALIŞMA ALANI MODÜLLERİNİ CANLI GETİR (/api/project-modules)
+    if (req.method === 'GET' && req.url === '/api/project-modules') {
+      try {
+        const parsed = scanAndParseDirectory(targetDir);
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ success: true, targetDir: posixTargetDir, count: parsed.length, modules: parsed }));
+      } catch (err) {
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ success: false, error: err.message }));
+      }
+      return;
+    }
+
+    // 2. CANLI YAMA UYGULAMA API ENDPOINT'İ (/api/apply-patch)
     if (req.method === 'POST' && req.url === '/api/apply-patch') {
       let body = '';
       req.on('data', chunk => { body += chunk; });

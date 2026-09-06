@@ -93,8 +93,15 @@ export class CodebaseParser {
     // Barrel File (Merkezi index re-export) tespiti
     const isBarrel = this.detectBarrelFile(filePath, content, exports);
 
+    // Özel İstanbul Simgeleri (Landmarks) Tespiti
+    const isMiddleware = this.isMiddlewareGateway(filePath, content);
+    const isEntryPoint = this.isRootEntryPoint(filePath);
+
+    // Güvenlik Denetimi: İstemci Tarafına Sunucu Sırları Sızıntısı (Coast Guard Check)
+    const securityLeaks = this.detectSecurityLeaks(filePath, content, imports);
+
     // İstanbul Bölgesi & Monorepo Tayini
-    const district = this.assignDistrict(filePath, content);
+    const district = this.assignDistrict(filePath, content, { isMiddleware, isEntryPoint });
 
     return {
       id: filePath,
@@ -108,10 +115,80 @@ export class CodebaseParser {
       exports,
       functions,
       isBarrel,
+      isMiddleware,
+      isEntryPoint,
+      securityLeaks,
       district,
       isCore: this.isCoreModule(filePath),
-      healthScore: this.calculateHealthScore(loc, complexity)
+      healthScore: this.calculateHealthScore(loc, complexity, securityLeaks.length)
     };
+  }
+
+  /**
+   * Middleware / API Gateway tespiti (Kız Kulesi simgesi)
+   */
+  isMiddlewareGateway(filePath, content) {
+    const p = filePath.toLowerCase();
+    return p.includes('middleware.') || 
+           p.includes('proxy.') || 
+           p.includes('gateway.') || 
+           p.includes('server-bridge.') ||
+           (p.includes('router') && (content.includes('next/server') || content.includes('express.Router')));
+  }
+
+  /**
+   * Kök Giriş Noktası tespiti (Galata Kulesi simgesi)
+   */
+  isRootEntryPoint(filePath) {
+    const p = filePath.toLowerCase();
+    const fileName = p.split('/').pop().split('\\').pop();
+    return ['index.ts', 'index.js', 'index.tsx', 'main.ts', 'main.js', 'main.tsx', 'app.ts', 'app.js', 'app.tsx'].includes(fileName) &&
+           (p.startsWith('src/') || !p.includes('/') || p === fileName);
+  }
+
+  /**
+   * Sahil Güvenlik Kaçakçılık Denetimi:
+   * İstemci (Avrupa) dosyalarında sunucu sırları veya backend DB paketlerinin sızması
+   */
+  detectSecurityLeaks(filePath, content, imports) {
+    const leaks = [];
+    const p = filePath.toLowerCase();
+    const isClientFile = p.includes('components/') || p.includes('ui/') || p.includes('views/') || 
+                         p.includes('pages/') || p.includes('.client.') || content.includes("'use client'") || content.includes('"use client"');
+
+    if (!isClientFile) return leaks;
+
+    // 1. Yasaklı Backend Veritabanı & Sunucu Paketleri İstemciye İthal Edilmiş mi?
+    const dangerousPackages = [
+      '@prisma/client', 'prisma', 'pg', 'mysql2', 'ioredis', 'redis', 
+      'bcrypt', 'bcryptjs', 'jsonwebtoken', 'jsonwebtoken-esm', 
+      'child_process', 'fs', 'fs/promises'
+    ];
+
+    for (const imp of imports) {
+      for (const danger of dangerousPackages) {
+        if (imp === `vendor:${danger}` || imp.includes(`vendor:${danger}/`) || imp.includes(`/${danger}/`)) {
+          leaks.push({
+            type: 'FORBIDDEN_BACKEND_PACKAGE',
+            target: danger,
+            message: `Sunucu paketi [${danger}] istemci modülüne ithal edilmiş! Bundle şişmesi ve güvenlik riski.`
+          });
+        }
+      }
+    }
+
+    // 2. Gizli Ortam Değişkenleri (Secret Environment Variables) Açıkta mı?
+    const secretKeyRegex = /\b(?:process\.env\.(?:DATABASE_URL|SECRET|API_SECRET|JWT_SECRET|PRIVATE_KEY|OPENAI_API_KEY|STRIPE_SECRET_KEY|AWS_SECRET_ACCESS_KEY))\b/g;
+    let match;
+    while ((match = secretKeyRegex.exec(content)) !== null) {
+      leaks.push({
+        type: 'LEAKED_SERVER_SECRET',
+        target: match[0],
+        message: `Hassas sunucu anahtarı [${match[0]}] istemci kodunda tespit edildi!`
+      });
+    }
+
+    return leaks;
   }
 
   /**
@@ -265,9 +342,19 @@ export class CodebaseParser {
    * Dosya içeriği ve yoluna göre İstanbul semtini ve yakasını akıllıca tayin eder
    * Next.js App Router, 'use client', 'use server' ve Node built-in heuristikleri
    */
-  assignDistrict(filePath, content = '') {
+  assignDistrict(filePath, content = '', landmarks = {}) {
     const p = filePath.toLowerCase();
     const cleanContent = content ? content.slice(0, 1000).toLowerCase() : '';
+
+    // 0. Özel Simgeler: Kız Kulesi (Middleware / Gateway)
+    if (landmarks.isMiddleware) {
+      return { side: 'bosphorus', district: 'Kız Kulesi (API Gateway)', color: '#00ffff', isLandmark: 'maiden_tower' };
+    }
+
+    // 0. Özel Simgeler: Galata Kulesi (Root Entry Point)
+    if (landmarks.isEntryPoint) {
+      return { side: 'europe', district: 'Galata (Root Entry)', color: '#ffd700', isLandmark: 'galata_tower' };
+    }
 
     // 1. Next.js Direktifleri (En yüksek öncelik)
     if (cleanContent.includes("'use client'") || cleanContent.includes('"use client"')) {
@@ -323,12 +410,13 @@ export class CodebaseParser {
     return p.includes('index') || p.includes('main') || p.includes('app') || p.includes('core');
   }
 
-  calculateHealthScore(loc, complexity) {
+  calculateHealthScore(loc, complexity, leakCount = 0) {
     let score = 100;
     if (loc > 500) score -= 20;
     if (loc > 1000) score -= 30;
     if (complexity > 30) score -= 20;
     if (complexity > 60) score -= 30;
-    return Math.max(10, score);
+    if (leakCount > 0) score -= (leakCount * 25);
+    return Math.max(5, score);
   }
 }
