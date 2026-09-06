@@ -68,15 +68,24 @@ Audits client bundles against MITRE CWE security standards:
 
 ## 🚀 Quick Start
 
+### Direct Execution (Clone & Run)
 ```bash
+git clone https://github.com/Cagrik34/zenith-istanbul.git
+cd zenith-istanbul
+
 # 1. Launch interactive 3D telemetry cockpit
-npx zenith-istanbul .
+node bin/cli.js .
 
 # 2. Export standalone zero-dependency 3D HTML report
-npx zenith-istanbul --export-html my-architecture.html .
+node bin/cli.js --export-html my-architecture.html .
 
 # 3. Headless CI gatekeeper for GitHub Actions
-npx zenith-istanbul --ci --fail-on-cycle --fail-on-leak .
+node bin/cli.js --ci --fail-on-cycle --fail-on-leak .
+```
+
+### Via NPX (Upon npm registry publication)
+```bash
+npx zenith-istanbul .
 ```
 
 ### GitHub Actions Workflow (`.github/workflows/zenith-gatekeeper.yml`):

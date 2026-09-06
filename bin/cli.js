@@ -171,9 +171,10 @@ async function runHeadlessCI() {
 }
 
 /**
- * Localhost CSRF Firewall
- * Validates Origin and Referer headers against localhost, 127.0.0.1, and IPv6 loopback.
- * Blocks malicious cross-site drive-by RCE attempts against developer machines.
+ * Strict Localhost CSRF Firewall
+ * Parses Origin and Referer directly with new URL() and strictly enforces:
+ * parsed.hostname === 'localhost' || parsed.hostname === '127.0.0.1'
+ * Rejects any external web-origin requests (Drive-by RCE protection).
  */
 export function isAllowedLocalOrigin(req) {
   const origin = req.headers['origin'];
@@ -181,9 +182,8 @@ export function isAllowedLocalOrigin(req) {
 
   if (origin) {
     try {
-      const u = new URL(origin);
-      const host = u.hostname.toLowerCase();
-      if (host !== 'localhost' && host !== '127.0.0.1' && host !== '[::1]' && host !== '::1') {
+      const parsed = new URL(origin);
+      if (parsed.hostname !== 'localhost' && parsed.hostname !== '127.0.0.1') {
         return false;
       }
     } catch (e) {
@@ -193,14 +193,18 @@ export function isAllowedLocalOrigin(req) {
 
   if (referer) {
     try {
-      const u = new URL(referer);
-      const host = u.hostname.toLowerCase();
-      if (host !== 'localhost' && host !== '127.0.0.1' && host !== '[::1]' && host !== '::1') {
+      const parsed = new URL(referer);
+      if (parsed.hostname !== 'localhost' && parsed.hostname !== '127.0.0.1') {
         return false;
       }
     } catch (e) {
       return false;
     }
+  }
+
+  const secFetchSite = req.headers['sec-fetch-site'];
+  if (secFetchSite && secFetchSite === 'cross-site') {
+    return false;
   }
 
   return true;

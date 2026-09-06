@@ -214,19 +214,31 @@ export class TrafficHUD {
     const count = history.length;
     const trafficPoints = [];
     const deadlockPoints = [];
-    const maxDeadlocks = Math.max(3, ...history.map(h => h.cyclicDeadlocks || 0));
     const coords = [];
 
+    // Division-by-zero protection: when all historical points are identical (min === max), render baseline at center
+    const calcY = (val, min, max, height = plotH) => {
+      const range = max - min;
+      const y = range === 0 ? height / 2 : height - ((val - min) / range) * height;
+      return padY + y;
+    };
+
+    const trafficVals = history.map(h => Math.min(100, Math.max(0, h.trafficIndex ?? 0)));
+    const minTraffic = Math.min(0, ...trafficVals);
+    const maxTraffic = Math.max(100, ...trafficVals);
+
+    const deadlockVals = history.map(h => Math.max(0, h.cyclicDeadlocks ?? 0));
+    const minDeadlocks = Math.min(...deadlockVals);
+    const maxDeadlocks = Math.max(3, ...deadlockVals);
+
     if (count <= 1) {
-      // Guard against division by zero (NaN) when only 1 snapshot exists: draw flat horizontal line and center node
+      // Guard against count <= 1: draw flat horizontal line and center node
       const rec = history[0];
-      const tNorm = Math.min(100, Math.max(0, rec.trafficIndex || 0)) / 100;
-      const yTraffic = padY + plotH * (1 - tNorm);
+      const yTraffic = calcY(rec.trafficIndex || 0, minTraffic, maxTraffic);
       trafficPoints.push(`${padX.toFixed(1)},${yTraffic.toFixed(1)}`);
       trafficPoints.push(`${(width - padX).toFixed(1)},${yTraffic.toFixed(1)}`);
 
-      const dNorm = Math.min(1, (rec.cyclicDeadlocks || 0) / maxDeadlocks);
-      const yDeadlock = padY + plotH * (1 - dNorm);
+      const yDeadlock = calcY(rec.cyclicDeadlocks || 0, minDeadlocks, maxDeadlocks);
       deadlockPoints.push(`${padX.toFixed(1)},${yDeadlock.toFixed(1)}`);
       deadlockPoints.push(`${(width - padX).toFixed(1)},${yDeadlock.toFixed(1)}`);
 
@@ -234,12 +246,10 @@ export class TrafficHUD {
     } else {
       history.forEach((rec, idx) => {
         const x = padX + (idx / (count - 1)) * plotW;
-        const tNorm = Math.min(100, Math.max(0, rec.trafficIndex || 0)) / 100;
-        const yTraffic = padY + plotH * (1 - tNorm);
+        const yTraffic = calcY(rec.trafficIndex || 0, minTraffic, maxTraffic);
         trafficPoints.push(`${x.toFixed(1)},${yTraffic.toFixed(1)}`);
 
-        const dNorm = Math.min(1, (rec.cyclicDeadlocks || 0) / maxDeadlocks);
-        const yDeadlock = padY + plotH * (1 - dNorm);
+        const yDeadlock = calcY(rec.cyclicDeadlocks || 0, minDeadlocks, maxDeadlocks);
         deadlockPoints.push(`${x.toFixed(1)},${yDeadlock.toFixed(1)}`);
 
         coords.push({ x, yTraffic, yDeadlock, rec, idx });

@@ -4,8 +4,9 @@ import { execSync } from 'child_process';
 
 let DatabaseSync = null;
 try {
-  const majorNode = parseInt(process.versions?.node?.split('.')[0] || '0', 10);
-  if (majorNode >= 22) {
+  const majorVersion = parseInt(process.versions.node.split('.')[0], 10);
+  const hasNativeSqlite = majorVersion >= 22;
+  if (hasNativeSqlite) {
     const sqliteModule = await import('node:sqlite');
     DatabaseSync = sqliteModule.DatabaseSync || null;
   }
