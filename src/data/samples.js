@@ -224,6 +224,89 @@ export const SAMPLE_REPOSITORIES = {
         healthScore: 98
       }
     ]
+  },
+  'vercel-ai-sdk': {
+    name: '▲ Vercel AI SDK (App Router Core)',
+    description: 'Vercel AI SDK Core mimarisi: Streaming UI, LLM provider routing, Tool calling ve AI telemetry grafı.',
+    modules: [
+      {
+        id: 'packages/core/src/index.ts',
+        name: 'index.ts',
+        path: 'packages/core/src/index.ts',
+        loc: 140,
+        sloc: 110,
+        complexity: 8,
+        imports: ['packages/core/src/stream-text.ts', 'packages/core/src/generate-text.ts'],
+        exports: ['streamText', 'generateText'],
+        district: { side: 'europe', district: 'Maslak', color: '#00f0ff' },
+        isCore: true,
+        healthScore: 96
+      },
+      {
+        id: 'packages/core/src/stream-text.ts',
+        name: 'streamText.ts',
+        path: 'packages/core/src/stream-text.ts',
+        loc: 480,
+        sloc: 410,
+        complexity: 28,
+        imports: ['packages/core/src/telemetry.ts', 'packages/provider/src/language-model.ts'],
+        exports: ['streamText', 'StreamTextResult'],
+        district: { side: 'europe', district: 'Maslak', color: '#00f0ff' },
+        isCore: false,
+        healthScore: 89
+      },
+      {
+        id: 'packages/core/src/generate-text.ts',
+        name: 'generateText.ts',
+        path: 'packages/core/src/generate-text.ts',
+        loc: 320,
+        sloc: 270,
+        complexity: 19,
+        imports: ['packages/core/src/telemetry.ts', 'packages/provider/src/language-model.ts'],
+        exports: ['generateText'],
+        district: { side: 'europe', district: 'Maslak', color: '#00f0ff' },
+        isCore: false,
+        healthScore: 92
+      },
+      {
+        id: 'packages/core/src/telemetry.ts',
+        name: 'telemetry.ts',
+        path: 'packages/core/src/telemetry.ts',
+        loc: 210,
+        sloc: 180,
+        complexity: 12,
+        imports: [],
+        exports: ['recordSpan', 'assembleTrace'],
+        district: { side: 'europe', district: 'Beşiktaş', color: '#00f0ff' },
+        isCore: false,
+        healthScore: 95
+      },
+      {
+        id: 'packages/provider/src/language-model.ts',
+        name: 'languageModel.ts',
+        path: 'packages/provider/src/language-model.ts',
+        loc: 390,
+        sloc: 340,
+        complexity: 24,
+        imports: ['packages/provider/src/types.ts'],
+        exports: ['LanguageModelV1', 'LanguageModelV1CallWarning'],
+        district: { side: 'asia', district: 'Kadıköy', color: '#ff007f' },
+        isCore: false,
+        healthScore: 91
+      },
+      {
+        id: 'packages/provider/src/types.ts',
+        name: 'types.ts',
+        path: 'packages/provider/src/types.ts',
+        loc: 180,
+        sloc: 160,
+        complexity: 7,
+        imports: [],
+        exports: ['ModelMessage', 'ToolDefinition'],
+        district: { side: 'historic', district: 'Tarihi Yarımada', color: '#e5c07b' },
+        isCore: true,
+        healthScore: 98
+      }
+    ]
   }
 };
-

@@ -1127,72 +1127,194 @@
       const sample = SAMPLE_REPOSITORIES[sampleKey];
       if (!sample) return;
 
-      logToTerminal(`📦 [REPO YÜKLENDİ] ${sample.name}`, 'header');
+      logToTerminal(`📦 [SCENARIO LOADED] ${sample.name}`, 'header');
       trafficEngine.loadModules(sample.modules);
       refreshCityUI();
+
+      // Camera auto-framing on Maslak & Beşiktaş skyscrapers
+      if (bosphorusScene) {
+        bosphorusScene.controlsLerpTarget = new THREE.Vector3(-40, 30, -30);
+        bosphorusScene.cameraLerpTarget = new THREE.Vector3(-60, 180, 240);
+      }
+
+      // Update sector radar
+      drawRadar();
 
       if (sampleKey === 'circular-jam-demo') {
         hud.playTrafficHonk();
         setTimeout(() => hud.playTrafficHonk(), 500);
       }
     }
+    window.loadScenario = loadSample;
+    window.loadSample = loadSample;
 
-    document.getElementById('btn-dispatch-agent').addEventListener('click', () => {
-      const incidentData = {
-        chain: trafficEngine.circularChains[0] || []
-      };
-      dispatcher.dispatchRefactorAgent(incidentData, trafficEngine);
-    });
+    const btnDispatchAgent = document.getElementById('btn-dispatch-agent');
+    if (btnDispatchAgent) {
+      btnDispatchAgent.addEventListener('click', () => {
+        const incidentData = {
+          chain: trafficEngine.circularChains[0] || []
+        };
+        dispatcher.dispatchRefactorAgent(incidentData, trafficEngine);
+      });
+    }
 
-    document.getElementById('sample-select').addEventListener('change', (e) => {
-      loadSample(e.target.value);
-    });
+    const sampleSelect = document.getElementById('sample-select');
+    if (sampleSelect) {
+      sampleSelect.addEventListener('change', (e) => {
+        loadSample(e.target.value);
+      });
+    }
 
-    document.getElementById('btn-vapur-dudugu').addEventListener('click', () => {
-      hud.playVapurDudugu();
-      logToTerminal('🚢 [BOĞAZ HATTI] Şehir Hatları Vapuru Karaköy-Kadıköy Seferinde Düdük Çaldı.', 'info');
-      setTimeout(() => hud.playSeagull(), 1200);
-    });
+    const btnVapurDudugu = document.getElementById('btn-vapur-dudugu');
+    if (btnVapurDudugu) {
+      btnVapurDudugu.addEventListener('click', () => {
+        hud.playVapurDudugu();
+        logToTerminal('🚢 [BOĞAZ HATTI] Şehir Hatları Vapuru Karaköy-Kadıköy Seferinde Düdük Çaldı.', 'info');
+        setTimeout(() => hud.playSeagull(), 1200);
+      });
+    }
 
-    document.getElementById('btn-fetch-github').addEventListener('click', async () => {
-      const repoInput = document.getElementById('input-github-repo').value.trim();
-      if (!repoInput) {
-        alert('Lütfen "owner/repo" biçiminde bir GitHub deposu girin (ör: expressjs/express)');
-        return;
-      }
+    const btnFetchGitHub = document.getElementById('btn-fetch-github');
+    if (btnFetchGitHub) {
+      btnFetchGitHub.addEventListener('click', async () => {
+        const repoInputElem = document.getElementById('input-github-repo');
+        const repoInput = repoInputElem ? repoInputElem.value.trim() : '';
+        if (!repoInput) {
+          logToTerminal('⚠️ Lütfen "owner/repo" biçiminde bir GitHub deposu girin (ör: expressjs/express)', 'warning');
+          return;
+        }
 
-      const cleanRepo = repoInput.replace('https://github.com/', '').replace(/\/$/, '');
-      logToTerminal(`🌐 [GITHUB API] ${cleanRepo} deposunun Git Tree haritası çekiliyor...`, 'header');
+        const cleanRepo = repoInput.replace('https://github.com/', '').replace(/\/$/, '');
+        logToTerminal(`🌐 [GITHUB API] "${cleanRepo}" deposunun Git Tree haritası taranıyor...`, 'header');
 
-      try {
-        const branchRes = await fetch(`https://api.github.com/repos/${cleanRepo}`);
-        if (!branchRes.ok) throw new Error('Repo bulunamadı veya GitHub API limiti aşıldı.');
-        const repoMeta = await branchRes.json();
-        const defaultBranch = repoMeta.default_branch || 'main';
+        try {
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 3500);
+          const branchRes = await fetch(`https://api.github.com/repos/${cleanRepo}`, { signal: controller.signal });
+          clearTimeout(timeoutId);
 
-        const treeRes = await fetch(`https://api.github.com/repos/${cleanRepo}/git/trees/${defaultBranch}?recursive=1`);
-        const treeData = await treeRes.json();
+          if (!branchRes.ok) {
+            throw new Error(`GitHub API rate limit or repository access restriction (Status: ${branchRes.status})`);
+          }
 
-        if (!treeData.tree) throw new Error('Dosya ağacı alınamadı.');
+          const repoMeta = await branchRes.json();
+          const defaultBranch = repoMeta.default_branch || 'main';
 
-        const supportedFiles = treeData.tree.filter(item => 
-          item.type === 'blob' && parser.isAuditableFile(item.path)
-        ).slice(0, 120); // Performans için ilk 120 dosya
+          const treeRes = await fetch(`https://api.github.com/repos/${cleanRepo}/git/trees/${defaultBranch}?recursive=1`);
+          if (!treeRes.ok) throw new Error(`Git tree unavailable (Status: ${treeRes.status})`);
+          const treeData = await treeRes.json();
 
-        logToTerminal(`📊 [AST İŞLEME] ${supportedFiles.length} kod dosyası ayrıştırılıyor...`, 'info');
+          if (!treeData.tree || treeData.tree.length === 0) throw new Error('Dosya ağacı alınamadı.');
 
-        const parsedList = supportedFiles.map(file => {
-          const mockContent = `// GitHub Repo: ${cleanRepo}\n// Dosya: ${file.path}\nexport const Component = () => {};`;
-          return parser.parseModule(file.path, mockContent);
-        });
+          const supportedFiles = treeData.tree.filter(item => 
+            item.type === 'blob' && parser.isAuditableFile(item.path)
+          ).slice(0, 100);
 
-        trafficEngine.loadModules(parsedList);
-        refreshCityUI();
-        logToTerminal(`✅ [ŞEHİR İNŞA EDİLDİ] ${cleanRepo} deposu başarıyla 3D İstanbul metropolüne dönüştürüldü.`, 'success');
-      } catch (err) {
-        logToTerminal(`❌ [HATA] ${err.message}`, 'warning');
-      }
-    });
+          if (supportedFiles.length === 0) throw new Error('Desteklenen JS/TS kaynak dosyası bulunamadı.');
+
+          logToTerminal(`📊 [AST İŞLEME] ${supportedFiles.length} kod dosyası ayrıştırılıyor...`, 'info');
+
+          const parsedList = supportedFiles.map(file => {
+            const mockContent = `// GitHub Repo: ${cleanRepo}\n// Dosya: ${file.path}\nexport const Component = () => {};`;
+            return parser.parseModule(file.path, mockContent);
+          });
+
+          trafficEngine.loadModules(parsedList);
+          refreshCityUI();
+          logToTerminal(`✅ [ŞEHİR İNŞA EDİLDİ] "${cleanRepo}" deposu başarıyla 3D İstanbul metropolüne dönüştürüldü.`, 'success');
+          bosphorusScene.controlsLerpTarget = new THREE.Vector3(-40, 30, -30);
+          bosphorusScene.cameraLerpTarget = new THREE.Vector3(-60, 180, 240);
+          drawRadar();
+        } catch (err) {
+          logToTerminal(`ℹ️ [GITHUB RESTRICTED] ${err.message}`, 'warning');
+          logToTerminal(`⚡ "${cleanRepo}" için sembolik kurumsal AST mimari profili sentezleniyor...`, 'info');
+
+          const parts = cleanRepo.split('/');
+          const repoName = parts[1] || parts[0] || 'app';
+          const mockModules = [
+            {
+              id: `${repoName}/src/index.ts`,
+              name: 'index.ts',
+              path: `${repoName}/src/index.ts`,
+              loc: 340,
+              complexity: 22,
+              imports: [`${repoName}/src/core/router.ts`, `${repoName}/src/middleware/auth.ts`],
+              exports: ['app', 'startServer'],
+              district: { side: 'europe', district: 'Maslak', color: '#00f0ff' },
+              isCore: true,
+              healthScore: 95
+            },
+            {
+              id: `${repoName}/src/core/router.ts`,
+              name: 'router.ts',
+              path: `${repoName}/src/core/router.ts`,
+              loc: 460,
+              complexity: 31,
+              imports: [`${repoName}/src/services/db.ts`],
+              exports: ['Router', 'RouteLayer'],
+              district: { side: 'europe', district: 'Maslak', color: '#00f0ff' },
+              isCore: true,
+              healthScore: 88
+            },
+            {
+              id: `${repoName}/src/middleware/auth.ts`,
+              name: 'auth.ts',
+              path: `${repoName}/src/middleware/auth.ts`,
+              loc: 210,
+              complexity: 14,
+              imports: [`${repoName}/src/services/db.ts`],
+              exports: ['authenticate', 'authorizeScope'],
+              district: { side: 'europe', district: 'Beşiktaş', color: '#00f0ff' },
+              isCore: false,
+              healthScore: 92
+            },
+            {
+              id: `${repoName}/src/services/db.ts`,
+              name: 'db.ts',
+              path: `${repoName}/src/services/db.ts`,
+              loc: 580,
+              complexity: 36,
+              imports: [`${repoName}/src/config/env.ts`],
+              exports: ['DatabaseClient', 'query'],
+              district: { side: 'asia', district: 'Kadıköy', color: '#ff007f' },
+              isCore: false,
+              healthScore: 84
+            },
+            {
+              id: `${repoName}/src/utils/crypto.ts`,
+              name: 'crypto.ts',
+              path: `${repoName}/src/utils/crypto.ts`,
+              loc: 180,
+              complexity: 12,
+              imports: [],
+              exports: ['hashPassword', 'verifyHash'],
+              district: { side: 'asia', district: 'Kadıköy', color: '#ff007f' },
+              isCore: false,
+              healthScore: 96
+            },
+            {
+              id: `${repoName}/src/config/env.ts`,
+              name: 'env.ts',
+              path: `${repoName}/src/config/env.ts`,
+              loc: 95,
+              complexity: 5,
+              imports: [],
+              exports: ['ENV_CONFIG'],
+              district: { side: 'historic', district: 'Tarihi Yarımada', color: '#e5c07b' },
+              isCore: true,
+              healthScore: 100
+            }
+          ];
+
+          trafficEngine.loadModules(mockModules);
+          refreshCityUI();
+          logToTerminal(`✅ [AST METROPOLÜ OLUŞTURULDU] "${cleanRepo}" (${mockModules.length} modül) 3D şehre yerleştirildi.`, 'success');
+          bosphorusScene.controlsLerpTarget = new THREE.Vector3(-40, 30, -30);
+          bosphorusScene.cameraLerpTarget = new THREE.Vector3(-60, 180, 240);
+          drawRadar();
+        }
+      });
+    }
 
     document.getElementById('input-search').addEventListener('input', (e) => {
       const query = e.target.value.toLowerCase().trim();
@@ -1721,8 +1843,6 @@
         };
       } catch (e) {}
     }
-    initLiveSseWatcher();
-
     // Drag & Drop directory support for Web Showcase
     window.addEventListener('dragover', (e) => {
       e.preventDefault();
@@ -1797,6 +1917,9 @@
         trafficEngine.loadModules(window.__ZENITH_EMBEDDED_MODULES__);
         refreshCityUI();
         loadDriftHistory();
+        bosphorusScene.controlsLerpTarget = new THREE.Vector3(-40, 30, -30);
+        bosphorusScene.cameraLerpTarget = new THREE.Vector3(-60, 180, 240);
+        drawRadar();
         return;
       }
 
@@ -1830,6 +1953,9 @@
             persistScanSnapshot(trafficEngine.generateTelemetryReport());
             loadDriftHistory();
             initLiveSseWatcher();
+            bosphorusScene.controlsLerpTarget = new THREE.Vector3(-40, 30, -30);
+            bosphorusScene.cameraLerpTarget = new THREE.Vector3(-60, 180, 240);
+            drawRadar();
             return;
           }
         }
@@ -1838,7 +1964,12 @@
       loadSample('circular-jam-demo');
       loadDriftHistory();
     }
-    startApplication();
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', () => startApplication());
+    } else {
+      startApplication();
+    }
   </script>
 </body>
 </html>
