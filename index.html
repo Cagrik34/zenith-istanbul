@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="tr">
 <head>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🌉</text></svg>">
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>ZenithIstanbul — 3D Codebase Metropole & Autonomous Agent Command Deck</title>
@@ -286,6 +287,8 @@
     import { AgentDispatcher } from './src/agent/agent-dispatcher.js';
     import { SAMPLE_REPOSITORIES } from './src/data/samples.js';
 
+    const isStaticHost = window.location.hostname.includes('github.io') || window.location.protocol === 'file:';
+
     const parser = new CodebaseParser();
     const trafficEngine = new TrafficEngine();
     const hud = new TrafficHUD();
@@ -387,44 +390,76 @@
       const weatherTitle = document.getElementById('weather-title');
       const weatherDesc = document.getElementById('weather-desc');
 
-      try {
-        const res = await fetch('/api/environment');
-        if (res.ok) {
-          const env = await res.json();
-          const code = (env.current && env.current.weather_code !== undefined) ? env.current.weather_code : 0;
-          const wind = (env.current && env.current.wind_speed_10m !== undefined) ? env.current.wind_speed_10m : 14.0;
-          const source = env.source === 'open-meteo' ? 'Open-Meteo Live API' : 'Deterministic AST Baseline';
+      let env = null;
 
-          let condition = 'Nominal Skies';
-          let icon = '✨';
-
-          if (code >= 1 && code <= 3) { condition = 'Partly Cloudy'; icon = '🌤️'; }
-          else if (code >= 45 && code <= 48) { condition = 'Bosphorus Inversion Fog'; icon = '🌫️'; }
-          else if (code >= 51 && code <= 67) { condition = 'Precipitation / Rain'; icon = '🌧️'; }
-          else if (code >= 71) { condition = 'Severe Atmospheric Storm'; icon = '⛈️'; }
-
-          if (hasGraphIssues) {
-            weatherIcon.textContent = '🌧️';
-            weatherTitle.textContent = `Atmosphere: ${condition} (${wind} km/h)`;
-            weatherTitle.style.color = 'var(--accent-red)';
-            weatherDesc.textContent = `CRITICAL: Ingress Deadlock Active • ${source}`;
-          } else {
-            weatherIcon.textContent = icon;
-            weatherTitle.textContent = `Atmosphere: ${condition} (${wind} km/h)`;
-            weatherTitle.style.color = 'var(--accent-green)';
-            weatherDesc.textContent = `DAG Topology Invariants Nominal • ${source}`;
+      // 1. If running with local CLI server, query server endpoint
+      if (!isStaticHost) {
+        try {
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 1200);
+          const res = await fetch('./api/environment', { signal: controller.signal });
+          clearTimeout(timeoutId);
+          if (res.ok) {
+            env = await res.json();
           }
-          return;
-        }
-      } catch (e) {}
+        } catch (e) {}
+      }
 
+      // 2. Direct client-side Open-Meteo fallback for GitHub Pages & standalone web
+      if (!env) {
+        try {
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 2500);
+          const url = 'https://api.open-meteo.com/v1/forecast?latitude=41.0082&longitude=28.9784&current=weather_code,wind_speed_10m';
+          const res = await fetch(url, { signal: controller.signal });
+          clearTimeout(timeoutId);
+          if (res.ok) {
+            const data = await res.json();
+            env = {
+              success: true,
+              source: 'open-meteo-client',
+              current: data.current || { weather_code: 0, wind_speed_10m: 12.0 }
+            };
+          }
+        } catch (e) {}
+      }
+
+      // 3. Process environment data or fallback
+      if (env && env.current) {
+        const code = env.current.weather_code !== undefined ? env.current.weather_code : 0;
+        const wind = env.current.wind_speed_10m !== undefined ? env.current.wind_speed_10m : 14.0;
+        const source = env.source === 'open-meteo-client' ? 'Open-Meteo Direct Client' : (env.source === 'open-meteo' ? 'Open-Meteo Server' : 'Deterministic AST');
+
+        let condition = 'Nominal Skies';
+        let icon = '☀️';
+
+        if (code >= 1 && code <= 3) { condition = 'Partly Cloudy'; icon = '🌤️'; }
+        else if (code >= 45 && code <= 48) { condition = 'Bosphorus Inversion Fog'; icon = '🌫️'; }
+        else if (code >= 51 && code <= 67) { condition = 'Precipitation / Rain'; icon = '🌧️'; }
+        else if (code >= 71) { condition = 'Severe Atmospheric Storm'; icon = '⚡'; }
+
+        if (hasGraphIssues) {
+          weatherIcon.textContent = '🌫️';
+          weatherTitle.textContent = `Atmosphere: ${condition} (${wind} km/h)`;
+          weatherTitle.style.color = 'var(--accent-red)';
+          weatherDesc.textContent = `CRITICAL: Ingress Deadlock Active • ${source}`;
+        } else {
+          weatherIcon.textContent = icon;
+          weatherTitle.textContent = `Atmosphere: ${condition} (${wind} km/h)`;
+          weatherTitle.style.color = 'var(--accent-green)';
+          weatherDesc.textContent = `DAG Topology Invariants Nominal • ${source}`;
+        }
+        return;
+      }
+
+      // 4. Offline deterministic AST fallback
       if (hasGraphIssues) {
-        weatherIcon.textContent = '🌧️';
+        weatherIcon.textContent = '🌫️';
         weatherTitle.textContent = 'Atmosphere: Low Inversion Fog';
         weatherTitle.style.color = 'var(--accent-red)';
         weatherDesc.textContent = 'Deterministic AST Health Invariant Breach';
       } else {
-        weatherIcon.textContent = '✨';
+        weatherIcon.textContent = '☀️';
         weatherTitle.textContent = 'Atmosphere: Clear Neon Metropolis';
         weatherTitle.style.color = 'var(--accent-green)';
         weatherDesc.textContent = 'Deterministic AST Health Score: 100%';
@@ -926,20 +961,22 @@
     }
 
     async function loadDriftHistory() {
-      try {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 1200);
-        const res = await fetch('/api/history', { signal: controller.signal });
-        clearTimeout(timeoutId);
-        if (res.ok) {
-          const data = await res.json();
-          if (data.success && Array.isArray(data.history) && data.history.length > 0) {
-            driftHistory = data.history;
-            renderDriftUI();
-            return;
+      if (!isStaticHost) {
+        try {
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 1200);
+          const res = await fetch('./api/history', { signal: controller.signal });
+          clearTimeout(timeoutId);
+          if (res.ok) {
+            const data = await res.json();
+            if (data.success && Array.isArray(data.history) && data.history.length > 0) {
+              driftHistory = data.history;
+              renderDriftUI();
+              return;
+            }
           }
-        }
-      } catch (e) {}
+        } catch (e) {}
+      }
 
       // Web Showcase Mode: Load from localStorage or initialize with demo trajectory
       try {
@@ -961,6 +998,23 @@
       renderDriftUI();
     }
 
+    function renderDriftUI() {
+      const badgeCount = document.getElementById('drift-badge-count');
+      if (badgeCount) badgeCount.textContent = driftHistory.length;
+
+      const svg = document.getElementById('drift-svg');
+      const tooltip = document.getElementById('drift-tooltip');
+      const list = document.getElementById('drift-history-list');
+
+      hud.renderDriftChart(svg, tooltip, driftHistory, activeSnapshotIndex, (rec, idx) => {
+        inspectSnapshotInHUD(rec, idx);
+      });
+
+      hud.renderHistoryList(list, driftHistory, activeSnapshotIndex, (rec, idx) => {
+        inspectSnapshotInHUD(rec, idx);
+      });
+    }
+
     async function persistScanSnapshot(report) {
       if (!report || activeSnapshotIndex !== null) return;
       const newRecord = {
@@ -975,24 +1029,28 @@
         totalEdges: trafficEngine.bridges ? trafficEngine.bridges.length : 0
       };
 
-      try {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 1200);
-        await fetch('/api/scan', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(newRecord),
-          signal: controller.signal
-        });
-        clearTimeout(timeoutId);
-      } catch (e) {
+      if (!isStaticHost) {
         try {
-          driftHistory.push(newRecord);
-          if (driftHistory.length > 30) driftHistory = driftHistory.slice(-30);
-          localStorage.setItem('zenith_web_drift_history', JSON.stringify(driftHistory));
-          renderDriftUI();
-        } catch (err) {}
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 1200);
+          await fetch('./api/scan', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(newRecord),
+            signal: controller.signal
+          });
+          clearTimeout(timeoutId);
+          return;
+        } catch (e) {}
       }
+
+      // Fallback in Web Showcase mode: persist in localStorage
+      try {
+        driftHistory.push(newRecord);
+        if (driftHistory.length > 30) driftHistory = driftHistory.slice(-30);
+        localStorage.setItem('zenith_web_drift_history', JSON.stringify(driftHistory));
+        renderDriftUI();
+      } catch (err) {}
     }
 
     async function rescanLiveProject() {
@@ -1016,14 +1074,26 @@
     }
 
     function initLiveSseWatcher() {
+      const sseIndicator = document.getElementById('live-sse-indicator');
+      if (isStaticHost) {
+        if (sseIndicator) {
+          sseIndicator.style.borderColor = 'rgba(0, 240, 255, 0.4)';
+          sseIndicator.style.background = 'rgba(0, 240, 255, 0.12)';
+          sseIndicator.style.color = 'var(--accent-cyan)';
+          sseIndicator.innerHTML = '<span style="width: 6px; height: 6px; border-radius: 50%; background: var(--accent-cyan); box-shadow: 0 0 6px var(--accent-cyan);"></span><span>WEB SHOWCASE</span>';
+        }
+        return;
+      }
+
       try {
-        const eventSource = new EventSource('/api/events');
-        const sseIndicator = document.getElementById('live-sse-indicator');
+        const eventSource = new EventSource('./api/events');
 
         eventSource.onopen = () => {
           if (sseIndicator) {
             sseIndicator.style.borderColor = 'rgba(0, 230, 118, 0.4)';
             sseIndicator.style.background = 'rgba(0, 230, 118, 0.12)';
+            sseIndicator.style.color = 'var(--accent-green)';
+            sseIndicator.innerHTML = '<span style="width: 6px; height: 6px; border-radius: 50%; background: var(--accent-green); box-shadow: 0 0 6px var(--accent-green);"></span><span>LIVE WATCHER</span>';
           }
         };
 
@@ -1041,13 +1111,65 @@
 
         eventSource.onerror = () => {
           if (sseIndicator) {
-            sseIndicator.style.borderColor = 'rgba(255, 145, 0, 0.3)';
-            sseIndicator.style.background = 'rgba(255, 145, 0, 0.1)';
+            sseIndicator.style.borderColor = 'rgba(0, 240, 255, 0.4)';
+            sseIndicator.style.background = 'rgba(0, 240, 255, 0.12)';
+            sseIndicator.style.color = 'var(--accent-cyan)';
+            sseIndicator.innerHTML = '<span style="width: 6px; height: 6px; border-radius: 50%; background: var(--accent-cyan); box-shadow: 0 0 6px var(--accent-cyan);"></span><span>WEB SHOWCASE</span>';
           }
         };
       } catch (e) {}
     }
     initLiveSseWatcher();
+
+    // Drag & Drop directory support for Web Showcase
+    window.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+    });
+
+    window.addEventListener('drop', async (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const items = e.dataTransfer.items;
+      if (!items || items.length === 0) return;
+
+      const files = [];
+      async function traverseEntry(entry, currentPath = '') {
+        if (entry.isFile) {
+          const file = await new Promise(res => entry.file(res));
+          files.push({ file, relPath: (currentPath + file.name).replace(/\\/g, '/') });
+        } else if (entry.isDirectory) {
+          const reader = entry.createReader();
+          const entries = await new Promise(res => reader.readEntries(res));
+          for (const child of entries) {
+            await traverseEntry(child, currentPath + entry.name + '/');
+          }
+        }
+      }
+
+      for (let i = 0; i < items.length; i++) {
+        const entry = items[i].webkitGetAsEntry ? items[i].webkitGetAsEntry() : null;
+        if (entry) await traverseEntry(entry);
+      }
+
+      if (files.length > 0) {
+        logToTerminal(`📁 [DRAG & DROP] Ingesting ${files.length} files from dropped directory...`, 'header');
+        const parsedList = [];
+        for (const { file, relPath } of files) {
+          if (!parser.isAuditableFile(relPath)) continue;
+          try {
+            const textContent = await file.text();
+            parsedList.push(parser.parseModule(relPath, textContent));
+          } catch (err) {}
+        }
+        if (parsedList.length > 0) {
+          trafficEngine.loadModules(parsedList);
+          refreshCityUI();
+          logToTerminal(`✅ [AST INGEST COMPLETE] ${parsedList.length} auditable modules rendered in 3D scene.`, 'success');
+          persistScanSnapshot(trafficEngine.generateTelemetryReport());
+        }
+      }
+    });
 
     const btnRescan = document.getElementById('btn-rescan-project');
     if (btnRescan) {
@@ -1066,31 +1188,55 @@
     }
     updateParticlesLoop();
 
-    if (window.__ZENITH_EMBEDDED_MODULES__ && window.__ZENITH_EMBEDDED_MODULES__.length > 0) {
-      logToTerminal(`📦 [STANDALONE MİMARİ RAPORU] Gömülü ${window.__ZENITH_EMBEDDED_MODULES__.length} kod modülü yüklendi.`, 'header');
-      trafficEngine.loadModules(window.__ZENITH_EMBEDDED_MODULES__);
-      refreshCityUI();
-      loadDriftHistory();
-    } else {
-      fetch('/api/project-modules')
-        .then(res => res.json())
-        .then(data => {
+    // Application Bootstrap Router
+    async function startApplication() {
+      if (window.__ZENITH_EMBEDDED_MODULES__ && window.__ZENITH_EMBEDDED_MODULES__.length > 0) {
+        logToTerminal(`📐 [STANDALONE ARCHITECTURE REPORT] Embedded ${window.__ZENITH_EMBEDDED_MODULES__.length} code modules loaded.`, 'header');
+        trafficEngine.loadModules(window.__ZENITH_EMBEDDED_MODULES__);
+        refreshCityUI();
+        loadDriftHistory();
+        return;
+      }
+
+      if (isStaticHost) {
+        const sseIndicator = document.getElementById('live-sse-indicator');
+        if (sseIndicator) {
+          sseIndicator.style.borderColor = 'rgba(0, 240, 255, 0.4)';
+          sseIndicator.style.background = 'rgba(0, 240, 255, 0.12)';
+          sseIndicator.style.color = 'var(--accent-cyan)';
+          sseIndicator.innerHTML = '<span style="width: 6px; height: 6px; border-radius: 50%; background: var(--accent-cyan); box-shadow: 0 0 6px var(--accent-cyan);"></span><span>WEB SHOWCASE</span>';
+        }
+        logToTerminal('🌐 [WEB SHOWCASE MODE] Interactive 3D Metropole online.', 'header');
+        logToTerminal('💡 Use the scenario selector or ingest your own project folder.', 'info');
+        loadSample('circular-jam-demo');
+        loadDriftHistory();
+        return;
+      }
+
+      // Local CLI Server Mode
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 1200);
+        const res = await fetch('./api/project-modules', { signal: controller.signal });
+        clearTimeout(timeoutId);
+        if (res.ok) {
+          const data = await res.json();
           if (data.modules && data.modules.length > 0) {
-            logToTerminal(`🚀 [CANLI PROJE BAŞLATILDI] "${data.targetDir}" dizinindeki ${data.modules.length} modül 3D İstanbul şehrine yerleştirildi.`, 'header');
+            logToTerminal(`🏙️ [LIVE WORKSPACE LOADED] "${data.targetDir}" (${data.modules.length} modules ingested into 3D city).`, 'header');
             trafficEngine.loadModules(data.modules);
             refreshCityUI();
             persistScanSnapshot(trafficEngine.generateTelemetryReport());
             loadDriftHistory();
-          } else {
-            loadSample('circular-jam-demo');
-            loadDriftHistory();
+            initLiveSseWatcher();
+            return;
           }
-        })
-        .catch(() => {
-          loadSample('circular-jam-demo');
-          loadDriftHistory();
-        });
+        }
+      } catch (e) {}
+
+      loadSample('circular-jam-demo');
+      loadDriftHistory();
     }
+    startApplication();
   </script>
 </body>
 </html>
