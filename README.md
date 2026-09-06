@@ -49,22 +49,48 @@ ZenithIstanbul doesn't just display bugs; it fixes them live:
 
 ---
 
-## 🚀 Quick Start (Zero Cost & Instant Run)
+## 🚀 Quick Start (Interactive 3D UI & CLI)
 
 No heavy Docker containers, no paid cloud APIs, no C++ compilation struggles:
 
 ```bash
-# 1. Clone the repository
+# 1. Direct interactive command deck
+npx zenith-istanbul .
+
+# 2. Or run from source
 git clone https://github.com/Cagrik34/zenith-istanbul.git
 cd zenith-istanbul
-
-# 2. Run with any static server
-npx serve -l 3000 .
+node bin/cli.js .
 ```
 
-Open [http://localhost:3000](http://localhost:3000) in your browser:
-* Explore the pre-loaded **18:00 Boğaziçi Traffic Jam Demo**, **Zenith Nexus**, or **Vercel AI SDK**.
-* Or click **`📁 Yerel Klasör Aç`** to drag and drop your own local project and watch your code rise as a 3D Istanbul metropole!
+---
+
+## 🚦 Headless CI Gatekeeper Mode (`--ci`, `--fail-on-cycle`)
+
+Run ZenithIstanbul as an automated architecture linter in your GitHub Actions or CI/CD pipelines without launching a browser:
+
+```bash
+# Block merge if there are circular dependencies (exits with code 1)
+npx zenith-istanbul --ci --fail-on-cycle .
+```
+
+### GitHub Actions Workflow Example (`.github/workflows/zenith-gatekeeper.yml`):
+```yaml
+name: ZenithIstanbul Architecture Gatekeeper
+
+on: [push, pull_request]
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Run Zenith Architecture Gatekeeper
+        run: npx zenith-istanbul --ci --fail-on-cycle . >> $GITHUB_STEP_SUMMARY
+```
 
 ---
 
