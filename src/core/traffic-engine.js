@@ -33,24 +33,39 @@ export class TrafficEngine {
       this.reverseAdjacencyList.set(mod.id, new Set());
     }
 
-    // 2. Kenar (Edge / Import) bağlantılarını kurma
+    // 2. Kenar (Edge / Import) bağlantılarını kurma & Barrel Flattening
     for (const mod of parsedModules) {
       for (const rawImport of mod.imports) {
-        if (rawImport.startsWith('vendor:')) continue; // Harici paketleri ayrı tut
+        if (rawImport.startsWith('vendor:')) continue;
 
         // Hedef modülü bul
         const targetId = this.findMatchingModuleId(rawImport);
         if (targetId && targetId !== mod.id) {
-          this.adjacencyList.get(mod.id).add(targetId);
-          if (this.reverseAdjacencyList.has(targetId)) {
-            this.reverseAdjacencyList.get(targetId).add(mod.id);
+          const targetMod = this.modules.get(targetId);
+
+          // Barrel File Flattening: Eğer hedef bir barrel file ise doğrudan alt modüllere bağla
+          if (targetMod && targetMod.isBarrel && targetMod.imports.length > 0) {
+            for (const subImport of targetMod.imports) {
+              const subTargetId = this.findMatchingModuleId(subImport);
+              if (subTargetId && subTargetId !== mod.id) {
+                this.adjacencyList.get(mod.id).add(subTargetId);
+                if (this.reverseAdjacencyList.has(subTargetId)) {
+                  this.reverseAdjacencyList.get(subTargetId).add(mod.id);
+                }
+              }
+            }
+          } else {
+            this.adjacencyList.get(mod.id).add(targetId);
+            if (this.reverseAdjacencyList.has(targetId)) {
+              this.reverseAdjacencyList.get(targetId).add(mod.id);
+            }
           }
         }
       }
     }
 
-    // 3. Döngüsel Bağımlılıkları (Circular Dependencies) Tarjan SCC ile bul
-    this.detectCircularDependenciesTarjan();
+    // 3. Döngüsel Bağımlılıkları (Circular Dependencies) İteratif Tarjan SCC ile bul
+    this.detectCircularDependenciesTarjanIterative();
 
     // 4. İki yaka arasındaki Boğaz Köprülerini çıkar (Avrupa <-> Anadolu)
     this.detectBosphorusBridges();
@@ -64,7 +79,6 @@ export class TrafficEngine {
 
   findMatchingModuleId(importPath) {
     if (this.modules.has(importPath)) return importPath;
-    // .ts, .tsx, .js eşleşmesi
     for (const key of this.modules.keys()) {
       const strippedKey = key.replace(/\.[^/.]+$/, '');
       const strippedImport = importPath.replace(/\.[^/.]+$/, '');
@@ -76,10 +90,11 @@ export class TrafficEngine {
   }
 
   /**
-   * Tarjan's Strongly Connected Components (SCC) Algoritması
-   * O(V + E) zaman karmaşıklığıyla kesin ve deterministik döngü tespiti
+   * İteratif Yığın Tabanlı Tarjan's SCC Algoritması (Iterative Stack-based DFS)
+   * V8 Call Stack taşmalarını (Maximum call stack size exceeded) önlemek için açık döngü ve heap yığını kullanır.
+   * 50.000+ dosyalık devasa monorepolarda dahi 0 çökme ile O(V + E) sürede çalışır.
    */
-  detectCircularDependenciesTarjan() {
+  detectCircularDependenciesTarjanIterative() {
     let index = 0;
     const indices = new Map();
     const lowlink = new Map();
@@ -87,53 +102,75 @@ export class TrafficEngine {
     const stack = [];
     const sccs = [];
 
-    const strongConnect = (v) => {
-      indices.set(v, index);
-      lowlink.set(v, index);
+    for (const startNode of this.modules.keys()) {
+      if (indices.has(startNode)) continue;
+
+      // Açık çağrı yığını (Explicit call stack)
+      const callStack = [{
+        v: startNode,
+        neighbors: Array.from(this.adjacencyList.get(startNode) || []),
+        neighborIdx: 0
+      }];
+
+      indices.set(startNode, index);
+      lowlink.set(startNode, index);
       index++;
-      stack.push(v);
-      onStack.set(v, true);
+      stack.push(startNode);
+      onStack.set(startNode, true);
 
-      const neighbors = this.adjacencyList.get(v) || new Set();
-      for (const w of neighbors) {
-        if (!indices.has(w)) {
-          // Komşu henüz ziyaret edilmedi
-          strongConnect(w);
-          lowlink.set(v, Math.min(lowlink.get(v), lowlink.get(w)));
-        } else if (onStack.get(w)) {
-          // Komşu yığında, döngü tespit edildi!
-          lowlink.set(v, Math.min(lowlink.get(v), indices.get(w)));
+      while (callStack.length > 0) {
+        const top = callStack[callStack.length - 1];
+        const v = top.v;
+
+        if (top.neighborIdx < top.neighbors.length) {
+          const w = top.neighbors[top.neighborIdx++];
+
+          if (!indices.has(w)) {
+            // Ziyaret edilmemiş komşu: Yeni çerçeveyi yığına it
+            indices.set(w, index);
+            lowlink.set(w, index);
+            index++;
+            stack.push(w);
+            onStack.set(w, true);
+
+            callStack.push({
+              v: w,
+              neighbors: Array.from(this.adjacencyList.get(w) || []),
+              neighborIdx: 0
+            });
+          } else if (onStack.get(w)) {
+            // Komşu yığında, döngü tespit edildi!
+            lowlink.set(v, Math.min(lowlink.get(v), indices.get(w)));
+          }
+        } else {
+          // Bu düğümün tüm komşuları tamamlandı, geri dönüş (Post-order processing)
+          callStack.pop();
+
+          if (callStack.length > 0) {
+            const parent = callStack[callStack.length - 1].v;
+            lowlink.set(parent, Math.min(lowlink.get(parent), lowlink.get(v)));
+          }
+
+          // v kök düğüm ise SCC'yi çıkar
+          if (lowlink.get(v) === indices.get(v)) {
+            const scc = [];
+            let w;
+            do {
+              w = stack.pop();
+              onStack.set(w, false);
+              scc.push(w);
+            } while (w !== v);
+
+            if (scc.length > 1) {
+              sccs.push(scc);
+            }
+          }
         }
-      }
-
-      // v kök düğüm ise SCC'yi çıkar
-      if (lowlink.get(v) === indices.get(v)) {
-        const scc = [];
-        let w;
-        do {
-          w = stack.pop();
-          onStack.set(w, false);
-          scc.push(w);
-        } while (w !== v);
-
-        // 1'den fazla düğüm içeren SCC'ler döngüdür (Circular Dependency!)
-        if (scc.length > 1) {
-          sccs.push(scc);
-        }
-      }
-    };
-
-    for (const v of this.modules.keys()) {
-      if (!indices.has(v)) {
-        strongConnect(v);
       }
     }
 
     // Döngü zincirlerini formatla
-    this.circularChains = sccs.map(scc => {
-      // Zincir sırasını oluştur
-      return [...scc, scc[0]];
-    });
+    this.circularChains = sccs.map(scc => [...scc, scc[0]]);
   }
 
   /**

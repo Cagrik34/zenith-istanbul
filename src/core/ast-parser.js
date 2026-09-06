@@ -26,6 +26,31 @@ export class CodebaseParser {
 
     // Desteklenen kod uzantıları
     this.supportedExtensions = ['.js', '.jsx', '.ts', '.tsx', '.mjs', '.cjs', '.py', '.vue', '.svelte'];
+
+    // tsconfig / jsconfig Path Aliases eşlemeleri
+    this.pathAliases = {
+      '@/': 'src/',
+      '~/': 'src/',
+      '@components/': 'src/components/',
+      '@utils/': 'src/utils/',
+      '@services/': 'src/services/',
+      '@core/': 'src/core/'
+    };
+  }
+
+  /**
+   * tsconfig.json veya jsconfig.json paths alanını yükler
+   */
+  loadTsConfigPaths(tsconfigObj) {
+    if (!tsconfigObj || !tsconfigObj.compilerOptions || !tsconfigObj.compilerOptions.paths) return;
+    const paths = tsconfigObj.compilerOptions.paths;
+    for (const [aliasPattern, targetList] of Object.entries(paths)) {
+      if (Array.isArray(targetList) && targetList.length > 0) {
+        const cleanAlias = aliasPattern.replace(/\*$/, '');
+        const cleanTarget = targetList[0].replace(/\*$/, '');
+        this.pathAliases[cleanAlias] = cleanTarget;
+      }
+    }
   }
 
   /**
@@ -65,24 +90,40 @@ export class CodebaseParser {
     const exports = this.extractExports(content);
     const functions = this.extractFunctions(content);
 
-    // İstanbul Bölgesi Tayini (Frontend/Avrupa vs Backend/Anadolu)
+    // Barrel File (Merkezi index re-export) tespiti
+    const isBarrel = this.detectBarrelFile(filePath, content, exports);
+
+    // İstanbul Bölgesi & Monorepo Tayini
     const district = this.assignDistrict(filePath, content);
 
     return {
       id: filePath,
       name: filePath.split('/').pop().split('\\').pop(),
       path: filePath,
-      content: content, // Gerçek kaynak kod önizlemesi için
+      content: content,
       loc,
       sloc,
       complexity,
       imports,
       exports,
       functions,
+      isBarrel,
       district,
       isCore: this.isCoreModule(filePath),
       healthScore: this.calculateHealthScore(loc, complexity)
     };
+  }
+
+  /**
+   * Barrel File (index.ts / re-export hub) tespiti
+   */
+  detectBarrelFile(filePath, content, exports) {
+    const fileName = filePath.toLowerCase();
+    if (!fileName.endsWith('index.ts') && !fileName.endsWith('index.js') && !fileName.endsWith('index.tsx')) {
+      return false;
+    }
+    const reexportCount = (content.match(/export\s+(?:\*|\{[^}]+\})\s+from/g) || []).length;
+    return reexportCount >= 2;
   }
 
   /**
@@ -150,20 +191,34 @@ export class CodebaseParser {
   }
 
   /**
-   * Göreceli import yollarını normalize ederek ana proje dizinine bağlar
+   * Göreceli import yollarını ve tsconfig Path Aliases (@/, ~/) çözümler
    */
   resolveImportPath(currentDir, rawTarget) {
-    // Harici npm paketlerini (react, lodash, express vb.) ayrı etiketle
-    if (!rawTarget.startsWith('.') && !rawTarget.startsWith('/')) {
-      return `vendor:${rawTarget}`;
+    let target = rawTarget;
+
+    // 1. Path Aliases Eşleştirmesi (@/components -> src/components)
+    for (const [alias, mappedPath] of Object.entries(this.pathAliases)) {
+      if (target.startsWith(alias)) {
+        target = target.replace(alias, mappedPath);
+        return this.normalizeFinalPath(target);
+      }
     }
 
-    let parts = (currentDir ? currentDir + '/' : '') + rawTarget;
-    parts = parts.replace(/\\/g, '/');
+    // 2. Harici npm paketleri (vendor)
+    if (!target.startsWith('.') && !target.startsWith('/')) {
+      return `vendor:${target}`;
+    }
+
+    let parts = (currentDir ? currentDir + '/' : '') + target;
+    return this.normalizeFinalPath(parts);
+  }
+
+  normalizeFinalPath(parts) {
+    let clean = parts.replace(/\\/g, '/');
 
     // Path normalization: a/b/../c -> a/c
     const segments = [];
-    for (const segment of parts.split('/')) {
+    for (const segment of clean.split('/')) {
       if (segment === '' || segment === '.') continue;
       if (segment === '..') {
         if (segments.length > 0) segments.pop();
