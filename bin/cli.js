@@ -171,6 +171,42 @@ async function runHeadlessCI() {
 }
 
 /**
+ * Localhost CSRF Firewall
+ * Validates Origin and Referer headers against localhost, 127.0.0.1, and IPv6 loopback.
+ * Blocks malicious cross-site drive-by RCE attempts against developer machines.
+ */
+export function isAllowedLocalOrigin(req) {
+  const origin = req.headers['origin'];
+  const referer = req.headers['referer'];
+
+  if (origin) {
+    try {
+      const u = new URL(origin);
+      const host = u.hostname.toLowerCase();
+      if (host !== 'localhost' && host !== '127.0.0.1' && host !== '[::1]' && host !== '::1') {
+        return false;
+      }
+    } catch (e) {
+      return false;
+    }
+  }
+
+  if (referer) {
+    try {
+      const u = new URL(referer);
+      const host = u.hostname.toLowerCase();
+      if (host !== 'localhost' && host !== '127.0.0.1' && host !== '[::1]' && host !== '::1') {
+        return false;
+      }
+    } catch (e) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+/**
  * 3. INTERACTIVE 3D WEBGEL SERVER MODE
  */
 function runInteractiveServer() {
@@ -355,7 +391,12 @@ function runInteractiveServer() {
   }
 
   const server = http.createServer(async (req, res) => {
-    res.setHeader('Access-Control-Allow-Origin', '*');
+    const originHeader = req.headers['origin'];
+    if (originHeader && isAllowedLocalOrigin(req)) {
+      res.setHeader('Access-Control-Allow-Origin', originHeader);
+    } else {
+      res.setHeader('Access-Control-Allow-Origin', `http://localhost:${PORT}`);
+    }
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
@@ -418,6 +459,11 @@ function runInteractiveServer() {
     }
 
     if (req.method === 'POST' && req.url === '/api/scan') {
+      if (!isAllowedLocalOrigin(req)) {
+        res.writeHead(403, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ success: false, error: 'Forbidden: CSRF Origin/Referer check failed. External cross-origin request blocked.' }));
+        return;
+      }
       let body = '';
       req.on('data', chunk => { body += chunk; });
       req.on('end', () => {
@@ -468,6 +514,11 @@ function runInteractiveServer() {
     }
 
     if (req.method === 'POST' && req.url === '/api/dispatch-agent') {
+      if (!isAllowedLocalOrigin(req)) {
+        res.writeHead(403, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ success: false, error: 'Forbidden: CSRF Origin/Referer check failed. External cross-origin request blocked.' }));
+        return;
+      }
       let body = '';
       req.on('data', chunk => { body += chunk; });
       req.on('end', async () => {
@@ -536,6 +587,11 @@ function runInteractiveServer() {
     }
 
     if (req.method === 'POST' && req.url === '/api/apply-patch') {
+      if (!isAllowedLocalOrigin(req)) {
+        res.writeHead(403, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ success: false, error: 'Forbidden: CSRF Origin/Referer check failed. External cross-origin request blocked.' }));
+        return;
+      }
       let body = '';
       req.on('data', chunk => { body += chunk; });
       req.on('end', () => {

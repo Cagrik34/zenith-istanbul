@@ -91,7 +91,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - run: npx zenith-istanbul --ci --fail-on-cycle --fail-on-leak . >> $GITHUB_STEP_SUMMARY
+      - run: node bin/cli.js --ci --fail-on-cycle --fail-on-leak . >> $GITHUB_STEP_SUMMARY
 ```
 
 ---

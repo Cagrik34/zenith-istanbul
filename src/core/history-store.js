@@ -4,8 +4,11 @@ import { execSync } from 'child_process';
 
 let DatabaseSync = null;
 try {
-  const sqliteModule = await import('node:sqlite');
-  DatabaseSync = sqliteModule.DatabaseSync || null;
+  const majorNode = parseInt(process.versions?.node?.split('.')[0] || '0', 10);
+  if (majorNode >= 22) {
+    const sqliteModule = await import('node:sqlite');
+    DatabaseSync = sqliteModule.DatabaseSync || null;
+  }
 } catch (e) {
   DatabaseSync = null;
 }

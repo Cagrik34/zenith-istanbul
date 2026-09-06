@@ -212,26 +212,39 @@ export class TrafficHUD {
     });
 
     const count = history.length;
-    const getX = (idx) => count > 1 ? padX + (idx / (count - 1)) * plotW : padX + plotW / 2;
-
     const trafficPoints = [];
     const deadlockPoints = [];
     const maxDeadlocks = Math.max(3, ...history.map(h => h.cyclicDeadlocks || 0));
-
     const coords = [];
 
-    history.forEach((rec, idx) => {
-      const x = getX(idx);
+    if (count <= 1) {
+      // Guard against division by zero (NaN) when only 1 snapshot exists: draw flat horizontal line and center node
+      const rec = history[0];
       const tNorm = Math.min(100, Math.max(0, rec.trafficIndex || 0)) / 100;
       const yTraffic = padY + plotH * (1 - tNorm);
-      trafficPoints.push(`${x.toFixed(1)},${yTraffic.toFixed(1)}`);
+      trafficPoints.push(`${padX.toFixed(1)},${yTraffic.toFixed(1)}`);
+      trafficPoints.push(`${(width - padX).toFixed(1)},${yTraffic.toFixed(1)}`);
 
       const dNorm = Math.min(1, (rec.cyclicDeadlocks || 0) / maxDeadlocks);
       const yDeadlock = padY + plotH * (1 - dNorm);
-      deadlockPoints.push(`${x.toFixed(1)},${yDeadlock.toFixed(1)}`);
+      deadlockPoints.push(`${padX.toFixed(1)},${yDeadlock.toFixed(1)}`);
+      deadlockPoints.push(`${(width - padX).toFixed(1)},${yDeadlock.toFixed(1)}`);
 
-      coords.push({ x, yTraffic, yDeadlock, rec, idx });
-    });
+      coords.push({ x: padX + plotW / 2, yTraffic, yDeadlock, rec, idx: 0 });
+    } else {
+      history.forEach((rec, idx) => {
+        const x = padX + (idx / (count - 1)) * plotW;
+        const tNorm = Math.min(100, Math.max(0, rec.trafficIndex || 0)) / 100;
+        const yTraffic = padY + plotH * (1 - tNorm);
+        trafficPoints.push(`${x.toFixed(1)},${yTraffic.toFixed(1)}`);
+
+        const dNorm = Math.min(1, (rec.cyclicDeadlocks || 0) / maxDeadlocks);
+        const yDeadlock = padY + plotH * (1 - dNorm);
+        deadlockPoints.push(`${x.toFixed(1)},${yDeadlock.toFixed(1)}`);
+
+        coords.push({ x, yTraffic, yDeadlock, rec, idx });
+      });
+    }
 
     const polyTraffic = document.createElementNS('http://www.w3.org/2000/svg', 'polyline');
     polyTraffic.setAttribute('points', trafficPoints.join(' '));
