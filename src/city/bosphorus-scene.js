@@ -189,7 +189,7 @@ export class BosphorusScene {
     // Tabela ve Semt İsimleri (3D Neon Zemin Yazıları)
     this.createDistrictGroundMarks();
 
-    // 6. Özel İstanbul Simgeleri (Kız Kulesi, Galata Kulesi, Sahil Güvenlik)
+    // 6. Özel İstanbul Simgeleri (Kız Kulesi, Galata Kulesi, Security Boundary Sentry Patrol Vessel)
     this.createLandmarks();
   }
 
@@ -322,7 +322,7 @@ export class BosphorusScene {
     hull.position.y = 2.2;
     this.coastGuardGroup.add(hull);
 
-    // Sahil Güvenlik Turuncu Şeridi
+    // Security Boundary Sentry Sinyal Hattı
     const stripeGeo = new THREE.BoxGeometry(9.2, 1.2, 26.2);
     const stripeMat = new THREE.MeshBasicMaterial({ color: 0xff6600 });
     const stripe = new THREE.Mesh(stripeGeo, stripeMat);
@@ -745,7 +745,7 @@ export class BosphorusScene {
       this.maidenBeacon.rotation.y += 0.025;
     }
 
-    // Sahil Güvenlik Botu Hareketi ve Acil Durum Işığı
+    // Security Boundary Sentry Devriye Botu Hareketi ve Acil Durum Işığı
     if (this.coastGuardGroup) {
       this.coastGuardGroup.position.y = 0.5 + Math.sin(elapsedTime * 2.2) * 0.35;
       this.coastGuardGroup.rotation.z = Math.sin(elapsedTime * 1.8) * 0.035;

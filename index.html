@@ -600,112 +600,118 @@
       <!-- Quick Search Bar -->
       <div class="search-box">
         <span style="font-size: 12px; margin-right: 4px;">🔍</span>
-        <input type="text" id="input-search" placeholder="Dosya / Semt Ara...">
+        <input type="text" id="input-search" placeholder="Search Module / Sector...">
       </div>
 
       <div class="header-controls">
         <!-- Live GitHub Fetcher -->
-        <div class="github-fetch-bar" title="Herhangi bir public GitHub reposunu 3D şehre dönüştür">
-          <input type="text" id="input-github-repo" placeholder="owner/repo (örn: expressjs/express)">
-          <button id="btn-fetch-github">Analiz Et</button>
+        <div class="github-fetch-bar" title="Transform public GitHub repository into 3D architectural city">
+          <input type="text" id="input-github-repo" placeholder="owner/repo (e.g. expressjs/express)">
+          <button id="btn-fetch-github">Ingest & Parse</button>
         </div>
 
         <!-- Sample Dropdown -->
         <select id="sample-select">
-          <option value="circular-jam-demo">🚨 18:00 Boğaz Trafik Kilidi (Demo)</option>
-          <option value="zenith-nexus">🌐 Zenith Nexus (Hybrid RAG)</option>
-          <option value="vercel-ai-sdk">▲ Vercel AI SDK</option>
+          <option value="circular-jam-demo">🚨 Cyclic Deadlock Scenario (Tarjan SCC)</option>
+          <option value="zenith-nexus">🌐 Zenith Nexus (Hybrid RAG Topology)</option>
+          <option value="vercel-ai-sdk">▲ Vercel AI SDK (App Router Core)</option>
         </select>
 
         <!-- Yerel Klasör & Canlı Proje Yeniden Tara -->
         <input type="file" id="folder-input" webkitdirectory directory multiple>
-        <button id="btn-open-folder" class="btn-control btn-primary">📁 Klasör Tara</button>
-        <button id="btn-rescan-project" class="btn-control" style="background: rgba(0, 240, 255, 0.15); border-color: var(--accent-cyan); color: var(--accent-cyan);" title="Projeyi Canlı Olarak Yeniden Tara (Kısayol: R)">🔄 Yeniden Tara</button>
+        <button id="btn-open-folder" class="btn-control btn-primary">📁 Ingest Directory</button>
+        <button id="btn-rescan-project" class="btn-control" style="background: rgba(0, 240, 255, 0.15); border-color: var(--accent-cyan); color: var(--accent-cyan);" title="Rescan Local Project (Shortcut: R)">🔄 Rescan AST</button>
 
         <!-- Rapor İndir & PR Yorumu -->
-        <button id="btn-download-report" class="btn-control btn-report" title="Detaylı Mimari Raporu Markdown İndir">📊 Raporu İndir</button>
-        <button id="btn-copy-pr-comment" class="btn-control" title="GitHub PR Bot Yorumunu Kopyala">💬 PR Yorumu</button>
+        <button id="btn-download-report" class="btn-control btn-report" title="Export Architectural Markdown Telemetry">📊 Export Report</button>
+        <button id="btn-copy-pr-comment" class="btn-control" title="Copy PR Gatekeeper Status Markdown">💬 PR Bot Status</button>
+
+        <!-- Live SSE Status Indicator -->
+        <div id="live-sse-indicator" style="display: inline-flex; align-items: center; gap: 6px; font-size: 10px; color: var(--accent-green); background: rgba(0, 230, 118, 0.1); border: 1px solid rgba(0, 230, 118, 0.3); padding: 4px 8px; border-radius: 6px;">
+          <span style="width: 6px; height: 6px; border-radius: 50%; background: var(--accent-green); box-shadow: 0 0 6px var(--accent-green);"></span>
+          <span>LIVE WATCHER</span>
+        </div>
 
         <!-- Ses Aç/Kapat (Mute/Unmute) Toggle -->
-        <button id="btn-toggle-audio" class="btn-control" title="Ambiyans Seslerini Aç/Kapat">🔇 Ses: Kapalı</button>
+        <button id="btn-toggle-audio" class="btn-control" title="Toggle Spatial Audio Synthesizer">🔇 Audio: Muted</button>
       </div>
     </header>
 
     <!-- Center Workspace -->
     <div class="workspace">
       
-      <!-- AKOM Traffic HUD (Left) -->
+      <!-- Architectural Telemetry & Topology HUD (Left) -->
       <aside class="traffic-hud interactive">
         <div class="hud-title">
-          <span>İBB AKOM Trafik Panosu</span>
-          <span style="font-size: 9px; color: var(--accent-green);">● CANLI</span>
+          <span>Architectural Telemetry & Topology HUD</span>
+          <span style="font-size: 9px; color: var(--accent-green);">● TELEMETRY LIVE</span>
         </div>
 
-        <!-- LOD / GÖRSEL FİLTRE ÇUBUĞU (Spagetti Şehir Önleyici) -->
+        <!-- LOD / GÖRSEL FİLTRE ÇUBUĞU (Anti-Spaghetti Selector) -->
         <div style="display: flex; gap: 4px; background: rgba(6, 11, 24, 0.7); padding: 4px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.06);">
-          <button id="btn-filter-all" class="btn-filter active" style="flex: 1; padding: 4px 6px; font-size: 10px; background: var(--accent-cyan); color: #060913; border: none; border-radius: 4px; font-weight: 700; cursor: pointer;">Tümü</button>
-          <button id="btn-filter-cycles" class="btn-filter" style="flex: 1; padding: 4px 6px; font-size: 10px; background: transparent; color: var(--text-muted); border: none; border-radius: 4px; font-weight: 700; cursor: pointer;">🚨 Kilitler</button>
-          <button id="btn-filter-bridges" class="btn-filter" style="flex: 1; padding: 4px 6px; font-size: 10px; background: transparent; color: var(--text-muted); border: none; border-radius: 4px; font-weight: 700; cursor: pointer;">🌉 Köprüler</button>
+          <button id="btn-filter-all" class="btn-filter active" style="flex: 1; padding: 4px 6px; font-size: 10px; background: var(--accent-cyan); color: #060913; border: none; border-radius: 4px; font-weight: 700; cursor: pointer;">All</button>
+          <button id="btn-filter-cycles" class="btn-filter" style="flex: 1; padding: 4px 6px; font-size: 10px; background: transparent; color: var(--text-muted); border: none; border-radius: 4px; font-weight: 700; cursor: pointer;">🚨 SCC Cycles</button>
+          <button id="btn-filter-bridges" class="btn-filter" style="flex: 1; padding: 4px 6px; font-size: 10px; background: transparent; color: var(--text-muted); border: none; border-radius: 4px; font-weight: 700; cursor: pointer;">🌉 Ingress Bridges</button>
         </div>
 
         <div class="gauge-wrapper">
-          <div class="gauge-dial" id="gauge-dial">%85</div>
+          <div class="gauge-dial" id="gauge-dial">%0</div>
           <div class="gauge-info">
-            <h3 id="gauge-status-title">Boğaz Köprüsü KİLİT</h3>
-            <p id="gauge-status-desc">Döngüsel İthalat Sıkışması</p>
+            <h3 id="gauge-status-title">Topology Nominal</h3>
+            <p id="gauge-status-desc">Zero Cycle Invariants</p>
           </div>
         </div>
 
-        <!-- AKOM Meteoroloji Rozeti -->
+        <!-- Atmospheric & Meteorological Telemetry Badge -->
         <div class="weather-badge" id="akom-weather-badge">
-          <span id="weather-icon" style="font-size: 16px;">🌧️</span>
+          <span id="weather-icon" style="font-size: 16px;">✨</span>
           <div>
-            <div id="weather-title" style="font-weight: 700; color: var(--accent-cyan);">AKOM Boğaz Meteorolojisi</div>
-            <div id="weather-desc" style="color: var(--text-muted); font-size: 10px;">Yoğun Sis & Sağanak (Kilit Alarmı)</div>
+            <div id="weather-title" style="font-weight: 700; color: var(--accent-cyan);">Atmospheric Telemetry</div>
+            <div id="weather-desc" style="color: var(--text-muted); font-size: 10px;">Istanbul (41.0082°N, 28.9784°E)</div>
           </div>
         </div>
 
         <!-- Döngüsel Kilit Alarm Kutusu -->
-        <div class="incident-alert" id="incident-box">
-          <div class="incident-title">🚨 15 Temmuz Şehitler Köprüsü Kilit!</div>
-          <div id="incident-desc">AuthModal ➔ sessionManager ➔ userService döngüsü köprüyü kilitledi.</div>
+        <div class="incident-alert" id="incident-box" style="display: none;">
+          <div class="incident-title">🚨 CRITICAL: Cyclic Deadlock Detected (Tarjan SCC Violation in Bridge Ingress)</div>
+          <div id="incident-desc">Directed acyclic graph invariant broken across ingress bridge modules.</div>
           <button class="btn-dispatch" id="btn-dispatch-agent">
-            <span>⚡ Ajanı Görevlendir (Refactor Et)</span>
+            <span>⚡ Dispatch Autonomous Remediation Agent</span>
           </button>
         </div>
 
-        <!-- Sahil Güvenlik Kaçakçılık Alarmı -->
+        <!-- Client-Side Leak Detector / Boundary Violation Sentry Alert -->
         <div class="incident-alert" id="security-alert-box" style="display: none; border-color: #ff9100; background: rgba(255, 145, 0, 0.1);">
-          <div class="incident-title" style="color: #ff9100;">🛡️ Boğaz Sahil Güvenlik Alarmı!</div>
-          <div id="security-alert-desc" style="color: #ffe0b2;">Sunucu sırrı veya DB paketi istemciye sızdı!</div>
+          <div class="incident-title" style="color: #ff9100;">🛡️ Secret & Boundary Violation Sentry Alert!</div>
+          <div id="security-alert-desc" style="color: #ffe0b2;">Client-Side Security Boundary Breached (Exposed Secret / Forbidden Module)</div>
         </div>
 
-        <!-- Refactor Diff Butonu (Ajan çözünce aktifleşir) -->
+        <!-- Refactor Diff Butonu -->
         <button id="btn-view-diff" class="btn-control btn-primary" style="display: none; width: 100%;">
-          📄 Üretilen Git Diff'ini Gör
+          📄 Review Unified Remediation Patch (Git Diff)
         </button>
 
         <!-- Stats -->
         <div class="stats-grid">
           <div class="stat-card">
-            <span>Toplam Modül</span>
-            <strong id="stat-modules">9</strong>
+            <span>Total Modules</span>
+            <strong id="stat-modules">0</strong>
           </div>
           <div class="stat-card">
-            <span>Döngüsel Kilit</span>
-            <strong id="stat-cycles" style="color: var(--accent-red);">1</strong>
+            <span>SCC Cycles</span>
+            <strong id="stat-cycles" style="color: var(--accent-red);">0</strong>
           </div>
           <div class="stat-card">
-            <span>Köprü Importları</span>
-            <strong id="stat-bridges">3</strong>
+            <span>Bridge Ingress</span>
+            <strong id="stat-bridges">0</strong>
           </div>
           <div class="stat-card">
-            <span>Sahil Güvenlik (Leak)</span>
+            <span>Security Leaks</span>
             <strong id="stat-leaks" style="color: #ff9100;">0</strong>
           </div>
           <div class="stat-card">
-            <span>Prens Adaları (Dead)</span>
-            <strong id="stat-dead">1</strong>
+            <span>Isolated Subgraphs</span>
+            <strong id="stat-dead">0</strong>
           </div>
         </div>
       </aside>
@@ -713,59 +719,59 @@
       <!-- Building Inspector (Right) -->
       <aside class="inspector-drawer interactive" id="inspector-drawer">
         <div class="inspector-header">
-          <h2 id="inspect-name">AuthModal.tsx</h2>
+          <h2 id="inspect-name">Module</h2>
           <button class="btn-close" id="btn-close-inspect">✕</button>
         </div>
 
         <div class="metric-row">
-          <span>Bölge / Semt:</span>
+          <span>Sector / District:</span>
           <strong id="inspect-district" class="badge-district">-</strong>
         </div>
 
         <div class="metric-row">
-          <span>Satır Sayısı (LOC):</span>
+          <span>Lines of Code (LOC):</span>
           <strong id="inspect-loc">-</strong>
         </div>
 
         <div class="metric-row">
-          <span>Döngüsel Karmaşıklık:</span>
+          <span>Cyclomatic Complexity:</span>
           <strong id="inspect-complexity">-</strong>
         </div>
 
         <div class="metric-row">
-          <span>Sağlık Skoru:</span>
+          <span>Code Health Score:</span>
           <strong id="inspect-health">-</strong>
         </div>
 
         <!-- Blast Radius -->
         <div class="blast-radius-box" id="inspect-blast-box">
-          <strong>⚡ Etki Alanı (Blast Radius):</strong>
-          <div id="inspect-blast-desc">Bu bina değişirse 3 bina doğrudan etkilenir.</div>
+          <strong>⚡ Topological Blast Radius:</strong>
+          <div id="inspect-blast-desc">-</div>
         </div>
 
-        <!-- Sahil Güvenlik Sızıntı Kutusu -->
+        <!-- Client-Side Security Boundary Sentry Box -->
         <div class="blast-radius-box" id="inspect-security-box" style="display: none; border-color: #ff9100; background: rgba(255, 145, 0, 0.12);">
-          <strong style="color: #ff9100;">🛡️ Sahil Güvenlik Güvenlik Uyarısı:</strong>
+          <strong style="color: #ff9100;">🛡️ Client-Side Security Boundary Violation (CWE Alert):</strong>
           <div id="inspect-security-desc" style="color: #ffe0b2; font-size: 11px; margin-top: 4px;">-</div>
         </div>
 
         <!-- Extracted Functions -->
         <div class="metric-row" style="flex-direction: column; gap: 4px;">
-          <span>AST Fonksiyonları:</span>
+          <span>AST Exported Signatures:</span>
           <div id="inspect-functions" style="font-size: 10px; color: var(--accent-cyan); font-family: monospace;">-</div>
         </div>
 
         <!-- Code Snippet -->
         <div class="metric-row" style="flex-direction: column; gap: 4px;">
-          <span>Kaynak Kod Önizlemesi:</span>
-          <div class="code-preview-box" id="inspect-code-preview">// Kod içeriği yükleniyor...</div>
+          <span>Source Code Buffer:</span>
+          <div class="code-preview-box" id="inspect-code-preview">// Loading module source...</div>
         </div>
       </aside>
 
-      <!-- 2D AKOM Radar Minimap (Bottom Right) -->
+      <!-- 2D Topological Minimap & Sector Radar (Bottom Right) -->
       <div class="radar-container interactive">
         <div class="radar-header">
-          <span>📡 Boğaz Radarı</span>
+          <span>📡 Topological Sector Radar</span>
           <span style="color: var(--accent-green); font-size: 8px;">● 360°</span>
         </div>
         <canvas id="radar-canvas" width="170" height="110"></canvas>
@@ -773,9 +779,9 @@
           <div class="radar-pill" data-target="maslak">Maslak</div>
           <div class="radar-pill" data-target="galata" style="color: #ffd700;">Galata</div>
           <div class="radar-pill" data-target="maiden" style="color: #00ffff;">Kız Kulesi</div>
-          <div class="radar-pill" data-target="bridge">Köprü</div>
+          <div class="radar-pill" data-target="bridge">Bridge</div>
           <div class="radar-pill" data-target="kadikoy">Kadıköy</div>
-          <div class="radar-pill" data-target="historic">Suriçi</div>
+          <div class="radar-pill" data-target="historic">Historical</div>
         </div>
       </div>
 
@@ -783,8 +789,8 @@
 
     <!-- Agent Stream Terminal (Bottom) -->
     <div class="terminal-drawer interactive" id="terminal-drawer">
-      <div class="log-line header">🌉 [ZENITH-İSTANBUL] 3D Şehir Hazır. Donanım İvmeli WebGL 60 FPS devrede.</div>
-      <div class="log-line info">📡 Kod tabanını analiz etmek için hazır demoları seçebilir, GitHub repo linki yapıştırabilir veya yerel klasör tarayabilirsiniz.</div>
+      <div class="log-line header">🌉 [ZENITH-ISTANBUL] Telemetry Engine Online. Hardware-Accelerated WebGL Context Initialized.</div>
+      <div class="log-line info">📡 System operational. Streaming real-time telemetry, AST graph parsing, and autonomous agent dispatch bridge.</div>
     </div>
 
   </div>
@@ -793,14 +799,14 @@
   <div class="diff-modal-backdrop interactive" id="diff-modal">
     <div class="diff-modal">
       <div style="display: flex; justify-content: space-between; align-items: center;">
-        <h2 style="font-size: 16px; color: var(--accent-cyan);">📄 Otonom Ajan Refactoring Yaması (Unified Diff)</h2>
+        <h2 style="font-size: 16px; color: var(--accent-cyan);">📄 Autonomous Agent Remediation Artifact (Unified Diff)</h2>
         <button class="btn-close" id="btn-close-diff-modal">✕</button>
       </div>
       <div class="diff-viewer" id="diff-viewer-content"></div>
       <div style="display: flex; justify-content: flex-end; gap: 10px; flex-wrap: wrap;">
-        <button id="btn-copy-diff" class="btn-control">📋 Yamayı Kopyala</button>
-        <button id="btn-download-patch" class="btn-control btn-primary">💾 .patch Olarak İndir</button>
-        <button id="btn-apply-patch-live" class="btn-control" style="background: linear-gradient(135deg, #00e676, #00f0ff); color: #060913; font-weight: 700; border: none; box-shadow: 0 0 16px rgba(0, 230, 118, 0.4);">🛠️ Yamayı Koda Uygula (Apply Patch)</button>
+        <button id="btn-copy-diff" class="btn-control">📋 Copy Patch</button>
+        <button id="btn-download-patch" class="btn-control btn-primary">💾 Export .patch File</button>
+        <button id="btn-apply-patch-live" class="btn-control" style="background: linear-gradient(135deg, #00e676, #00f0ff); color: #060913; font-weight: 700; border: none; box-shadow: 0 0 16px rgba(0, 230, 118, 0.4);">🛠️ Apply Remediation Patch to Disk</button>
       </div>
     </div>
   </div>
@@ -888,24 +894,31 @@
         Bağlı Olduğu (Imports): ${blast.directDependencies.length} modül
       `;
 
-      // Sahil Güvenlik Sızıntı Kontrolü
+      // Client-Side Security Boundary Exposures Sentry
       const secBox = document.getElementById('inspect-security-box');
       const secDesc = document.getElementById('inspect-security-desc');
       if (mod.securityLeaks && mod.securityLeaks.length > 0) {
-        secDesc.innerHTML = mod.securityLeaks.map(l => `<strong>[${escapeHtml(l.type)}]</strong> ${escapeHtml(l.message)}`).join('<br>');
+        secDesc.innerHTML = mod.securityLeaks.map(l => `
+          <div style="margin-bottom: 6px; border-bottom: 1px solid rgba(255, 145, 0, 0.2); padding-bottom: 4px;">
+            <strong style="color: #ff9100;">[${escapeHtml(l.cwe || l.type)}]</strong> 
+            <span style="font-family: monospace; color: #fff;">${escapeHtml(l.location || `${mod.path}:${l.line || 1}:${l.col || 1}`)}</span>
+            <div style="font-size: 10px; color: #ffe0b2; margin-top: 2px;">${escapeHtml(l.message)}</div>
+            ${l.snippet ? `<code style="display:block; background:rgba(0,0,0,0.5); padding:3px 6px; border-radius:4px; font-size:10px; color:#ffb74d; margin-top:3px; font-family: 'JetBrains Mono', monospace;">${escapeHtml(l.snippet)}</code>` : ''}
+          </div>
+        `).join('');
         secBox.style.display = 'block';
       } else {
         secBox.style.display = 'none';
       }
 
-      // Kod Önizlemesi
-      inspectCodePreview.textContent = mod.content || `// ${mod.name}\n// Satır: ${mod.loc}, Karmaşıklık: ${mod.complexity}\n// Bölge: ${mod.district.district}\n\nexport const ${mod.name.replace(/\.[^/.]+$/, '')} = {\n  status: 'active'\n};`;
+      // Source Code Buffer
+      inspectCodePreview.textContent = mod.content || `// ${mod.name}\n// LOC: ${mod.loc}, Complexity: ${mod.complexity}\n// Sector: ${mod.district.district}\n\nexport const ${mod.name.replace(/\.[^/.]+$/, '')} = {\n  status: 'active'\n};`;
 
-      // 3D Neon Lazer Hatlarını Çiz
+      // 3D Neon Laser Trajectories
       bosphorusScene.drawLaserConnections(mod, trafficEngine);
 
       inspectorDrawer.style.display = 'flex';
-      hud.playTrafficHonk();
+      hud.playGridlockAlertTone();
     }
 
     document.getElementById('btn-close-inspect').addEventListener('click', () => {
@@ -913,21 +926,72 @@
       bosphorusScene.clearLaserConnections();
     });
 
+    // Atmospheric & Meteorological Telemetry Fetcher
+    async function fetchEnvironmentTelemetry(hasGraphIssues, density) {
+      const weatherIcon = document.getElementById('weather-icon');
+      const weatherTitle = document.getElementById('weather-title');
+      const weatherDesc = document.getElementById('weather-desc');
+
+      try {
+        const res = await fetch('/api/environment');
+        if (res.ok) {
+          const env = await res.json();
+          const code = (env.current && env.current.weather_code !== undefined) ? env.current.weather_code : 0;
+          const wind = (env.current && env.current.wind_speed_10m !== undefined) ? env.current.wind_speed_10m : 14.0;
+          const source = env.source === 'open-meteo' ? 'Open-Meteo Live API' : 'Deterministic AST Baseline';
+
+          let condition = 'Nominal Skies';
+          let icon = '✨';
+
+          if (code >= 1 && code <= 3) { condition = 'Partly Cloudy'; icon = '🌤️'; }
+          else if (code >= 45 && code <= 48) { condition = 'Bosphorus Inversion Fog'; icon = '🌫️'; }
+          else if (code >= 51 && code <= 67) { condition = 'Precipitation / Rain'; icon = '🌧️'; }
+          else if (code >= 71) { condition = 'Severe Atmospheric Storm'; icon = '⛈️'; }
+
+          if (hasGraphIssues) {
+            weatherIcon.textContent = '🌧️';
+            weatherTitle.textContent = `Atmosphere: ${condition} (${wind} km/h)`;
+            weatherTitle.style.color = 'var(--accent-red)';
+            weatherDesc.textContent = `CRITICAL: Ingress Deadlock Active • ${source}`;
+          } else {
+            weatherIcon.textContent = icon;
+            weatherTitle.textContent = `Atmosphere: ${condition} (${wind} km/h)`;
+            weatherTitle.style.color = 'var(--accent-green)';
+            weatherDesc.textContent = `DAG Topology Invariants Nominal • ${source}`;
+          }
+          return;
+        }
+      } catch (e) {}
+
+      // Fallback if offline
+      if (hasGraphIssues) {
+        weatherIcon.textContent = '🌧️';
+        weatherTitle.textContent = 'Atmosphere: Low Inversion Fog';
+        weatherTitle.style.color = 'var(--accent-red)';
+        weatherDesc.textContent = 'Deterministic AST Health Invariant Breach';
+      } else {
+        weatherIcon.textContent = '✨';
+        weatherTitle.textContent = 'Atmosphere: Clear Neon Metropolis';
+        weatherTitle.style.color = 'var(--accent-green)';
+        weatherDesc.textContent = 'Deterministic AST Health Score: 100%';
+      }
+    }
+
     // Refresh UI & HUD Telemetry
     function refreshCityUI() {
-      const report = trafficEngine.generateAkomReport();
+      const report = trafficEngine.generateTelemetryReport();
 
-      // 3D Şehri Yeniden İnşa Et
+      // Rebuild 3D City Metropole
       bosphorusScene.buildCity(
         Array.from(trafficEngine.modules.values()),
         trafficEngine.bridges,
         trafficEngine.circularChains
       );
 
-      // Trafik Parçacıklarını Güncelle
+      // Traffic Particles State
       trafficParticles.setTrafficState(report.circularDependencies > 0);
 
-      // AKOM Panosu Güncellemesi
+      // Telemetry Gauge
       const dial = document.getElementById('gauge-dial');
       dial.textContent = `%${report.density}`;
 
@@ -939,50 +1003,36 @@
         dial.style.borderColor = '#ff1744';
         dial.style.color = '#ff1744';
         dial.style.boxShadow = '0 0 16px rgba(255, 23, 68, 0.4)';
-        title.textContent = 'Köprü KİLİTLENDİ';
-        desc.textContent = 'Döngüsel İthalat Sıkışması';
+        title.textContent = 'CRITICAL: Deadlock Invariant';
+        desc.textContent = 'Tarjan SCC Violation in Bridge Ingress';
         incidentBox.style.display = 'flex';
       } else {
         dial.style.borderColor = '#00e676';
         dial.style.color = '#00e676';
         dial.style.boxShadow = '0 0 16px rgba(0, 230, 118, 0.4)';
-        title.textContent = 'Trafik Akıcı';
-        desc.textContent = 'Köprüler ve Maslak Açık';
+        title.textContent = 'Topology Nominal';
+        desc.textContent = 'Zero Invariant Violations Across Bridges';
         incidentBox.style.display = 'none';
       }
 
-      // Sahil Güvenlik Alarm Kutusu
+      // Security Boundary Sentry Alert Box
       const secAlertBox = document.getElementById('security-alert-box');
       const secAlertDesc = document.getElementById('security-alert-desc');
       if (report.securityLeakCount > 0) {
-        secAlertDesc.textContent = `${report.securityLeakCount} istemci dosyasında sunucu sırrı / backend DB paketi tespit edildi!`;
+        secAlertDesc.textContent = `CRITICAL: Client-side boundary breached (${report.securityLeakCount} secret or forbidden package exposures detected)`;
         secAlertBox.style.display = 'flex';
       } else {
         secAlertBox.style.display = 'none';
       }
 
-      // 3D Hava Durumu, Sis ve Sahil Güvenlik Botunu Güncelle
+      // 3D Atmosphere & Sentry Patrol Vessel
       const hasIssues = report.circularDependencies > 0 || report.density >= 60 || report.securityLeakCount > 0;
       bosphorusScene.setAtmosphere(hasIssues, report.density, report.securityLeakCount > 0);
 
-      // AKOM Meteoroloji Rozeti Güncellemesi
-      const weatherIcon = document.getElementById('weather-icon');
-      const weatherTitle = document.getElementById('weather-title');
-      const weatherDesc = document.getElementById('weather-desc');
+      // Atmospheric Telemetry
+      fetchEnvironmentTelemetry(hasIssues, report.density);
 
-      if (hasIssues) {
-        weatherIcon.textContent = '🌧️';
-        weatherTitle.textContent = 'Boğaz Sis & Yağış';
-        weatherDesc.textContent = report.securityLeakCount > 0 ? 'Sahil Güvenlik & Kilit Alarmı' : 'Yoğun Sis & Kilit Alarmı';
-        weatherTitle.style.color = 'var(--accent-red)';
-      } else {
-        weatherIcon.textContent = '✨';
-        weatherTitle.textContent = 'Açık Neon Gecesi';
-        weatherDesc.textContent = 'Trafik Akıcı, Sis Dağıldı';
-        weatherTitle.style.color = 'var(--accent-green)';
-      }
-
-      // İstatistikler
+      // Telemetry Stats Grid
       document.getElementById('stat-modules').textContent = report.totalModules;
       document.getElementById('stat-cycles').textContent = report.circularDependencies;
       document.getElementById('stat-bridges').textContent = trafficEngine.bridges.length;
@@ -1395,21 +1445,54 @@
     // CANLI ÇALIŞMA ALANI YENİDEN TARAMA (RESCAN)
     async function rescanLiveProject() {
       try {
-        logToTerminal('🔄 [CANLI TARAMA] Yerel çalışma alanı taranıyor...', 'header');
+        logToTerminal('🔄 [LIVE AUDIT] Re-scanning active workspace modules...', 'header');
         const res = await fetch('/api/project-modules');
-        if (!res.ok) throw new Error('API bağlantısı kurulamadı');
+        if (!res.ok) throw new Error('API connection failure');
         const data = await res.json();
         if (data.modules && data.modules.length > 0) {
-          logToTerminal(`✅ [TARAMA TAMAMLANDI] "${data.targetDir}" dizinindeki ${data.modules.length} modül yüklendi.`, 'success');
+          logToTerminal(`✅ [AUDIT COMPLETE] "${data.targetDir}" (${data.modules.length} modules ingested into DAG topology).`, 'success');
           trafficEngine.loadModules(data.modules);
           refreshCityUI();
         } else {
-          logToTerminal('⚠️ Taranan dizinde JS/TS modülü bulunamadı.', 'warning');
+          logToTerminal('⚠️ No auditable JS/TS modules located in target directory.', 'warning');
         }
       } catch (e) {
-        logToTerminal('ℹ️ Canlı CLI sunucusu aktif değil. (Statik veya offline mod)', 'info');
+        logToTerminal('ℹ️ Live CLI server offline. Operating in standalone in-memory mode.', 'info');
       }
     }
+
+    // REAL-TIME SERVER-SENT EVENTS (SSE) WATCHER
+    function initLiveSseWatcher() {
+      try {
+        const eventSource = new EventSource('/api/events');
+        const sseIndicator = document.getElementById('live-sse-indicator');
+
+        eventSource.onopen = () => {
+          if (sseIndicator) {
+            sseIndicator.style.borderColor = 'rgba(0, 230, 118, 0.4)';
+            sseIndicator.style.background = 'rgba(0, 230, 118, 0.12)';
+          }
+        };
+
+        eventSource.onmessage = (event) => {
+          try {
+            const data = JSON.parse(event.data);
+            if (data.type === 'file-change') {
+              logToTerminal(`⚡ [REAL-TIME WATCHER] File mutation detected in "${data.file}". Rebuilding AST graph...`, 'highlight');
+              rescanLiveProject();
+            }
+          } catch (e) {}
+        };
+
+        eventSource.onerror = () => {
+          if (sseIndicator) {
+            sseIndicator.style.borderColor = 'rgba(255, 145, 0, 0.3)';
+            sseIndicator.style.background = 'rgba(255, 145, 0, 0.1)';
+          }
+        };
+      } catch (e) {}
+    }
+    initLiveSseWatcher();
 
     const btnRescan = document.getElementById('btn-rescan-project');
     if (btnRescan) {

@@ -1,6 +1,6 @@
 # 🌉 ZenithIstanbul (`zenith-istanbul`)
 ### *3D Codebase Metropole & Autonomous Agent Command Deck*
-> **"Inspired by my hometown Istanbul's glorious Bosphorus geography and its notorious evening traffic gridlocks."**
+> **"Inspired by Istanbul's Bosphorus geography and engineered for Principal/Staff Engineer architectural telemetry."**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Zero-Cloud Security](https://img.shields.io/badge/Security-Zero--Cloud%20Client--Side-brightgreen.svg)](#security--privacy)
@@ -9,81 +9,87 @@
 
 ---
 
-## 🌆 The Istanbul Metaphor & Engineering Model
+## 🌆 Architectural Topology & Engineering Mapping
 
-Instead of boring flat dependency trees or passive file tables, **ZenithIstanbul** procedurally transforms any Git repository or local codebase into a living, breathing **3D Cyberpunk Istanbul Metropole**:
+Instead of passive tables or static graph visualizers, **ZenithIstanbul** procedurally models any JavaScript/TypeScript codebase into an interactive **3D Cyberpunk Metropole** evaluated against formal graph invariants:
 
-| Istanbul Landmark | Software Architecture Mapping | Visual & Simulation Behavior |
+| Spatial Metropole Entity | Software Architecture Mapping | Visual & Simulation Behavior |
 |---|---|---|
-| **Boğaziçi (The Bosphorus)** | Client / Server Boundary | 3D procedural water shader dividing Frontend from Backend. |
-| **Avrupa Yakası (European Side)** | Frontend / UI / Components / Hooks | Modern illuminated glass high-rises (Beşiktaş, Levent, Maslak). |
-| **Anadolu Yakası (Asian Side)** | Backend / Services / Database / Core Engine | Heavy industrial infrastructure blocks (Kadıköy, Üsküdar, Ataşehir). |
-| **Kız Kulesi (Maiden's Tower)** | API Gateway / Middleware / Proxy (`middleware.ts`) | Iconic cylindrical stone tower in the middle of the strait with a rotating dual lighthouse beacon. |
-| **Galata Kulesi (Galata Tower)** | Root Entry Point (`index.ts`, `main.tsx`, `App.tsx`) | Towering master structure with observation balcony and conical copper roof overlooking Galata. |
-| **Boğaz Sahil Güvenlik (Coast Guard)** | Full-Stack Security Patrol (Forbidden Backend Leaks) | Patrol boat bobbing in the strait with flashing emergency strobes when backend packages or server secrets leak into client bundles! |
-| **15 Temmuz & FSM Bridges** | API Gateway, RPC & Cross-Boundary Imports | Suspension bridges with glowing cables connecting Europe and Asia. |
-| **Köprü Trafik Kilidi (18:00 Traffic Jam)** | **Circular Dependency (Döngüsel Bağımlılık)** & Deadlocks | Vehicles stop, bridge cables turn glowing red, horn alerts sound! Discovered deterministically via **Tarjan's SCC Algorithm**. |
-| **Maslak Gökdelenleri** | Monolithic / Complex Files (1000+ LOC) | Mega skyscrapers towering into the sky; roof warning beacons flash on high complexity. |
-| **Tarihi Yarımada (Historic Peninsula)** | Core Legacy Primitives & Configs | Ancient stone bastions that rarely change but anchor the entire foundation. |
-| **Prens Adaları (Princes' Islands)** | Isolated Microservices & Dead Code | Lone, uninhabited islands floating out in the sea with zero bridge connections. |
-| **AKOM Sis & Yağmur Motoru** | Code Health Atmosphere | Dynamic fog and 1,800 falling rain particles triggered by architectural gridlocks and health degradation. |
-| **2D Boğaz Radarı (Minimap HUD)** | Interactive Metropole Overview | Real-time 2D minimap with building LED dots, live camera indicator, and click-to-fly navigation. |
+| **Boğaziçi (The Bosphorus)** | Client / Server Boundary | 3D procedural water shader separating client bundles from backend infrastructure. |
+| **Avrupa Yakası (European Side)** | Frontend / UI / Components / Hooks | Illuminated glass towers (Beşiktaş, Levent, Maslak). |
+| **Anadolu Yakası (Asian Side)** | Backend / Services / Database / Core Engine | Industrial infrastructure blocks (Kadıköy, Üsküdar, Ataşehir). |
+| **Kız Kulesi (Maiden's Tower)** | API Gateway / Middleware / Proxy (`middleware.ts`) | Cylindrical stone tower in the strait with dual rotating beacons. |
+| **Galata Kulesi (Galata Tower)** | Root Entry Point (`index.ts`, `main.tsx`, `App.tsx`) | Towering master structure with observation deck anchoring historical dependencies. |
+| **Security Boundary Sentry** | Client-Side Leak Detector (CWE-200 / CWE-798) | Sentry patrol boat bobbing in the strait with visual alert strobes upon detected secret or ORM leaks. |
+| **15 Temmuz & FSM Bridges** | Ingress API Gateway & Cross-Boundary Imports | Suspension bridges with luminous cables connecting European and Asian subsystems. |
+| **Bridge Cyclic Deadlock** | **Tarjan Strongly Connected Component (SCC)** | Directed cycles trigger visual red alert, bridge ingress deadlocks, and alarm audio. |
+| **Maslak High-Rises** | Monolithic Modules (1000+ LOC / High Cyclomatic Complexity) | Skyscrapers scaling dynamically with line counts and branch complexity. |
+| **Tarihi Yarımada (Historic Peninsula)** | Core Immutable Primitives & Configs | Low-churn architectural bastions anchoring the foundation. |
+| **Isolated Subgraphs** | Zero In-Degree Unreferenced Modules (Dead Code) | Isolated islands floating offshore with zero inbound dependency edges. |
+| **Atmospheric Telemetry** | Dynamic Code Health & Meteorology Engine | Real-time Istanbul weather (Open-Meteo API) mapped to AST Code Health scores. |
+| **2D Topological Minimap** | 360° Sector Radar HUD | Real-time minimap with live camera tracking and instant sector navigation. |
 
 ---
 
-## 🤖 Munder-Difflin Style Autonomous Agent Dispatch & Live Patching
+## 📐 Mathematical Traffic Index (Graph Theory Formulation)
 
-ZenithIstanbul doesn't just display bugs; it fixes them live:
-1. When a circular dependency or architectural bottleneck is detected, an alert triggers on the AKOM Traffic Bulletin.
-2. Click **`⚡ Ajanı Görevlendir (Dispatch Agent)`**.
-3. An autonomous refactoring agent (inspired by *Munder-Difflin*) is dispatched to the incident site:
-   * Analyzes the Tarjan cycle (`AuthModal ➔ sessionManager ➔ userService ➔ AuthModal`).
-   * Decouples the shared interfaces to an independent contract layer in `Tarihi Yarımada`.
-   * Live AST updates break the loop in real-time.
-4. Click **`🛠️ Yamayı Koda Uygula (Apply Patch)`** to persist the refactor directly to disk!
-5. **Result:** The 15 Temmuz Bridge turns emerald green, traffic begins flowing at 60 FPS, the fog clears, and the celebration horn sounds!
+Traffic congestion on the Bosphorus bridges is deterministically derived from graph topology:
+
+$$\text{Traffic Index} = \min\left(100, \operatorname{round}\left(\frac{|\text{SCC Edges}| \times 3 + |\text{Cross-Boundary Imports}|}{|\text{Total Edges}|} \times 100\right)\right)$$
+
+- **$|\text{SCC Edges}|$:** Directed edges participating in strongly connected component cycles.
+- **$|\text{Cross-Boundary Imports}|$:** High-order couplings bridging the client/server divide.
+- **$\text{Traffic Index} = 0$:** Clean Directed Acyclic Graph (DAG) topology.
 
 ---
 
-## 🛡️ Security & Privacy (Zero-Vulnerability Architecture)
+## 🤖 Autonomous Agent Dispatch & Real Codemod Engine
 
-* **100% Zero-Cloud:** All parsing, AST graph generation, and WebGL rendering run completely inside your local browser sandbox. Not a single byte of your code ever leaves your machine.
-* **Path Traversal Protection:** All relative import specifiers are strictly sanitized and normalized; attempts to break out of the project root boundary are immediately rejected.
-* **Coast Guard Security Leak Detection:** Flags accidental frontend imports of `@prisma/client`, `bcrypt`, `jsonwebtoken`, or leaked server environment secrets (`process.env.DATABASE_URL`).
-* **Secret Redaction:** `.env*`, `*.pem`, `*.key`, `id_rsa`, `credentials*` and high-entropy secrets are automatically ignored from memory.
-* **ReDoS & Infinite Loop Immunity:** Fast single-pass regex extraction with bounded recursion depth prevents UI lockups.
+ZenithIstanbul provides an interactive remediation bridge for cyclic invariants:
+1. **Detection:** When Tarjan's algorithm identifies a cycle (e.g., `AuthModal ➔ sessionManager ➔ userService ➔ AuthModal`), the Ingress Bridge deadlocks.
+2. **Dispatch Protocol:** Clicking **`⚡ Dispatch Autonomous Remediation Agent`** executes:
+   - Queries the local process bridge (`POST /api/dispatch-agent`) to probe local LLM CLI tools (`ollama`, `aider`, `claude-code`).
+   - If offline or CLI unconfigured, executes the deterministic built-in AST codemod engine.
+   - Synthesizes an independent contract file (`src/contracts/[target].contract.ts`), extracts exported types and interfaces, and rewrites the offending import statements.
+   - Computes a formal unified git diff (`.patch`).
+3. **Live File Patching:** Clicking **`🛠️ Apply Remediation Patch to Disk`** writes changes to disk (`POST /api/apply-patch`), refreshes the AST graph, clears Tarjan SCC cycles, and turns the bridge emerald green.
+
+---
+
+## 🛡️ Zero-Tolerance Security Boundary Sentry
+
+Client-side modules (directories containing `client`, `ui`, `components`, or files containing `'use client'`) are audited against strict enterprise rules:
+- **CWE-200 (Information Exposure):** Leaked server environment variables (`DATABASE_URL`, `AWS_SECRET`, `JWT_SECRET`).
+- **CWE-798 (Hardcoded Credentials):** Hardcoded AWS access keys (`AKIA...`), private key headers (`-----BEGIN PRIVATE KEY-----`), and JWT tokens.
+- **CWE-598 (Forbidden Server Core Imports):** Direct client imports of Node.js core modules (`fs`, `child_process`, `net`, `tls`, `cluster`, `worker_threads`).
+- **CWE-321 (Leaked Server ORM Packages):** Client imports of backend database engines (`@prisma/client`, `typeorm`, `pg`, `ioredis`).
+- **Exact Coordinates:** HUD and Inspector display exact 1-indexed `file:line:col` coordinates for remediation.
+
+---
+
+## ⚡ Live Real-Time Telemetry & SSE Watcher
+
+ZenithIstanbul features a native Server-Sent Events (SSE) stream (`GET /api/events`):
+- Local directory changes trigger debounced (300ms) file watch events via `fs.watch`.
+- The 3D WebGL scene re-parses and updates automatically without manual page refreshes or keypresses.
+- Real-time atmospheric conditions are fetched from Open-Meteo (`41.0082°N, 28.9784°E`) with in-memory caching and deterministic AST fallback.
 
 ---
 
 ## 🚀 Quick Start (Interactive 3D UI & CLI)
 
-No heavy Docker containers, no paid cloud APIs, no C++ compilation struggles:
-
 ```bash
-# 1. Direct interactive command deck (auto-detects and visualizes current repo)
+# 1. Launch interactive 3D telemetry cockpit
 npx zenith-istanbul .
 
-# 2. Export self-contained standalone 3D HTML architecture report
+# 2. Export standalone zero-dependency 3D HTML report
 npx zenith-istanbul --export-html my-architecture.html .
 
-# 3. Or run from source
-git clone https://github.com/Cagrik34/zenith-istanbul.git
-cd zenith-istanbul
-node bin/cli.js .
-```
-
----
-
-## 🚦 Headless CI Gatekeeper Mode (`--ci`, `--fail-on-cycle`, `--fail-on-leak`)
-
-Run ZenithIstanbul as an automated architecture and security gatekeeper in your GitHub Actions or CI/CD pipelines without launching a browser:
-
-```bash
-# Block merge if there are circular dependencies or leaked server secrets (exits with code 1)
+# 3. Headless CI gatekeeper for GitHub Actions
 npx zenith-istanbul --ci --fail-on-cycle --fail-on-leak .
 ```
 
-### GitHub Actions Workflow Example (`.github/workflows/zenith-gatekeeper.yml`):
+### GitHub Actions Workflow (`.github/workflows/zenith-gatekeeper.yml`):
 ```yaml
 name: ZenithIstanbul Architecture Gatekeeper
 
@@ -105,7 +111,7 @@ jobs:
 
 ## 👨‍💻 Author
 
-Crafted with high engineering rigor and love for Istanbul by **[Çağrı Giray KEŞAN](https://github.com/Cagrik34)**.
+Crafted with high engineering rigor by **[Çağrı Giray KEŞAN](https://github.com/Cagrik34)**.
 Part of the **Zenith Project Ecosystem** (*Zenith Atlas, Zenith Nexus, Zenith Istanbul*).
 
 Licensed under the [MIT License](LICENSE).

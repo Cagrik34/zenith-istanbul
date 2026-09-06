@@ -147,48 +147,123 @@ export class CodebaseParser {
   }
 
   /**
-   * Sahil Güvenlik Kaçakçılık Denetimi:
-   * İstemci (Avrupa) dosyalarında sunucu sırları veya backend DB paketlerinin sızması
+   * Calculates exact 1-indexed line and column coordinates for a string character index
    */
-  detectSecurityLeaks(filePath, content, imports) {
-    const leaks = [];
+  calculateLineCol(content, index) {
+    const prefix = content.slice(0, index);
+    const lines = prefix.split('\n');
+    const line = lines.length;
+    const col = lines[lines.length - 1].length + 1;
+    return { line, col };
+  }
+
+  /**
+   * Client-Side Leak Detector & Secret Boundary Sentry (Zero-Tolerance Security Audit)
+   * Enforces CWE-200 (Information Exposure) and CWE-598 (Client-Side Sensitive Data Leakage).
+   * @param {string} filePath - Relative file path
+   * @param {string} content - Raw source code
+   * @param {Array<string>} imports - Extracted module imports
+   * @returns {Array<Object>} Comprehensive list of security boundary violations with exact line/col
+   */
+  auditSecurityBoundaries(filePath, content, imports) {
+    const violations = [];
     const p = filePath.toLowerCase();
-    const isClientFile = p.includes('components/') || p.includes('ui/') || p.includes('views/') || 
-                         p.includes('pages/') || p.includes('.client.') || content.includes("'use client'") || content.includes('"use client"');
+    const isClientModule = p.includes('components/') || p.includes('ui/') || p.includes('views/') || 
+                           p.includes('pages/') || p.includes('.client.') || content.includes("'use client'") || content.includes('"use client"');
 
-    if (!isClientFile) return leaks;
+    // 1. Client-Side Ingress Violation: Forbidden Node.js Core and Server ORM packages
+    if (isClientModule) {
+      const forbiddenPackages = [
+        'fs', 'fs/promises', 'child_process', 'cluster', 'net', 'tls', 'dns', 'worker_threads', 'dgram',
+        '@prisma/client', 'prisma', 'typeorm', 'sequelize', 'mongoose', 'knex', 'drizzle-orm', 
+        'pg', 'mysql2', 'ioredis', 'redis', 'bcrypt', 'bcryptjs', 'jsonwebtoken', 'jsonwebtoken-esm'
+      ];
 
-    // 1. Yasaklı Backend Veritabanı & Sunucu Paketleri İstemciye İthal Edilmiş mi?
-    const dangerousPackages = [
-      '@prisma/client', 'prisma', 'pg', 'mysql2', 'ioredis', 'redis', 
-      'bcrypt', 'bcryptjs', 'jsonwebtoken', 'jsonwebtoken-esm', 
-      'child_process', 'fs', 'fs/promises'
-    ];
+      for (const imp of imports) {
+        for (const pkg of forbiddenPackages) {
+          const isMatch = imp === `vendor:${pkg}` || imp.includes(`vendor:${pkg}/`) || imp.includes(`/${pkg}/`);
+          if (isMatch) {
+            // Find exact index of the import statement in source code
+            const importPattern = new RegExp(`(?:import|require)\\s*.*?['"](?:vendor:)?${pkg.replace('/', '\\/')}['"]`, 'g');
+            const match = importPattern.exec(content);
+            const index = match ? match.index : 0;
+            const { line, col } = this.calculateLineCol(content, index);
 
-    for (const imp of imports) {
-      for (const danger of dangerousPackages) {
-        if (imp === `vendor:${danger}` || imp.includes(`vendor:${danger}/`) || imp.includes(`/${danger}/`)) {
-          leaks.push({
-            type: 'FORBIDDEN_BACKEND_PACKAGE',
-            target: danger,
-            message: `Sunucu paketi [${danger}] istemci modülüne ithal edilmiş! Bundle şişmesi ve güvenlik riski.`
-          });
+            violations.push({
+              type: 'BOUNDARY_VIOLATION_INGRESS',
+              rule: 'CWE-598: Client-Side Server Package Ingress',
+              severity: 'CRITICAL',
+              target: pkg,
+              file: filePath,
+              line,
+              col,
+              location: `${filePath}:${line}:${col}`,
+              message: `Server-only package [${pkg}] imported into client module [${filePath}:${line}:${col}]. High risk of bundle inflation and server API leakage.`
+            });
+          }
         }
       }
     }
 
-    // 2. Gizli Ortam Değişkenleri (Secret Environment Variables) Açıkta mı?
-    const secretKeyRegex = /\b(?:process\.env\.(?:DATABASE_URL|SECRET|API_SECRET|JWT_SECRET|PRIVATE_KEY|OPENAI_API_KEY|STRIPE_SECRET_KEY|AWS_SECRET_ACCESS_KEY))\b/g;
-    let match;
-    while ((match = secretKeyRegex.exec(content)) !== null) {
-      leaks.push({
-        type: 'LEAKED_SERVER_SECRET',
-        target: match[0],
-        message: `Hassas sunucu anahtarı [${match[0]}] istemci kodunda tespit edildi!`
+    // 2. Secret Telemetry Scan: Leaked Environment Variables
+    const secretEnvRegex = /\b(?:process\.env\.(?:[A-Z0-9_]*(?:SECRET|KEY|PASSWORD|TOKEN|DATABASE_URL|PRISMA_URL|AUTH_SECRET|OPENAI_API_KEY|AWS_SECRET_ACCESS_KEY|STRIPE_SECRET_KEY)[A-Z0-9_]*))\b/g;
+    let envMatch;
+    while ((envMatch = secretEnvRegex.exec(content)) !== null) {
+      const { line, col } = this.calculateLineCol(content, envMatch.index);
+      violations.push({
+        type: 'SECRET_EXPOSURE_ENV',
+        rule: 'CWE-200: Exposure of Sensitive Information in Client Bundle',
+        severity: 'CRITICAL',
+        target: envMatch[0],
+        file: filePath,
+        line,
+        col,
+        location: `${filePath}:${line}:${col}`,
+        message: `High-entropy server secret credential [${envMatch[0]}] exposed at [${filePath}:${line}:${col}].`
       });
     }
 
-    return leaks;
+    // 3. Raw Private Key Headers & Cloud Credential Patterns
+    const privateKeyRegex = /-----BEGIN (?:[A-Z0-9_-]+\s+)?PRIVATE KEY-----/g;
+    let keyMatch;
+    while ((keyMatch = privateKeyRegex.exec(content)) !== null) {
+      const { line, col } = this.calculateLineCol(content, keyMatch.index);
+      violations.push({
+        type: 'CRYPTO_KEY_EXPOSURE',
+        rule: 'CWE-321: Use of Hard-coded Cryptographic Key',
+        severity: 'EMERGENCY',
+        target: 'PRIVATE_KEY_HEADER',
+        file: filePath,
+        line,
+        col,
+        location: `${filePath}:${line}:${col}`,
+        message: `Hardcoded Private Cryptographic Key header exposed at [${filePath}:${line}:${col}]. Immediate remediation required.`
+      });
+    }
+
+    // 4. AWS Access Key Pattern (AKIA...)
+    const awsKeyRegex = /\bAKIA[0-9A-Z]{16}\b/g;
+    let awsMatch;
+    while ((awsMatch = awsKeyRegex.exec(content)) !== null) {
+      const { line, col } = this.calculateLineCol(content, awsMatch.index);
+      violations.push({
+        type: 'CLOUD_CREDENTIAL_EXPOSURE',
+        rule: 'CWE-798: Use of Hard-coded Cloud Credentials',
+        severity: 'EMERGENCY',
+        target: awsMatch[0].slice(0, 8) + '********',
+        file: filePath,
+        line,
+        col,
+        location: `${filePath}:${line}:${col}`,
+        message: `AWS Cloud IAM Access Key ID exposed at [${filePath}:${line}:${col}].`
+      });
+    }
+
+    return violations;
+  }
+
+  detectSecurityLeaks(filePath, content, imports) {
+    return this.auditSecurityBoundaries(filePath, content, imports);
   }
 
   /**

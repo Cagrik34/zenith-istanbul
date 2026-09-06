@@ -1,7 +1,7 @@
 /**
- * ZenithIstanbul - Traffic HUD & Audio Synthesizer
- * Web Audio API procedural sound synthesizer (Ship horns, seagulls, car honks),
- * AKOM style traffic index gauge, and building inspector drawer.
+ * ZenithIstanbul - Architectural Telemetry HUD & Spatial Audio Synthesizer
+ * Web Audio API procedural sound synthesizer (Low-frequency ingress, ambient acoustic resonance, gridlock alarm),
+ * Telemetry gauge controller, and building inspector drawer.
  */
 
 export class TrafficHUD {
@@ -12,7 +12,6 @@ export class TrafficHUD {
   }
 
   initAudio() {
-    // Web Audio API kullanıcı etkileşimiyle başlar
     const enableAudioOnce = () => {
       if (!this.audioCtx) {
         const AudioContext = window.AudioContext || window.webkitAudioContext;
@@ -25,13 +24,13 @@ export class TrafficHUD {
   }
 
   /**
-   * Boğaz Vapur Düdüğü Sentezleyici (Gerçekçi düşük frekanslı akustik)
+   * Low-frequency acoustic ingress horn synthesizer (Maritime Bosphorus harmonic resonance)
    */
   playVapurDudugu() {
     if (!this.audioCtx || !this.audioEnabled) return;
     try {
       const now = this.audioCtx.currentTime;
-      // İki hafif uyumsuz düşük frekans osilatörü (110 Hz ve 114 Hz)
+      // Dual oscillator detuned pair (110 Hz and 113.5 Hz)
       const osc1 = this.audioCtx.createOscillator();
       const osc2 = this.audioCtx.createOscillator();
       const gain = this.audioCtx.createGain();
@@ -55,14 +54,14 @@ export class TrafficHUD {
       osc1.stop(now + 3.0);
       osc2.stop(now + 3.0);
     } catch (e) {
-      console.warn('Audio synthesis note:', e);
+      console.warn('Audio synthesis telemetry note:', e);
     }
   }
 
   /**
-   * Köprü Trafiği Korna Sesleri (Trafik kilidi uyarısı)
+   * Bridge Ingress Cyclic Deadlock Alert Synthesizer
    */
-  playTrafficHonk() {
+  playGridlockAlertTone() {
     if (!this.audioCtx || !this.audioEnabled) return;
     try {
       const now = this.audioCtx.currentTime;
@@ -85,7 +84,14 @@ export class TrafficHUD {
   }
 
   /**
-   * Martı Sesi Sentezleyici (İstanbul Boğazı Ambiyansı)
+   * Backward-compatibility alias for deadlock alarm
+   */
+  playTrafficHonk() {
+    return this.playGridlockAlertTone();
+  }
+
+  /**
+   * Ambient coastal seagull resonance
    */
   playSeagull() {
     if (!this.audioCtx || !this.audioEnabled) return;
@@ -111,7 +117,7 @@ export class TrafficHUD {
   }
 
   /**
-   * Kilit Çözüldü Kutlama Sesi
+   * Invariant Decoupled & Cycle Remediated Chime
    */
   playSuccessChime() {
     if (!this.audioCtx || !this.audioEnabled) return;
