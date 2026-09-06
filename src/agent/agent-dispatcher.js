@@ -59,8 +59,48 @@ export class AgentDispatcher {
 
     this.isResolving = false;
     if (this.onIncidentResolved) {
-      this.onIncidentResolved(this.lastGeneratedDiff);
+      this.onIncidentResolved(this.lastGeneratedDiff, this.getRefactorPayload());
     }
+  }
+
+  /**
+   * Diske veya bellek içi AST motoruna uygulanacak tam dosya yaması paketi
+   */
+  getRefactorPayload() {
+    return {
+      diff: this.lastGeneratedDiff,
+      files: [
+        {
+          path: 'src/services/userService.ts',
+          content: `// Refactored by ZenithIstanbul Agent
+import type { UserSessionPayload } from '../types/auth-contracts';
+import { dbPool } from './dbConnection';
+
+export function getUserProfile(userId: string) {
+  return dbPool.query('SELECT * FROM users WHERE id = $1', [userId]);
+}
+
+export function syncPermissions(userId: string) {
+  return dbPool.query('UPDATE users SET synced = true WHERE id = $1', [userId]);
+}
+`
+        },
+        {
+          path: 'src/types/auth-contracts.ts',
+          content: `/**
+ * ZenithIstanbul - Decoupled Contract Layer (Tarihi Yarımada)
+ * Bu dosya 15 Temmuz Köprüsü'ndeki döngüsel bağımlılığı kırmak için otonom olarak üretilmiştir.
+ */
+export interface UserSessionPayload {
+  userId: string;
+  roles: string[];
+  issuedAt: number;
+  expiresAt: number;
+}
+`
+        }
+      ]
+    };
   }
 
   /**

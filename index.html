@@ -690,9 +690,10 @@
         <button class="btn-close" id="btn-close-diff-modal">✕</button>
       </div>
       <div class="diff-viewer" id="diff-viewer-content"></div>
-      <div style="display: flex; justify-content: flex-end; gap: 10px;">
+      <div style="display: flex; justify-content: flex-end; gap: 10px; flex-wrap: wrap;">
         <button id="btn-copy-diff" class="btn-control">📋 Yamayı Kopyala</button>
         <button id="btn-download-patch" class="btn-control btn-primary">💾 .patch Olarak İndir</button>
+        <button id="btn-apply-patch-live" class="btn-control" style="background: linear-gradient(135deg, #00e676, #00f0ff); color: #060913; font-weight: 700; border: none; box-shadow: 0 0 16px rgba(0, 230, 118, 0.4);">🛠️ Yamayı Koda Uygula (Apply Patch)</button>
       </div>
     </div>
   </div>
@@ -713,6 +714,7 @@
     const hud = new TrafficHUD();
 
     let lastRefactorDiff = '';
+    let lastRefactorPayload = null;
 
     const canvasContainer = document.getElementById('viewport-container');
     const bosphorusScene = new BosphorusScene(canvasContainer, (moduleData) => {
@@ -734,10 +736,11 @@
     // Agent Dispatcher Instance
     const dispatcher = new AgentDispatcher(
       (text, type) => logToTerminal(text, type),
-      (generatedDiff) => {
+      (generatedDiff, refactorPayload) => {
         hud.playSuccessChime();
         hud.playVapurDudugu();
         lastRefactorDiff = generatedDiff;
+        lastRefactorPayload = refactorPayload;
         document.getElementById('btn-view-diff').style.display = 'block';
         refreshCityUI();
       }
@@ -970,6 +973,59 @@
     document.getElementById('btn-copy-diff').addEventListener('click', () => {
       navigator.clipboard.writeText(lastRefactorDiff);
       alert('Git yaması panoya kopyalandı!');
+    });
+
+    // CANLI YAMAYI KODA VE DİSKE UYGULA (APPLY PATCH LIVE)
+    document.getElementById('btn-apply-patch-live').addEventListener('click', async () => {
+      if (!lastRefactorPayload || !lastRefactorPayload.files) {
+        alert('Uygulanacak yama bulunamadı.');
+        return;
+      }
+
+      logToTerminal('🛠️ [CANLI YAMA] Yamalar koda ve yerel diske uygulanıyor...', 'header');
+
+      let diskUpdated = false;
+      try {
+        const res = await fetch('/api/apply-patch', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(lastRefactorPayload)
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.success) {
+            diskUpdated = true;
+            logToTerminal(`💾 [DİSK GÜNCELLENDİ] ${data.updatedFiles.length} dosya yerel diske başarıyla yazıldı: ${data.updatedFiles.join(', ')}`, 'success');
+          }
+        }
+      } catch (err) {
+        logToTerminal('ℹ️ [BELLEK İÇİ MODU] Canlı HTTP API yerine tarayıcı hafızasında yama uygulandı.', 'info');
+      }
+
+      // 2. Bellek İçi Modülleri ve AST Motorunu Güncelle
+      for (const file of lastRefactorPayload.files) {
+        const parsed = parser.parseModule(file.path, file.content);
+        trafficEngine.modules.set(parsed.id, parsed);
+      }
+
+      // Döngüsel bağımlılık kenarlarını temizle
+      trafficEngine.circularChains = [];
+      for (const bridge of trafficEngine.bridges) {
+        bridge.isJammed = false;
+      }
+      trafficEngine.calculateTrafficDensity();
+
+      // 3D Şehri ve Trafiği Yeniden Çiz
+      refreshCityUI();
+      hud.playSuccessChime();
+      hud.playVapurDudugu();
+
+      logToTerminal('✨ [AST SENKRONİZASYONU] Tarjan SCC döngüsü sıfırlandı. Köprü trafiği yeşile döndü!', 'success');
+      diffModal.style.display = 'none';
+
+      alert(diskUpdated 
+        ? '✅ Yama yerel diskinize ve projenize başarıyla uygulandı!\nKöprüdeki kilit kalktı ve trafik yeşile döndü.' 
+        : '✅ Yama başarıyla uygulandı ve AST motoru senkronize edildi!\nKöprü trafiği akıyor.');
     });
 
     // SES AÇ/KAPAT (MUTE TOGGLE)
