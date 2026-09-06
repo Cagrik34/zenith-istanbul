@@ -1,0 +1,712 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ZenithIstanbul — 3D Codebase Metropole & Autonomous Agent Command Deck</title>
+  <meta name="description" content="İstanbul Boğazı ve meşhur trafiğinden esinlenen; Git repolarını 3D yaşayan bir şehre dönüştüren sıfır maliyetli kod mimarisi ve otonom ajan operasyon merkezi.">
+  
+  <!-- Modern Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=JetBrains+Mono:wght@400;600&family=Space+Grotesk:wght@400;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --bg-dark: #060913;
+      --panel-bg: rgba(10, 16, 31, 0.78);
+      --panel-border: rgba(0, 240, 255, 0.22);
+      --accent-cyan: #00f0ff;
+      --accent-pink: #ff007f;
+      --accent-gold: #e5c07b;
+      --accent-red: #ff1744;
+      --accent-green: #00e676;
+      --text-main: #f0f4fc;
+      --text-muted: #8899b5;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+    }
+
+    body, html {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background-color: var(--bg-dark);
+      font-family: 'Space Grotesk', sans-serif;
+      color: var(--text-main);
+    }
+
+    #viewport-container {
+      width: 100vw;
+      height: 100vh;
+      position: absolute;
+      top: 0;
+      left: 0;
+      z-index: 1;
+    }
+
+    /* GLASSMORPHISM UI OVERLAY */
+    .ui-layer {
+      position: absolute;
+      z-index: 10;
+      pointer-events: none;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 18px;
+    }
+
+    .interactive {
+      pointer-events: auto;
+    }
+
+    /* TOP HEADER BAR */
+    header.top-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: var(--panel-bg);
+      border: 1px solid var(--panel-border);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      padding: 12px 24px;
+      border-radius: 14px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6), inset 0 0 20px rgba(0, 240, 255, 0.05);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .brand-icon {
+      font-size: 26px;
+      filter: drop-shadow(0 0 10px var(--accent-cyan));
+    }
+
+    .brand-text h1 {
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      background: linear-gradient(90deg, #ffffff 0%, var(--accent-cyan) 60%, var(--accent-pink) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .brand-text p {
+      font-size: 11px;
+      color: var(--text-muted);
+      letter-spacing: 0.5px;
+    }
+
+    .header-controls {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    select, button {
+      background: rgba(16, 26, 48, 0.85);
+      border: 1px solid rgba(0, 240, 255, 0.35);
+      color: var(--text-main);
+      padding: 8px 14px;
+      border-radius: 8px;
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      outline: none;
+    }
+
+    select:hover, button:hover {
+      border-color: var(--accent-cyan);
+      box-shadow: 0 0 14px rgba(0, 240, 255, 0.4);
+      transform: translateY(-1px);
+    }
+
+    button.btn-primary {
+      background: linear-gradient(135deg, rgba(0, 240, 255, 0.25), rgba(255, 0, 127, 0.25));
+      border: 1px solid var(--accent-cyan);
+    }
+
+    button.btn-vapur {
+      border-color: var(--accent-gold);
+      color: var(--accent-gold);
+    }
+
+    button.btn-vapur:hover {
+      box-shadow: 0 0 14px rgba(229, 192, 123, 0.4);
+    }
+
+    /* MAIN WORKSPACE (LEFT HUD & RIGHT INSPECTOR) */
+    .workspace {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      flex: 1;
+      margin: 16px 0;
+      gap: 20px;
+    }
+
+    /* AKOM TRAFFIC HUD (LEFT) */
+    .traffic-hud {
+      width: 320px;
+      background: var(--panel-bg);
+      border: 1px solid var(--panel-border);
+      backdrop-filter: blur(16px);
+      border-radius: 14px;
+      padding: 18px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .hud-title {
+      font-size: 13px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--accent-cyan);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .gauge-wrapper {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 12px;
+      background: rgba(6, 11, 24, 0.7);
+      border-radius: 10px;
+      border: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    .gauge-dial {
+      width: 68px;
+      height: 68px;
+      border-radius: 50%;
+      border: 4px solid var(--accent-red);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--accent-red);
+      box-shadow: 0 0 16px rgba(255, 23, 68, 0.4);
+      transition: all 0.5s ease;
+    }
+
+    .gauge-info h3 {
+      font-size: 15px;
+      font-weight: 700;
+    }
+
+    .gauge-info p {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    .incident-alert {
+      background: rgba(255, 23, 68, 0.12);
+      border-left: 3px solid var(--accent-red);
+      padding: 10px 12px;
+      border-radius: 6px;
+      font-size: 12px;
+      line-height: 1.4;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .incident-alert .incident-title {
+      font-weight: 700;
+      color: var(--accent-red);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .btn-dispatch {
+      background: var(--accent-red);
+      color: white;
+      border: none;
+      padding: 7px 12px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      box-shadow: 0 0 14px rgba(255, 23, 68, 0.5);
+      transition: all 0.2s;
+    }
+
+    .btn-dispatch:hover {
+      background: #ff3d67;
+      transform: scale(1.02);
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .stat-card {
+      background: rgba(14, 23, 44, 0.7);
+      padding: 10px;
+      border-radius: 8px;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .stat-card span {
+      font-size: 10px;
+      color: var(--text-muted);
+      display: block;
+      text-transform: uppercase;
+    }
+
+    .stat-card strong {
+      font-size: 16px;
+      color: var(--text-main);
+      margin-top: 2px;
+      display: block;
+    }
+
+    /* RIGHT INSPECTOR DRAWER */
+    .inspector-drawer {
+      width: 320px;
+      background: var(--panel-bg);
+      border: 1px solid var(--panel-border);
+      backdrop-filter: blur(16px);
+      border-radius: 14px;
+      padding: 18px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
+      display: none; /* Tıklanınca açılır */
+      flex-direction: column;
+      gap: 12px;
+      animation: fadeIn 0.3s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateX(20px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+
+    .inspector-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      padding-bottom: 10px;
+    }
+
+    .inspector-header h2 {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--accent-cyan);
+    }
+
+    .btn-close {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      font-size: 16px;
+      cursor: pointer;
+      padding: 2px 6px;
+    }
+
+    .metric-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 12px;
+      padding: 6px 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+    }
+
+    .metric-row span {
+      color: var(--text-muted);
+    }
+
+    .badge-district {
+      font-size: 10px;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 4px;
+      text-transform: uppercase;
+    }
+
+    /* BOTTOM TERMINAL DRAWER (AGENT STREAM) */
+    .terminal-drawer {
+      width: 100%;
+      max-height: 180px;
+      background: rgba(8, 12, 22, 0.92);
+      border: 1px solid rgba(0, 240, 255, 0.3);
+      border-radius: 12px;
+      backdrop-filter: blur(14px);
+      padding: 12px 18px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      overflow-y: auto;
+      box-shadow: 0 4px 24px rgba(0, 0, 0, 0.7);
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .log-line {
+      display: flex;
+      gap: 8px;
+      line-height: 1.5;
+    }
+
+    .log-line.header { color: var(--accent-cyan); font-weight: 600; }
+    .log-line.warning { color: var(--accent-gold); }
+    .log-line.success { color: var(--accent-green); font-weight: 600; }
+    .log-line.highlight { color: var(--accent-pink); }
+    .log-line.info { color: #a4b3cc; }
+
+    /* Hidden File Input */
+    #folder-input { display: none; }
+  </style>
+</head>
+<body>
+
+  <!-- 3D WebGL Canvas Container -->
+  <div id="viewport-container"></div>
+
+  <!-- UI Overlay -->
+  <div class="ui-layer">
+    
+    <!-- Top Bar -->
+    <header class="top-bar interactive">
+      <div class="brand">
+        <div class="brand-icon">🌉</div>
+        <div class="brand-text">
+          <h1>Zenithİstanbul</h1>
+          <p>3D Codebase Metropole & Autonomous Agent Command Deck</p>
+        </div>
+      </div>
+
+      <div class="header-controls">
+        <!-- Sample Selector -->
+        <select id="sample-select">
+          <option value="circular-jam-demo">🚨 18:00 Boğaz Trafik Kilidi (Demo)</option>
+          <option value="zenith-nexus">🌐 Zenith Nexus (Hybrid RAG)</option>
+          <option value="vercel-ai-sdk">▲ Vercel AI SDK (App Router)</option>
+        </select>
+
+        <!-- Local Folder Uploader -->
+        <input type="file" id="folder-input" webkitdirectory directory multiple>
+        <button id="btn-open-folder" class="btn-primary">📁 Yerel Klasör Aç</button>
+
+        <!-- Ambient Sound -->
+        <button id="btn-vapur-dudugu" class="btn-vapur">🚢 Vapur Düdüğü Çal</button>
+      </div>
+    </header>
+
+    <!-- Center Workspace -->
+    <div class="workspace">
+      
+      <!-- Left AKOM HUD -->
+      <aside class="traffic-hud interactive">
+        <div class="hud-title">
+          <span>İBB AKOM Trafik Bülteni</span>
+          <span style="font-size: 9px; color: var(--accent-green);">● CANLI</span>
+        </div>
+
+        <div class="gauge-wrapper">
+          <div class="gauge-dial" id="gauge-dial">%85</div>
+          <div class="gauge-info">
+            <h3 id="gauge-status-title">Boğaz Köprüsü KİLİT</h3>
+            <p id="gauge-status-desc">Döngüsel Bağımlılık Alarmı</p>
+          </div>
+        </div>
+
+        <!-- Incident Alert Box -->
+        <div class="incident-alert" id="incident-box">
+          <div class="incident-title">🚨 15 Temmuz Şehitler Köprüsü Kilit!</div>
+          <div id="incident-desc">AuthModal ➔ sessionManager ➔ userService döngüsü köprüyü kilitledi.</div>
+          <button class="btn-dispatch" id="btn-dispatch-agent">
+            <span>⚡ Ajanı Görevlendir (Refactor Et)</span>
+          </button>
+        </div>
+
+        <!-- Metric Cards -->
+        <div class="stats-grid">
+          <div class="stat-card">
+            <span>Toplam Modül</span>
+            <strong id="stat-modules">9</strong>
+          </div>
+          <div class="stat-card">
+            <span>Döngüsel Kilit</span>
+            <strong id="stat-cycles" style="color: var(--accent-red);">1</strong>
+          </div>
+          <div class="stat-card">
+            <span>Köprü Importları</span>
+            <strong id="stat-bridges">3</strong>
+          </div>
+          <div class="stat-card">
+            <span>Prens Adaları (Dead)</span>
+            <strong id="stat-dead">1</strong>
+          </div>
+        </div>
+      </aside>
+
+      <!-- Right Building Inspector Drawer -->
+      <aside class="inspector-drawer interactive" id="inspector-drawer">
+        <div class="inspector-header">
+          <h2 id="inspect-name">AuthModal.tsx</h2>
+          <button class="btn-close" id="btn-close-inspect">✕</button>
+        </div>
+
+        <div class="metric-row">
+          <span>Bölge / Semt:</span>
+          <strong id="inspect-district" class="badge-district" style="background: rgba(0, 240, 255, 0.2); color: var(--accent-cyan);">Avrupa (Beşiktaş)</strong>
+        </div>
+
+        <div class="metric-row">
+          <span>Satır Sayısı (LOC):</span>
+          <strong id="inspect-loc">280</strong>
+        </div>
+
+        <div class="metric-row">
+          <span>Döngüsel Karmaşıklık:</span>
+          <strong id="inspect-complexity">18</strong>
+        </div>
+
+        <div class="metric-row">
+          <span>Sağlık Skoru:</span>
+          <strong id="inspect-health" style="color: var(--accent-green);">85 / 100</strong>
+        </div>
+
+        <div class="metric-row" style="flex-direction: column; gap: 4px;">
+          <span>İçe Aktarmalar (Imports):</span>
+          <div id="inspect-imports" style="font-size: 11px; color: var(--text-main); font-family: monospace;">-</div>
+        </div>
+      </aside>
+
+    </div>
+
+    <!-- Bottom Agent Stream Terminal -->
+    <div class="terminal-drawer interactive" id="terminal-drawer">
+      <div class="log-line header">🌉 [ZENITH-İSTANBUL] Sistem Hazır. 3D Şehir Yüklendi. 60 FPS WebGL Aktif.</div>
+      <div class="log-line info">📡 Kod tabanını analiz etmek için hazır demoları seçebilir veya "Yerel Klasör Aç" ile kendi projenizi yükleyebilirsiniz.</div>
+    </div>
+
+  </div>
+
+  <!-- APPLICATION BOOTSTRAP SCRIPT -->
+  <script type="module">
+    import { CodebaseParser } from './src/core/ast-parser.js';
+    import { TrafficEngine } from './src/core/traffic-engine.js';
+    import { BosphorusScene } from './src/city/bosphorus-scene.js';
+    import { TrafficParticles } from './src/city/traffic-particles.js';
+    import { TrafficHUD } from './src/ui/traffic-hud.js';
+    import { AgentDispatcher } from './src/agent/agent-dispatcher.js';
+    import { SAMPLE_REPOSITORIES } from './src/data/samples.js';
+
+    // Global Instances
+    const parser = new CodebaseParser();
+    const trafficEngine = new TrafficEngine();
+    const hud = new TrafficHUD();
+
+    const canvasContainer = document.getElementById('viewport-container');
+    const bosphorusScene = new BosphorusScene(canvasContainer, (moduleData) => {
+      showBuildingInspector(moduleData);
+    });
+
+    const trafficParticles = new TrafficParticles(bosphorusScene.scene);
+
+    // Terminal Logger
+    const terminalDrawer = document.getElementById('terminal-drawer');
+    function logToTerminal(text, type = 'info') {
+      const line = document.createElement('div');
+      line.className = `log-line ${type}`;
+      line.textContent = text;
+      terminalDrawer.appendChild(line);
+      terminalDrawer.scrollTop = terminalDrawer.scrollHeight;
+    }
+
+    // Agent Dispatcher Instance
+    const dispatcher = new AgentDispatcher(
+      (text, type) => logToTerminal(text, type),
+      () => {
+        // Kilit Çözüldü Callback'i
+        hud.playSuccessChime();
+        hud.playVapurDudugu();
+        refreshCityUI();
+      }
+    );
+
+    // Inspector Drawer Elements
+    const inspectorDrawer = document.getElementById('inspector-drawer');
+    const inspectName = document.getElementById('inspect-name');
+    const inspectDistrict = document.getElementById('inspect-district');
+    const inspectLoc = document.getElementById('inspect-loc');
+    const inspectComplexity = document.getElementById('inspect-complexity');
+    const inspectHealth = document.getElementById('inspect-health');
+    const inspectImports = document.getElementById('inspect-imports');
+
+    function showBuildingInspector(mod) {
+      inspectName.textContent = mod.name;
+      inspectDistrict.textContent = `${mod.district.side === 'europe' ? 'Avrupa' : 'Anadolu'} (${mod.district.district})`;
+      inspectDistrict.style.color = mod.district.color;
+      inspectLoc.textContent = mod.loc;
+      inspectComplexity.textContent = mod.complexity;
+      inspectHealth.textContent = `${mod.healthScore} / 100`;
+      
+      inspectImports.innerHTML = mod.imports.length > 0 
+        ? mod.imports.map(i => `<div>↳ ${i}</div>`).join('') 
+        : '<div style="color: #64748b;">Harici bağımlılık yok</div>';
+
+      inspectorDrawer.style.display = 'flex';
+      hud.playTrafficHonk();
+    }
+
+    document.getElementById('btn-close-inspect').addEventListener('click', () => {
+      inspectorDrawer.style.display = 'none';
+    });
+
+    // Refresh UI & HUD Telemetry
+    function refreshCityUI() {
+      const report = trafficEngine.generateAkomReport();
+
+      // 3D Şehri Yeniden İnşa Et
+      bosphorusScene.buildCity(
+        Array.from(trafficEngine.modules.values()),
+        trafficEngine.bridges,
+        trafficEngine.circularChains
+      );
+
+      // Trafik Parçacıklarını Güncelle
+      trafficParticles.setTrafficState(report.circularDependencies > 0);
+
+      // AKOM Panosu Güncellemesi
+      const dial = document.getElementById('gauge-dial');
+      dial.textContent = `%${report.density}`;
+
+      const title = document.getElementById('gauge-status-title');
+      const desc = document.getElementById('gauge-status-desc');
+      const incidentBox = document.getElementById('incident-box');
+
+      if (report.circularDependencies > 0) {
+        dial.style.borderColor = '#ff1744';
+        dial.style.color = '#ff1744';
+        dial.style.boxShadow = '0 0 16px rgba(255, 23, 68, 0.4)';
+        title.textContent = 'Köprü KİLİTLENDİ';
+        desc.textContent = 'Döngüsel İthalat Sıkışması';
+        incidentBox.style.display = 'flex';
+      } else {
+        dial.style.borderColor = '#00e676';
+        dial.style.color = '#00e676';
+        dial.style.boxShadow = '0 0 16px rgba(0, 230, 118, 0.4)';
+        title.textContent = 'Trafik Akıcı';
+        desc.textContent = 'Köprüler ve Maslak Açık';
+        incidentBox.style.display = 'none';
+      }
+
+      // İstatistikler
+      document.getElementById('stat-modules').textContent = report.totalModules;
+      document.getElementById('stat-cycles').textContent = report.circularDependencies;
+      document.getElementById('stat-bridges').textContent = trafficEngine.bridges.length;
+      document.getElementById('stat-dead').textContent = report.deadCodeCount;
+    }
+
+    // Sample Repo Yükleyici
+    function loadSample(sampleKey) {
+      const sample = SAMPLE_REPOSITORIES[sampleKey];
+      if (!sample) return;
+
+      logToTerminal(`📦 [REPO YÜKLENDİ] ${sample.name}`, 'header');
+      trafficEngine.loadModules(sample.modules);
+      refreshCityUI();
+
+      if (sampleKey === 'circular-jam-demo') {
+        hud.playTrafficHonk();
+        setTimeout(() => hud.playTrafficHonk(), 500);
+      }
+    }
+
+    // Ajanı Görevlendir Butonu
+    document.getElementById('btn-dispatch-agent').addEventListener('click', () => {
+      const incidentData = {
+        chain: trafficEngine.circularChains[0] || []
+      };
+      dispatcher.dispatchRefactorAgent(incidentData, trafficEngine);
+    });
+
+    // Sample Seçimi
+    document.getElementById('sample-select').addEventListener('change', (e) => {
+      loadSample(e.target.value);
+    });
+
+    // Vapur Düdüğü Butonu
+    document.getElementById('btn-vapur-dudugu').addEventListener('click', () => {
+      hud.playVapurDudugu();
+      logToTerminal('🚢 [BOĞAZ HATTI] Şehir Hatları Vapuru Karaköy-Kadıköy Seferinde Düdük Çaldı.', 'info');
+      setTimeout(() => hud.playSeagull(), 1200);
+    });
+
+    // Yerel Klasör Seçimi (Zero-cloud, Safe, Local Parsing)
+    const folderInput = document.getElementById('folder-input');
+    document.getElementById('btn-open-folder').addEventListener('click', () => {
+      folderInput.click();
+    });
+
+    folderInput.addEventListener('change', async (e) => {
+      const files = Array.from(e.target.files);
+      if (files.length === 0) return;
+
+      logToTerminal(`📁 [YEREL KLASÖR] ${files.length} dosya taranıyor...`, 'header');
+      const parsedList = [];
+
+      for (const file of files) {
+        if (!parser.isAuditableFile(file.webkitRelativePath)) continue;
+
+        try {
+          const content = await file.text();
+          const parsed = parser.parseModule(file.webkitRelativePath, content);
+          parsedList.push(parsed);
+        } catch (err) {
+          console.warn('Dosya okunamadı:', file.name);
+        }
+      }
+
+      if (parsedList.length > 0) {
+        trafficEngine.loadModules(parsedList);
+        refreshCityUI();
+        logToTerminal(`✅ [TARAMA TAMAMLANDI] ${parsedList.length} kod modülü başarıyla İstanbul şehrine yerleştirildi.`, 'success');
+      } else {
+        logToTerminal('⚠️ Desteklenen kod dosyası (.ts, .js, .py) bulunamadı.', 'warning');
+      }
+    });
+
+    // Animasyon Döngüsüne Parçacık Güncellemesini Ekle
+    function updateParticlesLoop() {
+      requestAnimationFrame(updateParticlesLoop);
+      trafficParticles.update();
+    }
+    updateParticlesLoop();
+
+    // İlk Yükleme: Circular Jam Demosu ile başla
+    loadSample('circular-jam-demo');
+  </script>
+</body>
+</html>

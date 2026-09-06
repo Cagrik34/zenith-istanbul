@@ -1,0 +1,31 @@
+{
+  "name": "zenith-istanbul",
+  "version": "1.0.0",
+  "description": "3D Codebase Metropole & Autonomous Agent Command Deck — Inspired by Istanbul's Bosphorus & Notorious Traffic",
+  "main": "index.html",
+  "scripts": {
+    "dev": "npx -y serve -l 3000 .",
+    "start": "npx -y serve -l 3000 ."
+  },
+  "keywords": [
+    "code-visualization",
+    "threejs",
+    "webgl",
+    "ast",
+    "circular-dependency",
+    "tarjan-scc",
+    "istanbul",
+    "bosphorus",
+    "agentic-ai",
+    "multi-agent",
+    "developer-tools",
+    "munder-difflin",
+    "zenith"
+  ],
+  "author": "Çağrı Giray KEŞAN (https://github.com/Cagrik34)",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Cagrik34/zenith-istanbul.git"
+  }
+}
