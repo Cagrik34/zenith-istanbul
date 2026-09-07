@@ -77,12 +77,14 @@ export class BosphorusScene {
     // 1. Scene & Camera Setup
     this.scene = new THREE.Scene();
     this.scene.background = new THREE.Color(0x060913);
-    this.scene.fog = new THREE.FogExp2(0x060913, 0.0012);
+    this.scene.fog = new THREE.FogExp2(0x060913, 0.0005);
 
     const width = this.container.clientWidth || window.innerWidth;
     const height = this.container.clientHeight || window.innerHeight;
 
     this.camera = new THREE.PerspectiveCamera(45, width / height, 1, 4000);
+    this.camera.far = 4000;
+    this.camera.updateProjectionMatrix();
     this.camera.position.set(0, 240, 360);
 
     // 2. High-Performance WebGL Renderer
@@ -1327,7 +1329,7 @@ export class BosphorusScene {
       this.scene.background = new THREE.Color(isDark ? 0x060913 : 0xf1f5f9);
       if (this.scene.fog) {
         this.scene.fog.color.setHex(isDark ? 0x060913 : 0xd8eaf8);
-        this.scene.fog.density = isDark ? 0.0012 : 0.0014;
+        this.scene.fog.density = isDark ? 0.0005 : 0.0006;
       }
     }
 
@@ -1398,7 +1400,7 @@ export class BosphorusScene {
     const isDark = this.activeTheme !== 'light';
     if (this.isRaining) {
       if (this.scene.fog) {
-        this.scene.fog.density = isDark ? 0.0018 : 0.0016;
+        this.scene.fog.density = isDark ? 0.0007 : 0.0006;
         this.scene.fog.color.setHex(isDark ? 0x0a1020 : 0xd8eaf8);
       }
       if (this.renderer) this.renderer.toneMappingExposure = isDark ? 1.05 : 1.25;
@@ -1408,7 +1410,7 @@ export class BosphorusScene {
       }
     } else {
       if (this.scene.fog) {
-        this.scene.fog.density = isDark ? 0.0012 : 0.0014;
+        this.scene.fog.density = isDark ? 0.0005 : 0.0006;
         this.scene.fog.color.setHex(isDark ? 0x060913 : 0xd8eaf8);
       }
       if (this.renderer) this.renderer.toneMappingExposure = isDark ? 1.15 : 1.35;
@@ -1565,6 +1567,7 @@ export class BosphorusScene {
     const width = this.container.clientWidth;
     const height = this.container.clientHeight;
     this.camera.aspect = width / height;
+    this.camera.far = 4000;
     this.camera.updateProjectionMatrix();
     this.renderer.setSize(width, height);
   }

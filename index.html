@@ -2722,14 +2722,25 @@
         }
       }
 
-      radarCtx.fillStyle = '#00ffff';
+      // 1. Ayasofya (Tarihi Yarımada / Historical Peninsula): (-125, 155) -> (0.292*w, 0.758*h)
+      radarCtx.fillStyle = '#b45309';
       radarCtx.beginPath();
-      radarCtx.arc(w * 0.50, h * 0.55, 3.2, 0, Math.PI * 2);
+      radarCtx.arc(w * 0.292, h * 0.758, 3.8, 0, Math.PI * 2);
       radarCtx.fill();
+      radarCtx.strokeStyle = 'rgba(255, 215, 0, 0.7)';
+      radarCtx.lineWidth = 1;
+      radarCtx.stroke();
 
+      // 2. Galata Kulesi (Karaköy/Beyoğlu): (-105, 45) -> (0.325*w, 0.575*h)
       radarCtx.fillStyle = '#ffd700';
       radarCtx.beginPath();
-      radarCtx.arc(w * 0.32, h * 0.65, 3.5, 0, Math.PI * 2);
+      radarCtx.arc(w * 0.325, h * 0.575, 3.5, 0, Math.PI * 2);
+      radarCtx.fill();
+
+      // 3. Kız Kulesi (Boğaz Suyu Ortası / Salacak Açıkları): (35, 65) -> (0.558*w, 0.608*h)
+      radarCtx.fillStyle = '#00ffff';
+      radarCtx.beginPath();
+      radarCtx.arc(w * 0.558, h * 0.608, 3.5, 0, Math.PI * 2);
       radarCtx.fill();
 
       if (bosphorusScene.camera) {
@@ -2748,17 +2759,20 @@
       const clickX = (e.clientX - rect.left) / rect.width;
       const clickY = (e.clientY - rect.top) / rect.height;
 
-      if (clickY > 0.72) {
-        if (clickX < 0.5) bosphorusScene.flyToDistrict('historic');
-        else bosphorusScene.flyToDistrict('islands');
-      } else if (clickX < 0.44) {
+      if (clickY > 0.68) {
+        if (clickX < 0.48) bosphorusScene.flyToDistrict('historic');
+        else bosphorusScene.flyToDistrict('kadikoy');
+      } else if (clickX < 0.42) {
         if (clickY < 0.38) bosphorusScene.flyToDistrict('maslak');
-        else bosphorusScene.flyToDistrict('besiktas');
-      } else if (clickX > 0.56) {
+        else if (clickY < 0.54) bosphorusScene.flyToDistrict('besiktas');
+        else bosphorusScene.flyToDistrict('galata');
+      } else if (clickX > 0.58) {
         if (clickY < 0.38) bosphorusScene.flyToDistrict('atasehir');
+        else if (clickY < 0.56) bosphorusScene.flyToDistrict('uskudar');
         else bosphorusScene.flyToDistrict('kadikoy');
       } else {
-        bosphorusScene.flyToDistrict('bridge');
+        if (clickY > 0.55) bosphorusScene.flyToDistrict('maiden');
+        else bosphorusScene.flyToDistrict('bridge');
       }
     });
 
