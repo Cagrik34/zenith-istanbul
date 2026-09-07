@@ -77,7 +77,7 @@ export class BosphorusScene {
     // 1. Scene & Camera Setup
     this.scene = new THREE.Scene();
     this.scene.background = new THREE.Color(0x060913);
-    this.scene.fog = new THREE.FogExp2(0x060913, 0.0028);
+    this.scene.fog = new THREE.FogExp2(0x060913, 0.0012);
 
     const width = this.container.clientWidth || window.innerWidth;
     const height = this.container.clientHeight || window.innerHeight;
@@ -122,12 +122,12 @@ export class BosphorusScene {
   }
 
   setupLights() {
-    this.ambientLight = new THREE.AmbientLight(0x101b38, 1.8);
+    this.ambientLight = new THREE.AmbientLight(0x1e293b, 0.7);
     this.hemiLight = new THREE.HemisphereLight(0xffffff, 0x101b38, 0.8);
     this.scene.add(this.hemiLight);
     this.scene.add(this.ambientLight);
 
-    this.dirLight = new THREE.DirectionalLight(0x5080ff, 2.2);
+    this.dirLight = new THREE.DirectionalLight(0x38bdf8, 0.9);
     this.dirLight.position.set(150, 350, 100);
     this.dirLight.castShadow = true;
     this.dirLight.shadow.mapSize.width = 2048;
@@ -226,14 +226,16 @@ export class BosphorusScene {
    * Gerçekçi İstanbul 3D Topografya ve Coğrafya Modeli
    */
   createBosphorusTerrain() {
-    // 1. Derinlikli Boğaz ve Marmara Su Yüzeyi
+    // 1. Parlayan Boğaz Suyu Materyali (Luminous Cyber Bosphorus)
     const waterGeo = new THREE.PlaneGeometry(1600, 1600, 96, 96);
     this.waterMat = new THREE.MeshStandardMaterial({
-      color: 0x030712,
+      color: 0x0284c7,
       roughness: 0.15,
-      metalness: 0.85,
+      metalness: 0.8,
+      emissive: 0x0369a1,
+      emissiveIntensity: 0.4,
       transparent: true,
-      opacity: 0.95,
+      opacity: 0.82,
       flatShading: true
     });
     this.waterMesh = new THREE.Mesh(waterGeo, this.waterMat);
@@ -242,11 +244,13 @@ export class BosphorusScene {
     this.waterMesh.receiveShadow = true;
     this.scene.add(this.waterMesh);
 
-    // 2. Kademeli Kara Kütlesi Materyali
+    // 2. Kademeli Kara Kütlesi Materyali (Hafif Kenar Işıltılı Arduvaz Gece Mavisi)
     this.landMat = new THREE.MeshStandardMaterial({
-      color: 0x060913,
-      roughness: 0.85,
-      metalness: 0.2
+      color: 0x0b1329,
+      roughness: 0.65,
+      metalness: 0.3,
+      emissive: 0x040814,
+      emissiveIntensity: 0.35
     });
 
     // 3. Avrupa Yakası Kademeli Platosu
@@ -256,6 +260,15 @@ export class BosphorusScene {
     historicLand.position.set(-165, 7, 230);
     historicLand.receiveShadow = true;
     this.scene.add(historicLand);
+
+    // Sarayburnu Burnu (Marmara ve Boğaz birleşimine uzanan belirgin coğrafi burun)
+    const sarayburnuGeo = new THREE.CylinderGeometry(18, 75, 12, 16);
+    sarayburnuGeo.scale(1.5, 1, 0.9);
+    const sarayburnuLand = new THREE.Mesh(sarayburnuGeo, this.landMat);
+    sarayburnuLand.position.set(-110, 6, 175);
+    sarayburnuLand.rotation.y = -0.4;
+    sarayburnuLand.receiveShadow = true;
+    this.scene.add(sarayburnuLand);
 
     // Galata / Beyoğlu / Beşiktaş Sahil Kütlesi
     const galataCoastGeo = new THREE.BoxGeometry(110, 8, 180);
@@ -310,17 +323,8 @@ export class BosphorusScene {
     island2.position.set(150, 3.5, 355);
     this.scene.add(island2);
 
-    // Kıyı Hattı Kenarları (Shoreline Trim)
-    const dockGeo = new THREE.BoxGeometry(3.5, 1.8, 650);
-    this.europeDockMat = new THREE.MeshBasicMaterial({ color: 0x00f0ff });
-    const europeDock = new THREE.Mesh(dockGeo, this.europeDockMat);
-    europeDock.position.set(-62, 7.8, 0);
-    this.scene.add(europeDock);
-
-    this.asiaDockMat = new THREE.MeshBasicMaterial({ color: 0xff007f });
-    const asiaDock = new THREE.Mesh(dockGeo, this.asiaDockMat);
-    asiaDock.position.set(62, 7.8, 0);
-    this.scene.add(asiaDock);
+    // Neon Kıyı Kılavuz Çizgileri (Shoreline Glowing Lines - Boğaz S-Kıvrımı & Haliç)
+    this.createShorelines();
 
     // İnce Cyber Izgara
     this.gridHelper = new THREE.GridHelper(800, 40, 0x1e293b, 0x0f172a);
@@ -333,16 +337,72 @@ export class BosphorusScene {
    * KURAL 1: ambientMesh.raycast = () => {} (Inspector tıklamasını engellemez)
    * KURAL 2: init aşamasında 1 KEZ üretilir; buildCity() içinde sıfırdan üretilip VRAM sızdırmaz.
    */
+  /**
+   * Avrupa ve Anadolu Kıyı Sınırlarına Parlayan Kıyı Kılavuz Çizgileri (Shoreline Glowing Lines)
+   * Boğaz'ın S-kıvrımı ve Haliç uzaydan bakıldığında neon turkuaz ve neon pembe hatlarla parıldayan bir su yolu olarak ayrışır.
+   */
+  createShorelines() {
+    // 1. Neon Turkuaz (#00f0ff) Avrupa ve Haliç Kıyı Kılavuz Çizgisi
+    const eurPoints = [];
+    for (let z = -380; z <= 60; z += 20) {
+      const x = this.getBosphorusCenter(z) - this.getStraitHalfWidth(z);
+      eurPoints.push(new THREE.Vector3(x, 1.2, z));
+    }
+    // Haliç girintisi (Galata kıyısından kuzeybatıya, oradan Sarayburnu'na dönüş)
+    eurPoints.push(new THREE.Vector3(-65, 1.2, 75));
+    eurPoints.push(new THREE.Vector3(-120, 1.2, 60));
+    eurPoints.push(new THREE.Vector3(-190, 1.2, 45));
+    eurPoints.push(new THREE.Vector3(-220, 1.2, 40));
+    eurPoints.push(new THREE.Vector3(-190, 1.2, 55));
+    eurPoints.push(new THREE.Vector3(-120, 1.2, 95));
+    eurPoints.push(new THREE.Vector3(-75, 1.2, 140)); // Sarayburnu Burnu ucu
+
+    for (let z = 160; z <= 380; z += 20) {
+      const x = this.getBosphorusCenter(z) - this.getStraitHalfWidth(z);
+      eurPoints.push(new THREE.Vector3(x, 1.2, z));
+    }
+
+    const eurCurve = new THREE.CatmullRomCurve3(eurPoints);
+    const eurGeo = new THREE.TubeGeometry(eurCurve, 120, 1.3, 8, false);
+    this.europeShorelineMat = new THREE.MeshStandardMaterial({
+      color: 0x00f0ff,
+      emissive: 0x00f0ff,
+      emissiveIntensity: 1.0,
+      roughness: 0.2
+    });
+    this.europeShoreline = new THREE.Mesh(eurGeo, this.europeShorelineMat);
+    this.scene.add(this.europeShoreline);
+
+    // 2. Neon Pembe (#ff007f) Anadolu Kıyı Kılavuz Çizgisi
+    const asiaPoints = [];
+    for (let z = -380; z <= 380; z += 20) {
+      const x = this.getBosphorusCenter(z) + this.getStraitHalfWidth(z);
+      asiaPoints.push(new THREE.Vector3(x, 1.2, z));
+    }
+    const asiaCurve = new THREE.CatmullRomCurve3(asiaPoints);
+    const asiaGeo = new THREE.TubeGeometry(asiaCurve, 90, 1.3, 8, false);
+    this.asiaShorelineMat = new THREE.MeshStandardMaterial({
+      color: 0xff007f,
+      emissive: 0xff007f,
+      emissiveIntensity: 1.0,
+      roughness: 0.2
+    });
+    this.asiaShoreline = new THREE.Mesh(asiaGeo, this.asiaShorelineMat);
+    this.scene.add(this.asiaShoreline);
+  }
+
   createAmbientMetropole() {
     const ambientCount = 1500;
     const boxGeo = new THREE.BoxGeometry(1, 1, 1);
 
     this.ambientMat = new THREE.MeshStandardMaterial({
-      color: 0x121a2c,
-      roughness: 0.85,
-      metalness: 0.2,
+      color: 0x1e293b,
+      roughness: 0.35,
+      metalness: 0.5,
+      emissive: 0x0c1e38,
+      emissiveIntensity: 0.55,
       transparent: true,
-      opacity: 0.82
+      opacity: 0.88
     });
 
     this.ambientMesh = new THREE.InstancedMesh(boxGeo, this.ambientMat, ambientCount);
@@ -1006,46 +1066,52 @@ export class BosphorusScene {
     this.activeTheme = theme;
     const isDark = theme !== 'light';
 
-    // 1. Sahne Arka Planı ve Sis
+    // 1. Sahne Arka Planı ve Sis (Zift siyahı değil, derin siber gece mavisi #060913)
     if (this.scene) {
       this.scene.background = new THREE.Color(isDark ? 0x060913 : 0xf1f5f9);
       if (this.scene.fog) {
         this.scene.fog.color.setHex(isDark ? 0x060913 : 0xd8eaf8);
-        this.scene.fog.density = isDark ? 0.0028 : 0.0016;
+        this.scene.fog.density = isDark ? 0.0012 : 0.0014;
       }
     }
 
-    // 2. Işıklandırma
+    // 2. Işıklandırma (Luminous Night Lighting)
     if (this.ambientLight) {
-      this.ambientLight.color.setHex(isDark ? 0x101b38 : 0xffffff);
-      this.ambientLight.intensity = isDark ? 1.8 : 1.25;
+      this.ambientLight.color.setHex(isDark ? 0x1e293b : 0xffffff);
+      this.ambientLight.intensity = isDark ? 0.7 : 1.25;
     }
 
     if (this.dirLight) {
-      this.dirLight.color.setHex(isDark ? 0x5080ff : 0xfff4e0);
-      this.dirLight.intensity = isDark ? 2.2 : 1.7;
+      this.dirLight.color.setHex(isDark ? 0x38bdf8 : 0xfff4e0);
+      this.dirLight.intensity = isDark ? 0.9 : 1.7;
     }
 
-    // 3. Su Yüzeyi (Açık: Derin pastel gök mavisi #0284c7; Koyu: Derin neon lacivert #030712)
+    // 3. Parlayan Boğaz Suyu (Luminous Bosphorus Glow)
     if (this.waterMat) {
-      this.waterMat.color.setHex(isDark ? 0x030712 : 0x0284c7);
-      this.waterMat.roughness = isDark ? 0.15 : 0.25;
-      this.waterMat.metalness = isDark ? 0.85 : 0.2;
-      this.waterMat.opacity = isDark ? 0.95 : 0.85;
+      this.waterMat.color.setHex(0x0284c7);
+      this.waterMat.emissive.setHex(0x0369a1);
+      this.waterMat.emissiveIntensity = isDark ? 0.4 : 0.15;
+      this.waterMat.roughness = 0.15;
+      this.waterMat.metalness = 0.8;
+      this.waterMat.opacity = isDark ? 0.82 : 0.88;
       this.waterMat.needsUpdate = true;
     }
 
-    // 4. Kara Kütleleri (Açık: Modern mimari arduvaz #f1f5f9; Koyu: Uzay siyahı #060913)
+    // 4. Kara Kütleleri
     if (this.landMat) {
-      this.landMat.color.setHex(isDark ? 0x060913 : 0xf1f5f9);
-      this.landMat.roughness = isDark ? 0.85 : 0.9;
+      this.landMat.color.setHex(isDark ? 0x0b1329 : 0xf1f5f9);
+      this.landMat.emissive.setHex(isDark ? 0x040814 : 0x000000);
+      this.landMat.emissiveIntensity = isDark ? 0.35 : 0.0;
+      this.landMat.roughness = isDark ? 0.65 : 0.9;
       this.landMat.needsUpdate = true;
     }
 
-    // 5. 1500 Ambient Binalar
+    // 5. 1500 Ambient Binalar (Kenar ve Pencere Silüetleri)
     if (this.ambientMat) {
-      this.ambientMat.color.setHex(isDark ? 0x121a2c : 0xcfd8e3);
-      this.ambientMat.opacity = isDark ? 0.82 : 0.85;
+      this.ambientMat.color.setHex(isDark ? 0x1e293b : 0xcfd8e3);
+      this.ambientMat.emissive.setHex(isDark ? 0x0c1e38 : 0x000000);
+      this.ambientMat.emissiveIntensity = isDark ? 0.55 : 0.0;
+      this.ambientMat.opacity = isDark ? 0.88 : 0.85;
       this.ambientMat.needsUpdate = true;
     }
 
@@ -1073,21 +1139,31 @@ export class BosphorusScene {
       this.rainParticles.visible = this.isRaining;
     }
 
+    const isDark = this.activeTheme !== 'light';
     if (this.isRaining) {
       if (this.scene.fog) {
-        this.scene.fog.density = 0.0065;
-        this.scene.fog.color.setHex(0x0e111a);
+        this.scene.fog.density = isDark ? 0.0018 : 0.0016;
+        this.scene.fog.color.setHex(isDark ? 0x0a1020 : 0xd8eaf8);
       }
-      if (this.renderer) this.renderer.toneMappingExposure = 0.95;
-      if (this.ambientLight) this.ambientLight.color.setHex(0x1a1224);
+      if (this.renderer) this.renderer.toneMappingExposure = isDark ? 1.05 : 1.25;
+      if (this.ambientLight) {
+        this.ambientLight.color.setHex(isDark ? 0x1e293b : 0xe2e8f0);
+        this.ambientLight.intensity = isDark ? 0.65 : 1.0;
+      }
     } else {
-      const isDark = this.activeTheme !== 'light';
       if (this.scene.fog) {
-        this.scene.fog.density = isDark ? 0.0028 : 0.0016;
+        this.scene.fog.density = isDark ? 0.0012 : 0.0014;
         this.scene.fog.color.setHex(isDark ? 0x060913 : 0xd8eaf8);
       }
       if (this.renderer) this.renderer.toneMappingExposure = isDark ? 1.15 : 1.35;
-      if (this.ambientLight) this.ambientLight.color.setHex(isDark ? 0x101b38 : 0xffffff);
+      if (this.ambientLight) {
+        this.ambientLight.color.setHex(isDark ? 0x1e293b : 0xffffff);
+        this.ambientLight.intensity = isDark ? 0.7 : 1.25;
+      }
+      if (this.dirLight) {
+        this.dirLight.color.setHex(isDark ? 0x38bdf8 : 0xfff4e0);
+        this.dirLight.intensity = isDark ? 0.9 : 1.7;
+      }
     }
   }
 

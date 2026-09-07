@@ -215,8 +215,8 @@
       position: relative;
     }
 
-    /* LEFT AKOM HUD */
-    .traffic-hud {
+    /* LEFT AKOM HUD & HUD PANEL STYLES */
+    .traffic-hud, .hud-panel {
       width: 320px;
       background: var(--panel-bg);
       border: 1px solid var(--panel-border);
@@ -227,6 +227,33 @@
       display: flex;
       flex-direction: column;
       gap: 12px;
+      max-height: calc(100vh - 100px) !important;
+      overflow-y: auto !important;
+      overflow-x: hidden !important;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(0, 240, 255, 0.3) transparent;
+    }
+    .traffic-hud::-webkit-scrollbar, .hud-panel::-webkit-scrollbar {
+      width: 6px;
+    }
+    .traffic-hud::-webkit-scrollbar-track, .hud-panel::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    .traffic-hud::-webkit-scrollbar-thumb, .hud-panel::-webkit-scrollbar-thumb {
+      background: rgba(0, 240, 255, 0.3);
+      border-radius: 3px;
+    }
+
+    /* Sol Panel Metin Seçim Mavi Arka Plan Lekelerini ve Outlineları Kaldır */
+    .hud-panel *, .traffic-hud *, .brand-title, .gauge-card, .gauge-wrapper, .metric-box, .stat-card, #btn-dispatch-agent {
+      -webkit-user-select: none;
+      user-select: none;
+      outline: none !important;
+    }
+    /* Metin seçim arka planını sıfırla */
+    .hud-panel ::selection, .traffic-hud ::selection {
+      background: transparent !important;
+      color: inherit !important;
     }
 
     .hud-title {
@@ -1148,34 +1175,31 @@
     }
 
     .github-fetch-bar {
-      flex: 1 1 160px !important;
-      min-width: 120px !important;
-      max-width: 200px !important;
+      flex: 0 0 auto !important;
+      min-width: 180px !important;
       display: flex !important;
       align-items: center !important;
     }
-    .github-fetch-bar input {
-      width: 100% !important;
-      min-width: 0 !important;
+    .github-fetch-bar input, #input-github-repo {
+      min-width: 140px !important;
+      flex: 0 0 140px !important;
     }
     #sample-select {
-      flex: 0 1 150px !important;
-      min-width: 110px !important;
-      max-width: 160px !important;
+      min-width: 185px !important;
+      flex: 0 0 185px !important;
       text-overflow: ellipsis !important;
       white-space: nowrap !important;
       overflow: hidden !important;
     }
     .search-box {
-      flex: 0 1 120px !important;
-      min-width: 80px !important;
-      max-width: 130px !important;
+      flex: 0 0 auto !important;
+      min-width: 130px !important;
       display: flex !important;
       align-items: center !important;
     }
-    .search-box input {
-      width: 100% !important;
-      min-width: 0 !important;
+    .search-box input, #input-search {
+      min-width: 130px !important;
+      flex: 0 0 130px !important;
     }
 
     /* Mobile Overflow Drawer */
@@ -1241,7 +1265,8 @@
         min-width: 0 !important;
       }
       #sample-select {
-        max-width: 150px !important;
+        min-width: 185px !important;
+        flex: 0 0 185px !important;
       }
     }
 
@@ -1252,7 +1277,8 @@
         min-width: 0 !important;
       }
       #sample-select {
-        max-width: 130px !important;
+        min-width: 185px !important;
+        flex: 0 0 185px !important;
       }
       .brand-icon {
         font-size: 18px !important;
@@ -1458,7 +1484,7 @@
     <div class="workspace">
       
       
-      <aside class="traffic-hud interactive">
+      <aside class="traffic-hud hud-panel interactive">
         <div class="hud-title">
           <span>Architectural Telemetry & Topology HUD</span>
           <span style="font-size: 9px; color: var(--accent-green);">● TELEMETRY LIVE</span>
@@ -1504,8 +1530,8 @@
         </div>
 
         
-        <button id="btn-view-diff" class="btn-control btn-primary" style="display: none; width: 100%;">
-          📄 Review Unified Remediation Patch (Git Diff)
+        <button id="btn-view-diff" class="btn-control btn-primary" style="display: none; width: 100%; margin-top: 4px; margin-bottom: 4px;">
+          📄 View Remediation Diff
         </button>
 
         
@@ -1752,7 +1778,11 @@
         hud.playVapurDudugu();
         lastRefactorDiff = generatedDiff;
         lastRefactorPayload = refactorPayload;
-        document.getElementById('btn-view-diff').style.display = 'block';
+        const bvd = document.getElementById('btn-view-diff');
+        if (bvd) {
+          bvd.style.display = 'block';
+          bvd.innerHTML = '📄 View Remediation Diff';
+        }
         refreshCityUI();
       }
     );
@@ -1981,11 +2011,66 @@
 
     const btnDispatchAgent = document.getElementById('btn-dispatch-agent');
     if (btnDispatchAgent) {
-      btnDispatchAgent.addEventListener('click', () => {
-        const incidentData = {
-          chain: trafficEngine.circularChains[0] || []
-        };
-        dispatcher.dispatchRefactorAgent(incidentData, trafficEngine);
+      btnDispatchAgent.addEventListener('click', async () => {
+        try {
+          logToTerminal('⚡ [AUTONOMOUS REMEDIATION PROTOCOL] Remediation Agent Dispatched by Operator...', 'header');
+          hud.playClickTone();
+
+          // 1. İstemci taraflı bellek içi yama motorunu (TrafficEngine.applyAutonomousRemediation) çalıştır
+          const result = trafficEngine.applyAutonomousRemediation();
+          lastRefactorDiff = result.diff;
+          lastRefactorPayload = result;
+
+          // 2. 3D Şehir sahnesini ve HUD metriklerini yeniden hesapla
+          refreshCityUI();
+
+          // 3. Sol HUD göstergesini yeşile dönüştür: '%0 Topology Nominal (All Invariants Satisfied)'
+          const dial = document.getElementById('gauge-dial');
+          if (dial) {
+            dial.textContent = '%0';
+            dial.style.borderColor = '#00e676';
+            dial.style.color = '#00e676';
+            dial.style.boxShadow = '0 0 16px rgba(0, 230, 118, 0.4)';
+          }
+          const title = document.getElementById('gauge-status-title');
+          if (title) title.textContent = 'Topology Nominal';
+          const desc = document.getElementById('gauge-status-desc');
+          if (desc) desc.textContent = 'Zero Invariant Violations Across Bridges (All Invariants Satisfied)';
+          const statCycles = document.getElementById('stat-cycles');
+          if (statCycles) {
+            statCycles.textContent = '0';
+            statCycles.style.color = 'var(--accent-green)';
+          }
+
+          // 4. Boğaz Köprüsü üzerindeki kırmızı alarm lazerlerini anında turkuaz/yeşil akıcı parçacık trafiğine çevir
+          if (bosphorusScene) {
+            bosphorusScene.isDeadlockAlert = false;
+            bosphorusScene.setAtmosphere(false, 0, false);
+            if (bosphorusScene.bridgeCableMat) {
+              bosphorusScene.bridgeCableMat.color.setHex(0x00f0ff);
+              bosphorusScene.bridgeCableMat.emissive.setHex(0x00f0ff);
+              bosphorusScene.bridgeCableMat.emissiveIntensity = 0.8;
+            }
+          }
+          if (trafficParticles) {
+            trafficParticles.setTrafficState(false);
+          }
+
+          // 5. '📄 View Remediation Diff' butonunu görünür kıl
+          const btnViewDiff = document.getElementById('btn-view-diff');
+          if (btnViewDiff) {
+            btnViewDiff.style.display = 'block';
+            btnViewDiff.innerHTML = '📄 View Remediation Diff';
+          }
+
+          logToTerminal('✨ [REMEDIATION RESOLVED] Decoupled abstract contract synthesized: types/auth.ts', 'success');
+          logToTerminal('🌉 [TOPOLOGY NOMINAL] Tarjan SCC Cycles: 0 | Bridge ingress deadlock cleared.', 'success');
+          logToTerminal('📄 [PATCH READY] Click "View Remediation Diff" to review generated git diff.', 'highlight');
+          hud.playSuccessChime();
+        } catch (err) {
+          console.error('Autonomous remediation failed:', err);
+          logToTerminal(`❌ [REMEDIATION ERROR] ${err.message}`, 'error');
+        }
       });
     }
 

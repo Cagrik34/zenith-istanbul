@@ -76,8 +76,18 @@ export class AgentDispatcher {
     }
 
     if (!executionResult) {
-      log('⚙️ [LEXICAL CONTRACT EXTRACTOR] Synthesizing decoupled contract layer via regex-based tokenizer...', 'header');
-      executionResult = this.extractLexicalContracts(sourceMod, targetMod, chain);
+      if (trafficEngine && typeof trafficEngine.applyAutonomousRemediation === 'function') {
+        log('⚙️ [AUTONOMOUS REMEDIATION ENGINE] Disentangling circular AST invariants via in-memory contract synthesis...', 'header');
+        const remRes = trafficEngine.applyAutonomousRemediation();
+        executionResult = {
+          engine: 'IN_MEMORY_AUTONOMOUS_ENGINE',
+          diff: remRes.diff,
+          files: remRes.files
+        };
+      } else {
+        log('⚙️ [LEXICAL CONTRACT EXTRACTOR] Synthesizing decoupled contract layer via regex-based tokenizer...', 'header');
+        executionResult = this.extractLexicalContracts(sourceMod, targetMod, chain);
+      }
     }
 
     await this.delay(600);
