@@ -161,24 +161,35 @@ export class BosphorusScene {
     return 55 + Math.cos(z * 0.01) * 8;
   }
 
-  isInHalic(x, z) {
+  isInHalic(x, z, bufferMargin = 8) {
     // Haliç girintisi: Sarayburnu/Galata arasından (-55, 105) kuzeybatıya (-240, 40) uzanır
-    if (x > -55 || x < -240) return false;
+    if (x > -55 + bufferMargin || x < -245) return false;
     const halicCenterZ = 105 + (x + 55) * 0.35;
-    const halfWidth = 20 + (x + 55) * 0.04;
+    const halfWidth = 20 + (x + 55) * 0.04 + bufferMargin;
     return Math.abs(z - halicCenterZ) < halfWidth;
   }
 
-  isPointOnLand(x, z) {
+  /**
+   * Kıyı Şeridi ve Su Güvenlik Tamponu (Shoreline Buffer Margin)
+   * Minimum 8 birimlik kıyı emniyet payı ile binaların suya taşmasını kesin olarak engeller.
+   */
+  isPointOnLand(x, z, bufferMargin = 8) {
     const center = this.getBosphorusCenter(z);
-    const halfWidth = this.getStraitHalfWidth(z);
-    if (x > center - halfWidth && x < center + halfWidth) return false; // Boğaz suyu
-    if (this.isInHalic(x, z)) return false; // Haliç suyu
+    const halfWidth = this.getStraitHalfWidth(z) + bufferMargin;
+    if (x > center - halfWidth && x < center + halfWidth) return false; // Boğaz suyu + güvenlik tamponu
+    if (this.isInHalic(x, z, bufferMargin)) return false; // Haliç suyu + güvenlik tamponu
     return true; // Kara
   }
 
+  /**
+   * AST Gökdelenlerinin Araziye Oturtulması (Terrain-Height Snapping)
+   */
+  getTerrainHeight(x, z) {
+    return this.getGroundElevation(x, z);
+  }
+
   getGroundElevation(x, z) {
-    if (!this.isPointOnLand(x, z)) return 0;
+    if (!this.isPointOnLand(x, z, 0)) return 0;
 
     // Tarihi Yarımada (Haliç güneyi)
     if (x < -60 && z > 130) {
@@ -356,13 +367,13 @@ export class BosphorusScene {
       let z = (Math.random() * 660) - 330;
 
       if (side === 'europe') {
-        x = -65 - (Math.random() * 190);
+        x = -72 - (Math.random() * 185);
       } else {
-        x = 65 + (Math.random() * 190);
+        x = 72 + (Math.random() * 185);
       }
 
-      // Su poligonuna (Boğaz ve Haliç) taşmama koruması
-      if (!this.isPointOnLand(x, z)) continue;
+      // Su poligonuna (Boğaz ve Haliç) taşmama ve 8 birimlik kıyı güvenlik payı koruması
+      if (!this.isPointOnLand(x, z, 8)) continue;
 
       const groundY = this.getGroundElevation(x, z);
 
@@ -837,7 +848,7 @@ export class BosphorusScene {
         islandX += 35;
       }
 
-      const groundY = this.getGroundElevation(targetPos.x, targetPos.z);
+      const groundY = this.getTerrainHeight(targetPos.x, targetPos.z);
       const height = Math.min(190, Math.max(35, (mod.loc / 7) + (mod.complexity * 1.6)));
       const width = Math.min(42, Math.max(18, Math.sqrt(mod.loc) * 1.3));
       const depth = width;
