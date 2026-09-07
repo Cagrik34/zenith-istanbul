@@ -98,6 +98,7 @@
       font-weight: 700;
       letter-spacing: 1px;
       background: linear-gradient(90deg, #ffffff 0%, var(--accent-cyan) 60%, var(--accent-pink) 100%);
+      background-clip: text;
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
     }
@@ -878,6 +879,7 @@
     body.light-theme .brand-title,
     body.light-theme .brand-text h1 {
       background: linear-gradient(135deg, #0f172a 0%, #0284c7 100%) !important;
+      background-clip: text !important;
       -webkit-background-clip: text !important;
       -webkit-text-fill-color: transparent !important;
     }
@@ -1017,6 +1019,250 @@
       color: #0f172a !important;
     }
 
+  
+    /* ─── Export Popover Menu Styling ─── */
+    .export-dropdown-wrapper {
+      position: relative;
+      display: inline-block;
+    }
+    .export-popover {
+      position: absolute;
+      top: calc(100% + 6px);
+      right: 0;
+      min-width: 290px;
+      background: var(--panel-bg);
+      border: 1px solid var(--panel-border);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      border-radius: 10px;
+      box-shadow: 0 12px 36px rgba(0, 0, 0, 0.5), 0 0 16px var(--hud-shadow);
+      padding: 6px;
+      z-index: 99999;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      animation: popoverFadeIn 0.2s ease;
+    }
+    @keyframes popoverFadeIn {
+      from { opacity: 0; transform: translateY(-4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .export-popover-header {
+      font-size: 10px;
+      font-weight: 700;
+      color: var(--text-muted);
+      padding: 6px 8px 4px 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .export-popover-divider {
+      height: 1px;
+      background: var(--panel-border);
+      margin: 3px 0;
+    }
+    .export-popover-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 10px;
+      background: transparent;
+      border: 1px solid transparent;
+      border-radius: 6px;
+      cursor: pointer;
+      text-align: left;
+      color: var(--text-main);
+      transition: all 0.2s ease;
+      font-family: inherit;
+      width: 100%;
+    }
+    .export-popover-item:hover {
+      background: rgba(0, 240, 255, 0.08);
+      border-color: rgba(0, 240, 255, 0.25);
+    }
+    .export-item-icon {
+      font-size: 18px;
+      flex-shrink: 0;
+    }
+    .export-item-text strong {
+      display: block;
+      font-size: 11px;
+      color: var(--text-main);
+    }
+    .export-item-text small {
+      display: block;
+      font-size: 9.5px;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+    :root[data-theme="light"] .export-popover,
+    body.light-theme .export-popover {
+      background: rgba(255, 255, 255, 0.97) !important;
+      border-color: #cbd5e1 !important;
+      box-shadow: 0 12px 36px rgba(15, 23, 42, 0.15) !important;
+      color: #0f172a !important;
+    }
+    :root[data-theme="light"] .export-popover-item:hover,
+    body.light-theme .export-popover-item:hover {
+      background: #f1f5f9 !important;
+      border-color: #0284c7 !important;
+    }
+    :root[data-theme="light"] .export-item-text strong,
+    body.light-theme .export-item-text strong {
+      color: #0f172a !important;
+    }
+    :root[data-theme="light"] .export-item-text small,
+    body.light-theme .export-item-text small {
+      color: #64748b !important;
+    }
+
+    /* ─── Responsive Adaptive Clusters ─── */
+    .toolbar-cluster-left {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+    .toolbar-cluster-center {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-shrink: 1;
+      min-width: 0;
+    }
+    .toolbar-cluster-right {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      flex-shrink: 0;
+    }
+
+    header.top-bar {
+      overflow: visible !important;
+      width: 100% !important;
+      max-width: 100% !important;
+      box-sizing: border-box !important;
+    }
+
+    /* Mobile Overflow Drawer */
+    .mobile-overflow-drawer {
+      position: fixed;
+      top: 52px;
+      right: 12px;
+      width: calc(100vw - 24px);
+      max-width: 330px;
+      background: var(--panel-bg);
+      border: 1px solid var(--panel-border);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      border-radius: 12px;
+      padding: 12px;
+      box-shadow: 0 16px 48px rgba(0, 0, 0, 0.6), 0 0 20px var(--hud-shadow);
+      z-index: 999999;
+      animation: popoverFadeIn 0.2s ease;
+    }
+    :root[data-theme="light"] .mobile-overflow-drawer,
+    body.light-theme .mobile-overflow-drawer {
+      background: rgba(255, 255, 255, 0.98) !important;
+      border-color: #cbd5e1 !important;
+      box-shadow: 0 16px 48px rgba(15, 23, 42, 0.18) !important;
+      color: #0f172a !important;
+    }
+    .mobile-drawer-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--panel-border);
+      padding-bottom: 6px;
+      margin-bottom: 8px;
+    }
+    .mobile-drawer-header strong {
+      font-size: 11.5px;
+      color: var(--accent-cyan);
+    }
+    :root[data-theme="light"] .mobile-drawer-header strong,
+    body.light-theme .mobile-drawer-header strong {
+      color: #0284c7 !important;
+    }
+    .mobile-group label {
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--text-muted);
+    }
+
+    /* Breakpoint 1: <= 1400px (Icon-only mode for secondary actions) */
+    @media (max-width: 1400px) {
+      .btn-label {
+        display: none !important;
+      }
+      .brand-text p {
+        display: none !important;
+      }
+      .search-box input {
+        width: 85px !important;
+      }
+      .github-fetch-bar input {
+        width: 115px !important;
+      }
+      #sample-select {
+        max-width: 150px !important;
+      }
+    }
+
+    /* Breakpoint 2: <= 1024px (Tablet / Compact Laptop) */
+    @media (max-width: 1024px) {
+      .github-fetch-bar input {
+        width: 95px !important;
+      }
+      #sample-select {
+        max-width: 130px !important;
+      }
+      .brand-icon {
+        font-size: 18px !important;
+      }
+      .brand-text h1, .brand-title {
+        font-size: 13.5px !important;
+      }
+      #live-sse-indicator {
+        display: none !important;
+      }
+    }
+
+    /* Breakpoint 3: <= 768px (Mobile & Small Tablet - Zero Horizontal Scroll Guarantee) */
+    @media (max-width: 768px) {
+      .ui-layer {
+        padding: 6px !important;
+      }
+      header.top-bar {
+        padding: 4px 8px !important;
+        gap: 4px !important;
+      }
+      .toolbar-cluster-center {
+        display: none !important;
+      }
+      .secondary-action {
+        display: none !important;
+      }
+      #btn-toolbar-overflow {
+        display: inline-flex !important;
+      }
+      .workspace {
+        flex-direction: column !important;
+      }
+      .traffic-hud {
+        width: 100% !important;
+        max-width: 100% !important;
+      }
+    }
+
+  
+    @media (max-width: 480px) {
+      .export-popover {
+        min-width: 260px !important;
+        max-width: calc(100vw - 24px) !important;
+        right: 0 !important;
+      }
+    }
+
   </style>
 </head>
 <body>
@@ -1028,58 +1274,147 @@
   <div class="ui-layer">
     
     
-    <header class="top-bar interactive">
-      <div class="brand">
-        <div class="brand-icon">🌉</div>
-        <div class="brand-text">
-          <h1 class="brand-title" id="header-title">Zenithİstanbul</h1>
-          <p>3D Codebase Metropole & Autonomous Agent Command Deck</p>
+        <header class="top-bar interactive">
+      <!-- Sol Küme: Logo + Canlı Durum Rozeti -->
+      <div class="toolbar-cluster-left">
+        <div class="brand">
+          <div class="brand-icon">🌉</div>
+          <div class="brand-text">
+            <h1 class="brand-title" id="header-title">Zenithİstanbul</h1>
+            <p>3D Codebase Metropole & Command Deck</p>
+          </div>
+        </div>
+
+        <div id="live-sse-indicator" style="display: inline-flex; align-items: center; gap: 4px; font-size: 9px; color: var(--accent-green); background: rgba(0, 230, 118, 0.1); border: 1px solid rgba(0, 230, 118, 0.3); padding: 3px 6px; border-radius: 5px; white-space: nowrap;">
+          <span style="width: 5px; height: 5px; border-radius: 50%; background: var(--accent-green); box-shadow: 0 0 5px var(--accent-green);"></span>
+          <span>WEB SHOWCASE</span>
         </div>
       </div>
 
-      
-      <div class="search-box">
-        <span style="font-size: 12px; margin-right: 4px;">🔍</span>
-        <input type="text" id="input-search" placeholder="Search Module / Sector...">
-      </div>
-
-      <div class="header-controls">
-        
-        <div class="github-fetch-bar" title="Transform public GitHub repository into 3D architectural city">
-          <input type="text" id="input-github-repo" placeholder="owner/repo (e.g. expressjs/express)">
-          <button id="btn-fetch-github">Ingest & Parse</button>
-          <button id="btn-open-pat-modal" class="btn-control" style="border-left: 1px solid rgba(0,240,255,0.3); border-radius: 0 6px 6px 0; background: rgba(0,240,255,0.1);" title="GitHub Personal Access Token (PAT) Ayarları">🔑 Token</button>
+      <!-- Orta Küme: Repo Ingest + Token + Senaryo + Klasör Aç -->
+      <div class="toolbar-cluster-center">
+        <div class="github-fetch-bar" title="GitHub deposunu 3D metropole dönüştürün">
+          <input type="text" id="input-github-repo" placeholder="owner/repo (ör: expressjs/express)">
+          <button id="btn-fetch-github">Ingest</button>
+          <button id="btn-open-pat-modal" class="btn-control" style="border-left: 1px solid rgba(0,240,255,0.3); border-radius: 0 6px 6px 0; background: rgba(0,240,255,0.1); padding: 4px 6px !important;" title="GitHub Personal Access Token (PAT)">🔑 Token</button>
         </div>
 
-        
-        <select id="sample-select">
-          <option value="circular-jam-demo">🚨 Cyclic Deadlock Scenario (Tarjan SCC)</option>
-          <option value="zenith-nexus">🌐 Zenith Nexus (Hybrid RAG Topology)</option>
-          <option value="vercel-ai-sdk">▲ Vercel AI SDK (App Router Core)</option>
+        <select id="sample-select" title="Örnek Senaryo Seçin">
+          <option value="circular-jam-demo">🚨 Cyclic Deadlock (Tarjan SCC)</option>
+          <option value="zenith-nexus">🌐 Zenith Nexus (Hybrid RAG)</option>
+          <option value="vercel-ai-sdk">▲ Vercel AI SDK (App Router)</option>
         </select>
 
-        
-        <input type="file" id="folder-input" webkitdirectory directory multiple>
-        <button id="btn-open-folder" class="btn-control btn-primary">📁 Ingest Directory</button>
-        <button id="btn-rescan-project" class="btn-control" style="background: rgba(0, 240, 255, 0.15); border-color: var(--accent-cyan); color: var(--accent-cyan);" title="Rescan Local Project (Shortcut: R)">🔄 Rescan AST</button>
+        <input type="file" id="folder-input" webkitdirectory directory multiple style="display: none;">
+        <button id="btn-open-folder" class="btn-control btn-primary" title="Yerel Proje Klasörü Yükle">
+          <span class="btn-icon">📁</span> <span class="btn-label">Ingest Directory</span>
+        </button>
+      </div>
 
-        
-        <button id="btn-download-report" class="btn-control btn-report" title="Export Architectural Markdown Telemetry">📊 Export Report</button>
-        <button id="btn-copy-pr-comment" class="btn-control" title="Copy PR Gatekeeper Status Markdown">💬 PR Bot Status</button>
-
-        
-        <div id="live-sse-indicator" style="display: inline-flex; align-items: center; gap: 6px; font-size: 10px; color: var(--accent-green); background: rgba(0, 230, 118, 0.1); border: 1px solid rgba(0, 230, 118, 0.3); padding: 4px 8px; border-radius: 6px;">
-          <span style="width: 6px; height: 6px; border-radius: 50%; background: var(--accent-green); box-shadow: 0 0 6px var(--accent-green);"></span>
-          <span>LIVE WATCHER</span>
+      <!-- Sağ Küme: Arama + Rescan + PR Bot + Export Popover + Tur + Vapur + Ses + Tema + Mobil Menü -->
+      <div class="toolbar-cluster-right">
+        <div class="search-box">
+          <span style="font-size: 11px; margin-right: 2px;">🔍</span>
+          <input type="text" id="input-search" placeholder="Search Module...">
         </div>
 
-        
-        <button id="btn-cinematic-tour" class="btn-control" title="360° Boğaz Sinematik Sunum Turu">🎥 360° Tur</button>
-        <button id="btn-vapur-dudugu" class="btn-control" title="Karaköy-Kadıköy Vapur Düdüğü & Martı Sesleri">🚢 Vapur Düdüğü</button>
-        <button id="btn-toggle-audio" class="btn-control" title="Toggle Spatial Audio Synthesizer">🔇 Audio: Muted</button>
-        <button id="btn-toggle-theme" class="btn-control" title="Toggle Dark / Light Bosphorus Theme"><span class="theme-icon">🌙</span> Dark</button>
+        <button id="btn-rescan-project" class="btn-control secondary-action" style="background: rgba(0, 240, 255, 0.12); border-color: var(--accent-cyan); color: var(--accent-cyan);" title="Rescan Local Project (Shortcut: R)">
+          <span class="btn-icon">🔄</span> <span class="btn-label">Rescan</span>
+        </button>
+
+        <button id="btn-copy-pr-comment" class="btn-control secondary-action" title="Copy PR Gatekeeper Status Markdown">
+          <span class="btn-icon">💬</span> <span class="btn-label">PR Bot</span>
+        </button>
+
+        <!-- Anchored Export Popover -->
+        <div class="export-dropdown-wrapper">
+          <button id="btn-download-report" class="btn-control btn-report" title="Mimari Rapor ve Şemaları Dışa Aktar">
+            <span class="btn-icon">📊</span> <span class="btn-label">Export</span> <span style="font-size: 8px; opacity: 0.8; margin-left: 2px;">▼</span>
+          </button>
+          <div id="export-menu-popover" class="export-popover" style="display: none;">
+            <div class="export-popover-header">
+              <span>📦 Mimari Dışa Aktarma</span>
+            </div>
+            <button class="export-popover-item" id="btn-export-md">
+              <span class="export-item-icon">📄</span>
+              <div class="export-item-text">
+                <strong>Markdown Telemetri Raporu (.md)</strong>
+                <small>Tarjan SCC, metrikler ve mimari sağlık denetimi</small>
+              </div>
+            </button>
+            <button class="export-popover-item" id="btn-export-svg">
+              <span class="export-item-icon">🗺️</span>
+              <div class="export-item-text">
+                <strong>2D Vektörel Mimari Şema (.svg)</strong>
+                <small>Semt blokları ve kavisli bağımlılık okları</small>
+              </div>
+            </button>
+            <div class="export-popover-divider"></div>
+            <button class="export-popover-item export-all" id="btn-export-all">
+              <span class="export-item-icon">📦</span>
+              <div class="export-item-text">
+                <strong>Hepsini İndir (İkisi Birden)</strong>
+                <small>400ms güvenlik gecikmesiyle tarayıcı uyarısız indirme</small>
+              </div>
+            </button>
+          </div>
+        </div>
+
+        <button id="btn-cinematic-tour" class="btn-control secondary-action" title="360° Boğaz Sinematik Sunum Turu">
+          <span class="btn-icon tour-icon">🎥</span> <span class="btn-label">360° Tur</span>
+        </button>
+
+        <button id="btn-vapur-dudugu" class="btn-control secondary-action" title="Karaköy-Kadıköy Vapur Düdüğü & Martı Sesleri">
+          <span class="btn-icon">🚢</span> <span class="btn-label">Vapur</span>
+        </button>
+
+        <button id="btn-toggle-audio" class="btn-control secondary-action" title="Toggle Spatial Audio Synthesizer">
+          <span class="btn-icon" id="audio-icon">🔇</span> <span class="btn-label" id="audio-label">Ses: Kapalı</span>
+        </button>
+
+        <button id="btn-toggle-theme" class="btn-control" title="Toggle Dark / Light Bosphorus Theme">
+          <span class="theme-icon">🌙</span> <span class="btn-label" id="theme-label">Dark</span>
+        </button>
+
+        <!-- Mobile Overflow Trigger -->
+        <button id="btn-toolbar-overflow" class="btn-control" style="display: none;" title="Ek Menü">
+          <span>⋮</span> <span style="font-size: 10px;">Menü</span>
+        </button>
       </div>
     </header>
+
+    <!-- Mobil Overflow Açılır Çekmecesi -->
+    <div id="mobile-overflow-drawer" class="mobile-overflow-drawer interactive" style="display: none;">
+      <div class="mobile-drawer-header">
+        <strong>⚡ Hızlı Kontrol Menüsü</strong>
+        <button class="btn-close" id="btn-close-mobile-drawer">✕</button>
+      </div>
+      <div class="mobile-drawer-content">
+        <div class="mobile-group">
+          <label>GitHub Repository:</label>
+          <div style="display: flex; gap: 4px; margin-top: 4px;">
+            <input type="text" id="input-github-repo-mobile" placeholder="owner/repo" style="flex: 1; padding: 5px 8px; font-size: 11px; border-radius: 6px;">
+            <button id="btn-fetch-github-mobile" class="btn-control btn-primary" style="padding: 5px 10px;">Ingest</button>
+          </div>
+        </div>
+        <div class="mobile-group" style="margin-top: 8px;">
+          <label>Senaryo Seç:</label>
+          <select id="sample-select-mobile" style="width: 100%; margin-top: 4px; padding: 5px 8px;">
+            <option value="circular-jam-demo">🚨 Cyclic Deadlock Scenario</option>
+            <option value="zenith-nexus">🌐 Zenith Nexus Topology</option>
+            <option value="vercel-ai-sdk">▲ Vercel AI SDK Core</option>
+          </select>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 10px;">
+          <button id="btn-rescan-mobile" class="btn-control" style="text-align: left;">🔄 Rescan</button>
+          <button id="btn-pr-bot-mobile" class="btn-control" style="text-align: left;">💬 PR Bot</button>
+          <button id="btn-tour-mobile" class="btn-control" style="text-align: left;">🎥 360° Tur</button>
+          <button id="btn-vapur-mobile" class="btn-control" style="text-align: left;">🚢 Vapur</button>
+          <button id="btn-audio-mobile" class="btn-control" style="text-align: left;">🔇 Ses Aç/Kapat</button>
+          <button id="btn-token-mobile" class="btn-control" style="text-align: left;">🔑 GitHub PAT</button>
+        </div>
+      </div>
+    </div>
 
     
     <div class="workspace">
@@ -1810,8 +2145,28 @@
       }
     });
 
-    document.getElementById('btn-download-report').addEventListener('click', () => {
-      // 1. Markdown Telemetry Report
+        // ─── Export Popover & Dual Download Engine (Zero Browser Warnings) ───
+    const btnDownloadReport = document.getElementById('btn-download-report');
+    const exportPopover = document.getElementById('export-menu-popover');
+    const btnExportMd = document.getElementById('btn-export-md');
+    const btnExportSvg = document.getElementById('btn-export-svg');
+    const btnExportAll = document.getElementById('btn-export-all');
+
+    if (btnDownloadReport && exportPopover) {
+      btnDownloadReport.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const isOpen = exportPopover.style.display === 'flex';
+        exportPopover.style.display = isOpen ? 'none' : 'flex';
+      });
+
+      document.addEventListener('click', (e) => {
+        if (!exportPopover.contains(e.target) && !btnDownloadReport.contains(e.target)) {
+          exportPopover.style.display = 'none';
+        }
+      });
+    }
+
+    function downloadMarkdownReport() {
       const md = trafficEngine.exportArchitectureReportMarkdown();
       const blobMd = new Blob([md], { type: 'text/markdown;charset=utf-8;' });
       const urlMd = URL.createObjectURL(blobMd);
@@ -1820,8 +2175,10 @@
       aMd.download = 'zenith-architecture-report.md';
       aMd.click();
       URL.revokeObjectURL(urlMd);
+      logToTerminal('📄 [RAPOR İNDİRİLDİ] "zenith-architecture-report.md" başarıyla kaydedildi.', 'success');
+    }
 
-      // 2. 2D Vector Architecture Diagram (SVG)
+    function downloadSvgDiagram() {
       if (typeof trafficEngine.exportArchitectureSvg === 'function') {
         const svg = trafficEngine.exportArchitectureSvg();
         const blobSvg = new Blob([svg], { type: 'image/svg+xml;charset=utf-8;' });
@@ -1831,11 +2188,133 @@
         aSvg.download = 'zenith-architecture.svg';
         aSvg.click();
         URL.revokeObjectURL(urlSvg);
-        logToTerminal('📊 [RAPOR VE ŞEMA İNDİRİLDİ] "zenith-architecture-report.md" ve 2D Vektörel "zenith-architecture.svg" kaydedildi.', 'success');
-      } else {
-        logToTerminal('📊 [RAPOR İNDİRİLDİ] "zenith-architecture-report.md" kaydedildi.', 'success');
+        logToTerminal('🗺️ [ŞEMA İNDİRİLDİ] 2D Vektörel "zenith-architecture.svg" kaydedildi.', 'success');
       }
-    });
+    }
+
+    if (btnExportMd) {
+      btnExportMd.addEventListener('click', () => {
+        downloadMarkdownReport();
+        if (exportPopover) exportPopover.style.display = 'none';
+      });
+    }
+
+    if (btnExportSvg) {
+      btnExportSvg.addEventListener('click', () => {
+        downloadSvgDiagram();
+        if (exportPopover) exportPopover.style.display = 'none';
+      });
+    }
+
+    if (btnExportAll) {
+      btnExportAll.addEventListener('click', () => {
+        downloadMarkdownReport();
+        setTimeout(() => {
+          downloadSvgDiagram();
+        }, 400);
+        if (exportPopover) exportPopover.style.display = 'none';
+        logToTerminal('📦 [TOPLU İNDİRME] 400ms güvenlik gecikmesiyle Markdown ve SVG dosyaları indiriliyor.', 'info');
+      });
+    }
+
+    // ─── Mobile Drawer Logic ───
+    const btnToolbarOverflow = document.getElementById('btn-toolbar-overflow');
+    const mobileDrawer = document.getElementById('mobile-overflow-drawer');
+    const btnCloseMobileDrawer = document.getElementById('btn-close-mobile-drawer');
+
+    if (btnToolbarOverflow && mobileDrawer) {
+      btnToolbarOverflow.addEventListener('click', (e) => {
+        e.stopPropagation();
+        mobileDrawer.style.display = mobileDrawer.style.display === 'block' ? 'none' : 'block';
+      });
+      if (btnCloseMobileDrawer) {
+        btnCloseMobileDrawer.addEventListener('click', () => {
+          mobileDrawer.style.display = 'none';
+        });
+      }
+      document.addEventListener('click', (e) => {
+        if (!mobileDrawer.contains(e.target) && !btnToolbarOverflow.contains(e.target)) {
+          mobileDrawer.style.display = 'none';
+        }
+      });
+    }
+
+    // Mobile Actions Bridge
+    const btnFetchMobile = document.getElementById('btn-fetch-github-mobile');
+    if (btnFetchMobile) {
+      btnFetchMobile.addEventListener('click', () => {
+        const mobInput = document.getElementById('input-github-repo-mobile');
+        const mainInput = document.getElementById('input-github-repo');
+        if (mobInput && mainInput) mainInput.value = mobInput.value;
+        const mainBtn = document.getElementById('btn-fetch-github');
+        if (mainBtn) mainBtn.click();
+        if (mobileDrawer) mobileDrawer.style.display = 'none';
+      });
+    }
+
+    const sampleMobile = document.getElementById('sample-select-mobile');
+    if (sampleMobile) {
+      sampleMobile.addEventListener('change', (e) => {
+        const mainSelect = document.getElementById('sample-select');
+        if (mainSelect) {
+          mainSelect.value = e.target.value;
+          loadSample(e.target.value);
+        }
+        if (mobileDrawer) mobileDrawer.style.display = 'none';
+      });
+    }
+
+    const btnRescanMob = document.getElementById('btn-rescan-mobile');
+    if (btnRescanMob) {
+      btnRescanMob.addEventListener('click', () => {
+        rescanLiveProject();
+        if (mobileDrawer) mobileDrawer.style.display = 'none';
+      });
+    }
+
+    const btnPrBotMob = document.getElementById('btn-pr-bot-mobile');
+    if (btnPrBotMob) {
+      btnPrBotMob.addEventListener('click', () => {
+        const mainBtn = document.getElementById('btn-copy-pr-comment');
+        if (mainBtn) mainBtn.click();
+        if (mobileDrawer) mobileDrawer.style.display = 'none';
+      });
+    }
+
+    const btnTourMob = document.getElementById('btn-tour-mobile');
+    if (btnTourMob) {
+      btnTourMob.addEventListener('click', () => {
+        const mainBtn = document.getElementById('btn-cinematic-tour');
+        if (mainBtn) mainBtn.click();
+        if (mobileDrawer) mobileDrawer.style.display = 'none';
+      });
+    }
+
+    const btnVapurMob = document.getElementById('btn-vapur-mobile');
+    if (btnVapurMob) {
+      btnVapurMob.addEventListener('click', () => {
+        const mainBtn = document.getElementById('btn-vapur-dudugu');
+        if (mainBtn) mainBtn.click();
+        if (mobileDrawer) mobileDrawer.style.display = 'none';
+      });
+    }
+
+    const btnAudioMob = document.getElementById('btn-audio-mobile');
+    if (btnAudioMob) {
+      btnAudioMob.addEventListener('click', () => {
+        const mainBtn = document.getElementById('btn-toggle-audio');
+        if (mainBtn) mainBtn.click();
+      });
+    }
+
+    const btnTokenMob = document.getElementById('btn-token-mobile');
+    if (btnTokenMob) {
+      btnTokenMob.addEventListener('click', () => {
+        const mainBtn = document.getElementById('btn-open-pat-modal');
+        if (mainBtn) mainBtn.click();
+        if (mobileDrawer) mobileDrawer.style.display = 'none';
+      });
+    }
 
     const diffModal = document.getElementById('diff-modal');
     const diffContent = document.getElementById('diff-viewer-content');
@@ -1933,12 +2412,12 @@
       isAudioMuted = !isAudioMuted;
       hud.audioEnabled = !isAudioMuted;
       if (!isAudioMuted) {
-        btnToggleAudio.textContent = '🔊 Ses: Açık';
+        btnToggleAudio.innerHTML = '<span class="btn-icon">🔊</span> <span class="btn-label">Ses: Açık</span>';
         btnToggleAudio.style.borderColor = 'var(--accent-green)';
         btnToggleAudio.style.color = 'var(--accent-green)';
         hud.playVapurDudugu();
       } else {
-        btnToggleAudio.textContent = '🔇 Ses: Kapalı';
+        btnToggleAudio.innerHTML = '<span class="btn-icon">🔇</span> <span class="btn-label">Ses: Kapalı</span>';
         btnToggleAudio.style.borderColor = 'rgba(0, 240, 255, 0.35)';
         btnToggleAudio.style.color = 'var(--text-main)';
       }
@@ -2374,8 +2853,8 @@
       if (btnToggleTheme) {
         const isDark = theme === 'dark';
         btnToggleTheme.innerHTML = isDark
-          ? '<span class="theme-icon">🌙</span> Dark'
-          : '<span class="theme-icon">☀️</span> Light';
+          ? '<span class="theme-icon">🌙</span> <span class="btn-label">Dark</span>'
+          : '<span class="theme-icon">☀️</span> <span class="btn-label">Light</span>';
       }
 
       // Sync Three.js 3D scene
@@ -2401,7 +2880,9 @@
     if (btnCinematicTour) {
       btnCinematicTour.addEventListener('click', () => {
         const active = bosphorusScene.toggleCinematicTour();
-        btnCinematicTour.innerHTML = active ? '🎬 360° Tur: Açık' : '🎥 360° Tur';
+        btnCinematicTour.innerHTML = active 
+          ? '<span class="btn-icon tour-icon">🎬</span> <span class="btn-label">Tur: Açık</span>' 
+          : '<span class="btn-icon tour-icon">🎥</span> <span class="btn-label">360° Tur</span>';
         btnCinematicTour.style.borderColor = active ? 'var(--accent-cyan)' : 'rgba(0, 240, 255, 0.35)';
         btnCinematicTour.style.color = active ? 'var(--accent-cyan)' : 'var(--text-main)';
         if (active) {
@@ -2411,7 +2892,9 @@
         }
       });
       bosphorusScene.onCinematicChange = (active) => {
-        btnCinematicTour.innerHTML = active ? '🎬 360° Tur: Açık' : '🎥 360° Tur';
+        btnCinematicTour.innerHTML = active 
+          ? '<span class="btn-icon tour-icon">🎬</span> <span class="btn-label">Tur: Açık</span>' 
+          : '<span class="btn-icon tour-icon">🎥</span> <span class="btn-label">360° Tur</span>';
         btnCinematicTour.style.borderColor = active ? 'var(--accent-cyan)' : 'rgba(0, 240, 255, 0.35)';
         btnCinematicTour.style.color = active ? 'var(--accent-cyan)' : 'var(--text-main)';
       };
