@@ -2,7 +2,7 @@
   "name": "zenith-istanbul",
   "version": "1.0.0",
   "type": "module",
-  "description": "3D Codebase Metropole, Tarjan SCC Engine & Architectural Gatekeeper",
+  "description": "3D codebase topology visualizer, Tarjan SCC cycle detector, and architectural CI gatekeeper.",
   "main": "./bin/cli.js",
   "bin": {
     "zenith-istanbul": "./bin/cli.js"
