@@ -861,7 +861,10 @@ export class BosphorusScene {
 
       this.buildingObjects.push(buildingMesh);
       this.buildingsMeshMap.set(buildingMesh, mod);
-      mod.worldPosition = buildingMesh.position.clone();
+
+      // Lazerlerin bina gövdesinin içinden değil, tam çatı kotundan çıkması için:
+      const roofY = groundY + height;
+      mod.worldPosition = new THREE.Vector3(targetPos.x, roofY, targetPos.z);
     }
   }
 
@@ -908,8 +911,8 @@ export class BosphorusScene {
     this.clearLaserConnections();
     if (!sourceMod || !sourceMod.worldPosition) return;
 
+    // Doğrudan çatı kotunu (rooftop) al
     const sourcePos = sourceMod.worldPosition.clone();
-    sourcePos.y += 10;
 
     const targets = Array.from(trafficEngine.adjacencyList.get(sourceMod.id) || []);
     const dependents = Array.from(trafficEngine.reverseAdjacencyList.get(sourceMod.id) || []);
@@ -930,11 +933,13 @@ export class BosphorusScene {
   }
 
   createLaserArc(start, end, hexColor) {
+    const distance = start.distanceTo(end);
     const midPoint = new THREE.Vector3().addVectors(start, end).multiplyScalar(0.5);
-    midPoint.y += 45;
+    // İki çatının en yükseğinden en az 30 birim yukarıda ve mesafeye göre artan yay yüksekliği (Arc Clearance)
+    midPoint.y = Math.max(start.y, end.y) + 30 + (distance * 0.15);
 
     const curve = new THREE.QuadraticBezierCurve3(start, midPoint, end);
-    const points = curve.getPoints(24);
+    const points = curve.getPoints(28);
     const geo = new THREE.BufferGeometry().setFromPoints(points);
     const mat = new THREE.LineBasicMaterial({
       color: hexColor,
