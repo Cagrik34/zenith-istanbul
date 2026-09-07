@@ -148,37 +148,66 @@ export class BosphorusScene {
   }
 
   /**
-   * Coğrafi Boğaz Hattı Matematiksel Sınırları (S-Kıvrımı & Haliç)
+   * Coğrafi Boğaz Hattı Matematiksel Sınırları (S-Kıvrımı, Haliç & Marmara Denizi)
+   * Marmara Denizi güney açık su kütlesi, Sarayburnu-Üsküdar daralması, Ortaköy-Beylerbeyi köprü hattı
    */
   getBosphorusCenter(z) {
     return Math.sin(z * 0.007) * 25 + Math.sin(z * 0.015) * 10;
   }
 
   getStraitHalfWidth(z) {
-    if (z > 180) return 80 + (z - 180) * 0.3; // Marmara Denizi Girişi
-    if (z < -180) return 70 + (-180 - z) * 0.25; // Karadeniz Boğazı
-    if (z >= -60 && z <= 10) return 50; // 15 Temmuz Köprüsü Boğaz Boğazı
-    return 55 + Math.cos(z * 0.01) * 8;
+    if (z > 160) return 60 + (z - 160) * 0.45; // Marmara Denizi geniş girişi
+    if (z < -180) return 60 + (-180 - z) * 0.25; // Karadeniz genişlemesi
+    if (z >= -55 && z <= 10) return 48; // 15 Temmuz Köprüsü boğaz boğazı
+    return 52 + Math.cos(z * 0.012) * 6;
   }
 
-  isInHalic(x, z, bufferMargin = 8) {
-    // Haliç girintisi: Sarayburnu/Galata arasından (-55, 105) kuzeybatıya (-240, 40) uzanır
-    if (x > -55 + bufferMargin || x < -245) return false;
-    const halicCenterZ = 105 + (x + 55) * 0.35;
-    const halfWidth = 20 + (x + 55) * 0.04 + bufferMargin;
-    return Math.abs(z - halicCenterZ) < halfWidth;
+  /**
+   * Haliç (Golden Horn) Gerçek Su Yarığı
+   * Sarayburnu/Galata arasından (-65, 95) kuzeybatıya (-340, 20) doğru kıvrılarak Avrupa karasının içine girer
+   */
+  isInsideHalic(x, z, margin = 0) {
+    if (x > -65 + margin || x < -340 - margin) return false;
+    const t = (-65 - x) / 250;
+    const halicCenterZ = 95 - t * 80;
+    const halicHalfWidth = (22 - t * 10) + margin;
+    return Math.abs(z - halicCenterZ) < halicHalfWidth;
+  }
+
+  isInHalic(x, z, margin = 0) {
+    return this.isInsideHalic(x, z, margin);
+  }
+
+  /**
+   * Marmara Denizi Güney Açık Su Kütlesi
+   * Tarihi Yarımada'nın güneyini (Kennedy Caddesi boyu) ve Kadıköy/Moda'nın güneyini çevreleyen açık deniz
+   */
+  isMarmaraSea(x, z) {
+    // Tarihi Yarımada güneyi (X < -70): Z > 190 Marmara Denizi
+    if (x < -70 && z > 190) {
+      const coastZ = 190 + (x + 70) * 0.15;
+      return z > coastZ;
+    }
+    // Anadolu Yakası Kadıköy güneyi (X > 60): Z > 220 Marmara Denizi
+    if (x > 60 && z > 220) return true;
+    // Boğaz çıkışı Marmara ortası
+    if (x >= -70 && x <= 60 && z > 170) return true;
+    // Açık güney ufku
+    if (z > 240) return true;
+    return false;
   }
 
   /**
    * Kıyı Şeridi ve Su Güvenlik Tamponu (Shoreline Buffer Margin)
-   * Minimum 8 birimlik kıyı emniyet payı ile binaların suya taşmasını kesin olarak engeller.
+   * Marmara, Haliç ve Boğaz sularından karayı kesin olarak ayırır.
    */
-  isPointOnLand(x, z, bufferMargin = 8) {
+  isPointOnLand(x, z, bufferMargin = 0) {
+    if (this.isMarmaraSea(x, z)) return false;
+    if (this.isInsideHalic(x, z, bufferMargin)) return false;
     const center = this.getBosphorusCenter(z);
     const halfWidth = this.getStraitHalfWidth(z) + bufferMargin;
-    if (x > center - halfWidth && x < center + halfWidth) return false; // Boğaz suyu + güvenlik tamponu
-    if (this.isInHalic(x, z, bufferMargin)) return false; // Haliç suyu + güvenlik tamponu
-    return true; // Kara
+    if (x > center - halfWidth && x < center + halfWidth) return false;
+    return true;
   }
 
   /**
@@ -189,41 +218,56 @@ export class BosphorusScene {
   }
 
   getGroundElevation(x, z) {
-    if (!this.isPointOnLand(x, z, 0)) return 0;
+    if (!this.isPointOnLand(x, z, 0)) return -14;
 
-    // Tarihi Yarımada (Haliç güneyi)
-    if (x < -60 && z > 130) {
-      const distToSarayburnu = Math.hypot(x - (-160), z - 220);
-      return Math.max(8, 15 - distToSarayburnu * 0.04);
+    // 1. Tarihi Yarımada (Sarayburnu, Fatih, Sultanahmet, Süleymaniye)
+    // Kuzeyi Haliç, Doğusu Boğaz, Güneyi Marmara Denizi
+    if (x < -70 && z >= 85 && z <= 190) {
+      const distToSarayburnu = Math.hypot(x - (-85), z - 130);
+      if (distToSarayburnu < 35) {
+        return 10; // Sarayburnu burnu tepesi (Topkapı & Gülhane)
+      }
+      return 13; // Sultanahmet & Süleymaniye sırtı
     }
-    // Maslak / Levent Platosu (Avrupa kuzeyi sırtları)
-    if (x < -60 && z < -40) {
-      const distToMaslak = Math.hypot(x - (-180), z - (-160));
-      return Math.max(10, 24 - distToMaslak * 0.06);
+
+    // 2. Galata / Beyoğlu / Taksim Tepesi (Haliç'in kuzeyi, Karaköy sırtları)
+    if (x < -60 && z >= 25 && z < 85) {
+      const distToGalata = Math.hypot(x - (-105), z - 45);
+      return Math.max(8, 16 - distToGalata * 0.05);
     }
-    // Galata / Beşiktaş sahil şeridi
-    if (x < -50 && z >= -40 && z <= 130) {
+
+    // 3. Beşiktaş / Ortaköy sahil şeridi
+    if (x < -55 && z >= -40 && z < 25) {
       return 7;
     }
-    // Anadolu Yakası
+
+    // 4. Maslak / Levent / Şişli Platosu (Kuzey Avrupa sırtları - AST çekirdeği)
+    if (x < -65 && z < -40) {
+      const distToMaslak = Math.hypot(x - (-180), z - (-160));
+      return Math.max(12, 28 - distToMaslak * 0.05);
+    }
+
+    // 5. Anadolu Yakası (X > 50)
     if (x > 50) {
-      // Çamlıca Tepesi Kubbesi
+      // Çamlıca Tepesi (Yumuşak kubbe orman tepesi)
       const distToCamlica = Math.hypot(x - 175, z - 0);
-      if (distToCamlica < 100) {
-        return Math.max(8, 32 - distToCamlica * 0.22);
+      if (distToCamlica < 90) {
+        return Math.max(8, 36 - distToCamlica * 0.32);
       }
-      // Ataşehir Platosu
-      if (z < -80) {
-        return 18;
+      // Ataşehir Finans Platosu
+      if (z < -60) {
+        return 20;
       }
       // Kadıköy & Üsküdar kıyısı
       return 8;
     }
+
     return 0;
   }
 
   /**
-   * Gerçekçi İstanbul 3D Topografya ve Coğrafya Modeli
+   * Gerçekçi İstanbul 3D Topografya ve Coğrafya Modeli (Kesintisiz İki Kıta)
+   * Yüzen adacıklar kaldırılmış; Avrupa ve Asya kıta plakaları ufka kadar uzanır.
    */
   createBosphorusTerrain() {
     // 1. Parlayan Boğaz Suyu Materyali (Luminous Cyber Bosphorus)
@@ -244,126 +288,286 @@ export class BosphorusScene {
     this.waterMesh.receiveShadow = true;
     this.scene.add(this.waterMesh);
 
-    // 2. Kademeli Kara Kütlesi Materyali (Hafif Kenar Işıltılı Arduvaz Gece Mavisi)
+    // 2. Kademeli Kara Kütlesi Materyali
     this.landMat = new THREE.MeshStandardMaterial({
-      color: 0x0b1329,
+      color: 0x0c162d,
       roughness: 0.65,
       metalness: 0.3,
-      emissive: 0x040814,
-      emissiveIntensity: 0.35
+      emissive: 0x050b18,
+      emissiveIntensity: 0.35,
+      flatShading: true
     });
 
-    // 3. Avrupa Yakası Kademeli Platosu
-    // Tarihi Yarımada (Sarayburnu, Fatih)
-    const historicGeo = new THREE.CylinderGeometry(85, 105, 14, 32);
-    const historicLand = new THREE.Mesh(historicGeo, this.landMat);
-    historicLand.position.set(-165, 7, 230);
-    historicLand.receiveShadow = true;
-    this.scene.add(historicLand);
+    // 3. Kesintisiz Kıtasal Kara Kütleleri (Continental Landmasses)
+    // Avrupa Kıta Plakası: X: -550 -> 0, Z: -450 -> +450
+    const eurWidth = 550;
+    const depth = 900;
+    const segX = 110;
+    const segZ = 180;
+    const europeGeo = new THREE.PlaneGeometry(eurWidth, depth, segX, segZ);
+    europeGeo.rotateX(-Math.PI / 2);
+    europeGeo.translate(-eurWidth / 2, 0, 0);
 
-    // Sarayburnu Burnu (Marmara ve Boğaz birleşimine uzanan belirgin coğrafi burun)
-    const sarayburnuGeo = new THREE.CylinderGeometry(18, 75, 12, 16);
-    sarayburnuGeo.scale(1.5, 1, 0.9);
-    const sarayburnuLand = new THREE.Mesh(sarayburnuGeo, this.landMat);
-    sarayburnuLand.position.set(-110, 6, 175);
-    sarayburnuLand.rotation.y = -0.4;
-    sarayburnuLand.receiveShadow = true;
-    this.scene.add(sarayburnuLand);
+    const eurPos = europeGeo.attributes.position;
+    for (let i = 0; i < eurPos.count; i++) {
+      const vx = eurPos.getX(i);
+      const vz = eurPos.getZ(i);
+      const elev = this.getGroundElevation(vx, vz);
+      eurPos.setY(i, elev);
+    }
+    europeGeo.computeVertexNormals();
 
-    // Galata / Beyoğlu / Beşiktaş Sahil Kütlesi
-    const galataCoastGeo = new THREE.BoxGeometry(110, 8, 180);
-    const galataCoast = new THREE.Mesh(galataCoastGeo, this.landMat);
-    galataCoast.position.set(-115, 4, 35);
-    galataCoast.receiveShadow = true;
-    this.scene.add(galataCoast);
+    this.europeContinent = new THREE.Mesh(europeGeo, this.landMat);
+    this.europeContinent.receiveShadow = true;
+    this.europeContinent.castShadow = true;
+    this.scene.add(this.europeContinent);
 
-    // Maslak & Levent Yükseltilmiş Platosu
-    const maslakPlateauGeo = new THREE.BoxGeometry(180, 24, 250);
-    const maslakPlateau = new THREE.Mesh(maslakPlateauGeo, this.landMat);
-    maslakPlateau.position.set(-190, 12, -170);
-    maslakPlateau.receiveShadow = true;
-    this.scene.add(maslakPlateau);
+    // Anadolu Kıta Plakası: X: 0 -> +550, Z: -450 -> +450
+    const asiaGeo = new THREE.PlaneGeometry(eurWidth, depth, segX, segZ);
+    asiaGeo.rotateX(-Math.PI / 2);
+    asiaGeo.translate(eurWidth / 2, 0, 0);
 
-    // 4. Anadolu Yakası Kademeli Tepeleri
-    // Üsküdar & Beylerbeyi Kıyı Hattı
-    const uskudarCoastGeo = new THREE.BoxGeometry(110, 8, 180);
-    const uskudarCoast = new THREE.Mesh(uskudarCoastGeo, this.landMat);
-    uskudarCoast.position.set(115, 4, 15);
-    uskudarCoast.receiveShadow = true;
-    this.scene.add(uskudarCoast);
+    const asiaPos = asiaGeo.attributes.position;
+    for (let i = 0; i < asiaPos.count; i++) {
+      const vx = asiaPos.getX(i);
+      const vz = asiaPos.getZ(i);
+      const elev = this.getGroundElevation(vx, vz);
+      asiaPos.setY(i, elev);
+    }
+    asiaGeo.computeVertexNormals();
 
-    // Çamlıca Tepesi (Yumuşak Kubbe Yükseltisi)
-    const camlicaGeo = new THREE.SphereGeometry(75, 32, 16, 0, Math.PI * 2, 0, Math.PI / 2);
-    const camlicaHill = new THREE.Mesh(camlicaGeo, this.landMat);
-    camlicaHill.position.set(175, 0, 5);
-    camlicaHill.scale.set(1, 0.42, 1);
-    camlicaHill.receiveShadow = true;
-    this.scene.add(camlicaHill);
+    this.asiaContinent = new THREE.Mesh(asiaGeo, this.landMat);
+    this.asiaContinent.receiveShadow = true;
+    this.asiaContinent.castShadow = true;
+    this.scene.add(this.asiaContinent);
 
-    // Kadıköy & Moda Burnu
-    const kadikoyGeo = new THREE.CylinderGeometry(85, 100, 10, 32);
-    const kadikoyLand = new THREE.Mesh(kadikoyGeo, this.landMat);
-    kadikoyLand.position.set(155, 5, 205);
-    kadikoyLand.receiveShadow = true;
-    this.scene.add(kadikoyLand);
+    // 4. Şehir Damarları ve Karayolu Arterleri (Road Infrastructure)
+    this.createRoadNetworks();
 
-    // Ataşehir Arka Platosu
-    const atasehirGeo = new THREE.BoxGeometry(160, 20, 200);
-    const atasehirLand = new THREE.Mesh(atasehirGeo, this.landMat);
-    atasehirLand.position.set(210, 10, -160);
-    atasehirLand.receiveShadow = true;
-    this.scene.add(atasehirLand);
+    // 5. Yeşil Kuşaklar ve Koruluklar (Gülhane, Yıldız, Çamlıca)
+    this.createGreenBelts();
 
-    // Prens Adaları (Marmara Denizi)
-    const island1 = new THREE.Mesh(new THREE.CylinderGeometry(35, 45, 10, 24), this.landMat);
-    island1.position.set(70, 4, 325);
-    this.scene.add(island1);
-
-    const island2 = new THREE.Mesh(new THREE.CylinderGeometry(25, 35, 8, 24), this.landMat);
-    island2.position.set(150, 3.5, 355);
-    this.scene.add(island2);
-
-    // Neon Kıyı Kılavuz Çizgileri (Shoreline Glowing Lines - Boğaz S-Kıvrımı & Haliç)
+    // 6. Neon Kıyı Kılavuz Çizgileri (Boğaz S-Kıvrımı, Haliç & Tarihi Yarımada)
     this.createShorelines();
 
     // İnce Cyber Izgara
-    this.gridHelper = new THREE.GridHelper(800, 40, 0x1e293b, 0x0f172a);
+    this.gridHelper = new THREE.GridHelper(900, 45, 0x1e293b, 0x0f172a);
     this.gridHelper.position.y = 8.1;
     this.scene.add(this.gridHelper);
   }
 
   /**
-   * 1500+ Binalık Procedural Ambient Şehir Dokusu (InstancedMesh Tek Draw-Call)
-   * KURAL 1: ambientMesh.raycast = () => {} (Inspector tıklamasını engellemez)
-   * KURAL 2: init aşamasında 1 KEZ üretilir; buildCity() içinde sıfırdan üretilip VRAM sızdırmaz.
+   * Karayolu Ağı ve Asfalt Arterler (D-100 Otoyolu, Kennedy Caddesi & Boğaz Sahil Yolu)
    */
+  createRoadNetworks() {
+    // 1. D-100 Otoyolu (15 Temmuz Şehitler Köprüsü Bağlantısı - Avrupa ve Asya Karasının İçine Akış)
+    const d100EuropePts = [
+      new THREE.Vector3(-55, 21.5, -30),
+      new THREE.Vector3(-95, 18, -32),
+      new THREE.Vector3(-155, 15, -35),
+      new THREE.Vector3(-230, 13.5, -38),
+      new THREE.Vector3(-340, 13, -40),
+      new THREE.Vector3(-480, 13, -40)
+    ];
+    this.createRoadRibbon(d100EuropePts, 8.0, 0x121826, true);
+
+    const d100AsiaPts = [
+      new THREE.Vector3(55, 21.5, -30),
+      new THREE.Vector3(95, 18, -32),
+      new THREE.Vector3(155, 15, -35),
+      new THREE.Vector3(230, 14, -38),
+      new THREE.Vector3(340, 14, -40),
+      new THREE.Vector3(480, 14, -40)
+    ];
+    this.createRoadRibbon(d100AsiaPts, 8.0, 0x121826, true);
+
+    // 2. Kennedy Caddesi (Tarihi Yarımada Güney Marmara Sahil Yolu)
+    const kennedyPts = [
+      new THREE.Vector3(-88, 7.8, 135),
+      new THREE.Vector3(-102, 8.2, 165),
+      new THREE.Vector3(-135, 8.5, 182),
+      new THREE.Vector3(-185, 8.5, 192),
+      new THREE.Vector3(-245, 8.5, 190),
+      new THREE.Vector3(-325, 8.5, 185),
+      new THREE.Vector3(-460, 8.5, 185)
+    ];
+    this.createRoadRibbon(kennedyPts, 5.5, 0x161f33, false);
+
+    // 3. Boğaz Sahil Yolu (Karaköy - Kabataş - Beşiktaş - Ortaköy - Bebek)
+    const coastalPts = [
+      new THREE.Vector3(-75, 7.8, 70),
+      new THREE.Vector3(-68, 7.8, 30),
+      new THREE.Vector3(-62, 7.8, -5),
+      new THREE.Vector3(-55, 7.8, -30),
+      new THREE.Vector3(-62, 7.8, -65),
+      new THREE.Vector3(-68, 7.8, -110),
+      new THREE.Vector3(-75, 7.8, -160)
+    ];
+    this.createRoadRibbon(coastalPts, 5.0, 0x161f33, false);
+  }
+
+  createRoadRibbon(points, width = 6.0, color = 0x121826, hasCenterLine = true) {
+    const curve = new THREE.CatmullRomCurve3(points);
+    const sampleCount = Math.max(24, points.length * 8);
+    const samplePoints = curve.getPoints(sampleCount);
+
+    const vertices = [];
+    const uvs = [];
+    const indices = [];
+
+    for (let i = 0; i < samplePoints.length; i++) {
+      const p = samplePoints[i];
+      let tangent;
+      if (i < samplePoints.length - 1) {
+        tangent = new THREE.Vector3().subVectors(samplePoints[i + 1], p).normalize();
+      } else {
+        tangent = new THREE.Vector3().subVectors(p, samplePoints[i - 1]).normalize();
+      }
+      const side = new THREE.Vector3(-tangent.z, 0, tangent.x).normalize().multiplyScalar(width / 2);
+
+      const left = new THREE.Vector3().addVectors(p, side);
+      const right = new THREE.Vector3().subVectors(p, side);
+
+      vertices.push(left.x, left.y, left.z);
+      vertices.push(right.x, right.y, right.z);
+
+      const u = i / (samplePoints.length - 1);
+      uvs.push(0, u, 1, u);
+
+      if (i < samplePoints.length - 1) {
+        const row = i * 2;
+        indices.push(row, row + 1, row + 2);
+        indices.push(row + 1, row + 3, row + 2);
+      }
+    }
+
+    const roadGeo = new THREE.BufferGeometry();
+    roadGeo.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+    roadGeo.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
+    roadGeo.setIndex(indices);
+    roadGeo.computeVertexNormals();
+
+    const roadMat = new THREE.MeshStandardMaterial({
+      color: color,
+      roughness: 0.88,
+      metalness: 0.15,
+      side: THREE.DoubleSide
+    });
+    const roadMesh = new THREE.Mesh(roadGeo, roadMat);
+    this.scene.add(roadMesh);
+
+    if (hasCenterLine) {
+      const lineCurve = new THREE.CatmullRomCurve3(points.map(pt => new THREE.Vector3(pt.x, pt.y + 0.15, pt.z)));
+      const lineGeo = new THREE.TubeGeometry(lineCurve, sampleCount, 0.28, 4, false);
+      const lineMat = new THREE.MeshBasicMaterial({ color: 0x00f0ff, transparent: true, opacity: 0.85 });
+      const lineMesh = new THREE.Mesh(lineGeo, lineMat);
+      this.scene.add(lineMesh);
+    }
+
+    return roadMesh;
+  }
+
   /**
-   * Avrupa ve Anadolu Kıyı Sınırlarına Parlayan Kıyı Kılavuz Çizgileri (Shoreline Glowing Lines)
-   * Boğaz'ın S-kıvrımı ve Haliç uzaydan bakıldığında neon turkuaz ve neon pembe hatlarla parıldayan bir su yolu olarak ayrışır.
+   * Yeşil Kuşaklar ve Şehir Korulukları (Gülhane, Yıldız & Çamlıca)
+   */
+  createGreenBelts() {
+    this.createParkZone('Gülhane Parkı', -95, 132, 24, 18, 0x14532d);
+    this.createParkZone('Yıldız Parkı', -95, -15, 26, 20, 0x166534);
+    this.createParkZone('Çamlıca Tepesi Koruluğu', 175, 0, 38, 30, 0x14532d);
+  }
+
+  createParkZone(name, centerX, centerZ, radius, treeCount, baseColor = 0x14532d) {
+    const parkGroup = new THREE.Group();
+    const groundY = this.getGroundElevation(centerX, centerZ);
+    parkGroup.position.set(centerX, groundY, centerZ);
+
+    // Kademeli Yeşil Teras
+    const moundGeo = new THREE.CylinderGeometry(radius * 0.75, radius, 2.2, 16);
+    const moundMat = new THREE.MeshStandardMaterial({
+      color: baseColor,
+      roughness: 0.85,
+      metalness: 0.1
+    });
+    const mound = new THREE.Mesh(moundGeo, moundMat);
+    mound.position.y = 1.1;
+    mound.receiveShadow = true;
+    parkGroup.add(mound);
+
+    // 3D Cyber Servi & Çam Ağaçları
+    const trunkGeo = new THREE.CylinderGeometry(0.3, 0.45, 2.5, 6);
+    const trunkMat = new THREE.MeshStandardMaterial({ color: 0x2b1d0c, roughness: 0.9 });
+    const foliageGeo = new THREE.ConeGeometry(1.6, 5.0, 7);
+    const foliageMat = new THREE.MeshStandardMaterial({
+      color: baseColor,
+      roughness: 0.75,
+      metalness: 0.15
+    });
+
+    for (let i = 0; i < treeCount; i++) {
+      const angle = Math.random() * Math.PI * 2;
+      const dist = Math.random() * (radius * 0.8);
+      const tx = Math.cos(angle) * dist;
+      const tz = Math.sin(angle) * dist;
+
+      const tree = new THREE.Group();
+      tree.position.set(tx, 2.2, tz);
+
+      const trunk = new THREE.Mesh(trunkGeo, trunkMat);
+      trunk.position.y = 1.25;
+      tree.add(trunk);
+
+      const foliage = new THREE.Mesh(foliageGeo, foliageMat);
+      foliage.position.y = 4.2;
+      tree.add(foliage);
+
+      parkGroup.add(tree);
+    }
+
+    this.scene.add(parkGroup);
+    return parkGroup;
+  }
+
+  /**
+   * Avrupa, Haliç ve Anadolu Kıyı Sınırlarına Parlayan Kıyı Kılavuz Çizgileri
    */
   createShorelines() {
-    // 1. Neon Turkuaz (#00f0ff) Avrupa ve Haliç Kıyı Kılavuz Çizgisi
-    const eurPoints = [];
-    for (let z = -380; z <= 60; z += 20) {
-      const x = this.getBosphorusCenter(z) - this.getStraitHalfWidth(z);
-      eurPoints.push(new THREE.Vector3(x, 1.2, z));
-    }
-    // Haliç girintisi (Galata kıyısından kuzeybatıya, oradan Sarayburnu'na dönüş)
-    eurPoints.push(new THREE.Vector3(-65, 1.2, 75));
-    eurPoints.push(new THREE.Vector3(-120, 1.2, 60));
-    eurPoints.push(new THREE.Vector3(-190, 1.2, 45));
-    eurPoints.push(new THREE.Vector3(-220, 1.2, 40));
-    eurPoints.push(new THREE.Vector3(-190, 1.2, 55));
-    eurPoints.push(new THREE.Vector3(-120, 1.2, 95));
-    eurPoints.push(new THREE.Vector3(-75, 1.2, 140)); // Sarayburnu Burnu ucu
-
-    for (let z = 160; z <= 380; z += 20) {
-      const x = this.getBosphorusCenter(z) - this.getStraitHalfWidth(z);
-      eurPoints.push(new THREE.Vector3(x, 1.2, z));
-    }
+    // 1. Neon Turkuaz (#00f0ff) Avrupa, Haliç ve Tarihi Yarımada Kıyı Kılavuz Çizgisi
+    const eurPoints = [
+      new THREE.Vector3(-80, 1.2, -380),
+      new THREE.Vector3(-75, 1.2, -300),
+      new THREE.Vector3(-70, 1.2, -220),
+      new THREE.Vector3(-65, 1.2, -140),
+      new THREE.Vector3(-60, 1.2, -70),
+      new THREE.Vector3(-55, 1.2, -30),   // Ortaköy Köprü Ayağı
+      new THREE.Vector3(-60, 1.2, 5),     // Beşiktaş
+      new THREE.Vector3(-66, 1.2, 40),    // Kabataş
+      new THREE.Vector3(-74, 1.2, 65),    // Karaköy
+      // Haliç Kuzey Kıyısı (Karaköy -> Kasımpaşa -> Eyüp)
+      new THREE.Vector3(-110, 1.2, 60),
+      new THREE.Vector3(-170, 1.2, 48),
+      new THREE.Vector3(-240, 1.2, 36),
+      new THREE.Vector3(-310, 1.2, 22),
+      new THREE.Vector3(-330, 1.2, 20),   // Haliç Başı
+      new THREE.Vector3(-310, 1.2, 34),
+      // Haliç Güney Kıyısı (Balat -> Fener -> Cibali -> Eminönü)
+      new THREE.Vector3(-240, 1.2, 52),
+      new THREE.Vector3(-170, 1.2, 70),
+      new THREE.Vector3(-120, 1.2, 92),
+      new THREE.Vector3(-88, 1.2, 118),   // Sarayburnu Kıyı Girişi
+      // Sarayburnu Burnu (Yarımada Doğu Ucu)
+      new THREE.Vector3(-82, 1.2, 134),
+      new THREE.Vector3(-88, 1.2, 150),
+      // Marmara Kıyısı (Kennedy Caddesi Boyu)
+      new THREE.Vector3(-105, 1.2, 172),
+      new THREE.Vector3(-140, 1.2, 186),
+      new THREE.Vector3(-190, 1.2, 194),
+      new THREE.Vector3(-260, 1.2, 192),
+      new THREE.Vector3(-350, 1.2, 188),
+      new THREE.Vector3(-450, 1.2, 188)
+    ];
 
     const eurCurve = new THREE.CatmullRomCurve3(eurPoints);
-    const eurGeo = new THREE.TubeGeometry(eurCurve, 120, 1.3, 8, false);
+    const eurGeo = new THREE.TubeGeometry(eurCurve, 140, 1.2, 8, false);
     this.europeShorelineMat = new THREE.MeshStandardMaterial({
       color: 0x00f0ff,
       emissive: 0x00f0ff,
@@ -374,13 +578,26 @@ export class BosphorusScene {
     this.scene.add(this.europeShoreline);
 
     // 2. Neon Pembe (#ff007f) Anadolu Kıyı Kılavuz Çizgisi
-    const asiaPoints = [];
-    for (let z = -380; z <= 380; z += 20) {
-      const x = this.getBosphorusCenter(z) + this.getStraitHalfWidth(z);
-      asiaPoints.push(new THREE.Vector3(x, 1.2, z));
-    }
+    const asiaPoints = [
+      new THREE.Vector3(75, 1.2, -380),
+      new THREE.Vector3(68, 1.2, -300),
+      new THREE.Vector3(62, 1.2, -220),
+      new THREE.Vector3(58, 1.2, -140),
+      new THREE.Vector3(52, 1.2, -70),
+      new THREE.Vector3(55, 1.2, -30),    // Beylerbeyi Köprü Ayağı
+      new THREE.Vector3(62, 1.2, 10),     // Kuzguncuk
+      new THREE.Vector3(72, 1.2, 45),     // Üsküdar
+      new THREE.Vector3(78, 1.2, 75),     // Salacak (Kız Kulesi Açıkları)
+      new THREE.Vector3(88, 1.2, 120),    // Harem
+      new THREE.Vector3(92, 1.2, 155),    // Kadıköy Rıhtım
+      new THREE.Vector3(108, 1.2, 190),   // Moda Burnu
+      new THREE.Vector3(135, 1.2, 215),   // Fenerbahçe
+      new THREE.Vector3(220, 1.2, 222),   // Bostancı
+      new THREE.Vector3(340, 1.2, 222),   // Maltepe
+      new THREE.Vector3(450, 1.2, 222)
+    ];
     const asiaCurve = new THREE.CatmullRomCurve3(asiaPoints);
-    const asiaGeo = new THREE.TubeGeometry(asiaCurve, 90, 1.3, 8, false);
+    const asiaGeo = new THREE.TubeGeometry(asiaCurve, 110, 1.2, 8, false);
     this.asiaShorelineMat = new THREE.MeshStandardMaterial({
       color: 0xff007f,
       emissive: 0xff007f,
@@ -391,22 +608,27 @@ export class BosphorusScene {
     this.scene.add(this.asiaShoreline);
   }
 
+  /**
+   * 1600 Binalık Procedural Ambient Şehir Dokusu (InstancedMesh - 4 Farklı Semt Renk Paleti)
+   * Tarihi Yarımada: Alçak katlı (#b45309 kiremit, #78350f taş/ahşap)
+   * Maslak/Levent: Yüksek (#0284c7 cam mavisi, #1e293b çelik antrasit)
+   * Kadıköy/Üsküdar: Konut (#cbd5e1 açık arduvaz, #e2e8f0 konut beji)
+   */
   createAmbientMetropole() {
-    const ambientCount = 1500;
+    const ambientCount = 1600;
     const boxGeo = new THREE.BoxGeometry(1, 1, 1);
 
     this.ambientMat = new THREE.MeshStandardMaterial({
-      color: 0x1e293b,
-      roughness: 0.35,
-      metalness: 0.5,
-      emissive: 0x0c1e38,
-      emissiveIntensity: 0.55,
+      color: 0xffffff,
+      roughness: 0.4,
+      metalness: 0.45,
+      emissive: 0x071120,
+      emissiveIntensity: 0.35,
       transparent: true,
-      opacity: 0.88
+      opacity: 0.92
     });
 
     this.ambientMesh = new THREE.InstancedMesh(boxGeo, this.ambientMat, ambientCount);
-    // Mimari Kural 1: Sıfır Raycast yükü & AST bina seçimlerine engel olmama
     this.ambientMesh.raycast = () => {};
 
     const matrix = new THREE.Matrix4();
@@ -415,47 +637,70 @@ export class BosphorusScene {
     const scale = new THREE.Vector3();
     const euler = new THREE.Euler();
 
+    // Semt Renk Paletleri
+    const colorHistoric1 = new THREE.Color(0xb45309); // Kiremit / Terracotta
+    const colorHistoric2 = new THREE.Color(0x78350f); // Ahşap / Sıcak Taş
+    const colorMaslak1 = new THREE.Color(0x0284c7);   // Cam Mavisi
+    const colorMaslak2 = new THREE.Color(0x1e293b);   // Çelik Antrasit
+    const colorGalata1 = new THREE.Color(0x475569);   // Beyoğlu Taşı
+    const colorGalata2 = new THREE.Color(0x64748b);   // Arduvaz Gri
+    const colorAsia1 = new THREE.Color(0xcbd5e1);     // Açık Arduvaz
+    const colorAsia2 = new THREE.Color(0xe2e8f0);     // Konut Beji
+
     let placed = 0;
     let attempts = 0;
 
-    while (placed < ambientCount && attempts < 5000) {
+    while (placed < ambientCount && attempts < 6000) {
       attempts++;
 
-      // Avrupa veya Anadolu Yakasına ağırlıklı dağıtım
-      const side = Math.random() < 0.54 ? 'europe' : 'asia';
+      const side = Math.random() < 0.52 ? 'europe' : 'asia';
       let x = 0;
       let z = (Math.random() * 660) - 330;
 
       if (side === 'europe') {
-        x = -72 - (Math.random() * 185);
+        x = -72 - (Math.random() * 220);
       } else {
-        x = 72 + (Math.random() * 185);
+        x = 72 + (Math.random() * 220);
       }
 
-      // Su poligonuna (Boğaz ve Haliç) taşmama ve 8 birimlik kıyı güvenlik payı koruması
-      if (!this.isPointOnLand(x, z, 8)) continue;
+      // Su poligonuna taşmama
+      if (!this.isPointOnLand(x, z, 6)) continue;
 
       const groundY = this.getGroundElevation(x, z);
 
-      // Bölgesel Yükseklik Hiyerarşisi
       let height = 8;
       let width = 6 + Math.random() * 6;
       let depth = width * (0.8 + Math.random() * 0.4);
+      let chosenColor = colorMaslak2;
 
-      if (x < -100 && z < -60) {
-        // Maslak & Levent: Yüksek gökdelenler
-        height = 20 + Math.random() * 45;
+      if (x < -70 && z >= 85 && z <= 190) {
+        // 1. Tarihi Yarımada: Alçak katlı (Y: 5-13), kiremit & kumtaşı
+        height = 5 + Math.random() * 8;
         width = 8 + Math.random() * 7;
-      } else if (x < -70 && z > 130) {
-        // Tarihi Yarımada: Alçak ve yayvan geleneksel doku
-        height = 6 + Math.random() * 12;
-        width = 9 + Math.random() * 8;
-      } else if (x > 140 && z < -60) {
-        // Ataşehir: Modern finans kuleleri
+        depth = width * (0.8 + Math.random() * 0.4);
+        chosenColor = Math.random() < 0.55 ? colorHistoric1 : colorHistoric2;
+      } else if (x < -65 && z < -40) {
+        // 2. Maslak / Levent: Yüksek modern gökdelenler (Y: 35-85)
+        height = 25 + Math.random() * 60;
+        width = 8 + Math.random() * 8;
+        depth = width * (0.8 + Math.random() * 0.4);
+        chosenColor = Math.random() < 0.5 ? colorMaslak1 : colorMaslak2;
+      } else if (x < -60 && z >= 25 && z < 85) {
+        // 3. Galata / Beyoğlu: Orta ölçek geleneksel doku (Y: 8-16)
+        height = 8 + Math.random() * 9;
+        width = 7 + Math.random() * 6;
+        depth = width;
+        chosenColor = Math.random() < 0.5 ? colorGalata1 : colorGalata2;
+      } else if (x > 120 && z < -60) {
+        // 4. Ataşehir: Modern finans kuleleri
         height = 18 + Math.random() * 38;
+        width = 8 + Math.random() * 7;
+        chosenColor = Math.random() < 0.5 ? colorMaslak1 : colorAsia1;
       } else {
-        // Kadıköy, Üsküdar, Beşiktaş: Orta ölçek metropol
-        height = 8 + Math.random() * 18;
+        // 5. Kadıköy, Üsküdar: Konut beji ve açık arduvaz (Y: 7-16)
+        height = 7 + Math.random() * 10;
+        width = 7 + Math.random() * 6;
+        chosenColor = Math.random() < 0.5 ? colorAsia1 : colorAsia2;
       }
 
       position.set(x, groundY + (height / 2), z);
@@ -465,10 +710,14 @@ export class BosphorusScene {
 
       matrix.compose(position, quaternion, scale);
       this.ambientMesh.setMatrixAt(placed, matrix);
+      this.ambientMesh.setColorAt(placed, chosenColor);
       placed++;
     }
 
     this.ambientMesh.instanceMatrix.needsUpdate = true;
+    if (this.ambientMesh.instanceColor) {
+      this.ambientMesh.instanceColor.needsUpdate = true;
+    }
     this.ambientMesh.receiveShadow = true;
     this.ambientMesh.castShadow = true;
     this.scene.add(this.ambientMesh);
@@ -521,7 +770,6 @@ export class BosphorusScene {
       const towerGroup = new THREE.Group();
       towerGroup.position.set(xPos, 0, bridgeZ);
 
-      // İki bacak
       const legGeo = new THREE.BoxGeometry(4.5, 75, 4.5);
       const northLeg = new THREE.Mesh(legGeo, towerMat);
       northLeg.position.set(0, 37.5, -5.5);
@@ -531,7 +779,6 @@ export class BosphorusScene {
       southLeg.position.set(0, 37.5, 5.5);
       towerGroup.add(southLeg);
 
-      // Alt ve Üst Enine Kirişler
       const crossGeo = new THREE.BoxGeometry(4.2, 3.5, 11);
       const lowerCross = new THREE.Mesh(crossGeo, towerMat);
       lowerCross.position.set(0, 19, 0);
@@ -549,7 +796,7 @@ export class BosphorusScene {
     this.bridgeGroup.add(europeTower);
     this.bridgeGroup.add(asiaTower);
 
-    // 3. Kavisli Taşıyıcı Ana Halatlar (CatmullRomCurve3 Parabolik Katenar Eğrisi)
+    // 3. Kavisli Taşıyıcı Ana Halatlar
     this.bridgeCableMat = new THREE.MeshStandardMaterial({
       color: 0x00f0ff,
       emissive: 0x00f0ff,
@@ -570,7 +817,7 @@ export class BosphorusScene {
       const cableMesh = new THREE.Mesh(tubeGeo, this.bridgeCableMat);
       this.bridgeGroup.add(cableMesh);
 
-      // 4. Dikey Askı Halatları (Suspenders)
+      // 4. Dikey Askı Halatları
       const suspenderMat = new THREE.LineBasicMaterial({ color: 0x00f0ff, transparent: true, opacity: 0.7 });
       for (let x = -50; x <= 50; x += 5) {
         const u = (x + 55) / 110;
@@ -591,15 +838,16 @@ export class BosphorusScene {
   }
 
   /**
-   * İkonik Tarihi ve Mimari Landmark'lar
-   * KURAL 3: Kız Kulesi feneri SpotLight yerine yarı saydam ConeGeometry mesh ile 144 FPS çalışır.
+   * İkonik Tarihi ve Mimari Landmark'lar (Kesin Coğrafi Koordinatlar)
    */
   createLandmarks() {
     const goldMat = new THREE.MeshStandardMaterial({ color: 0xffd700, metalness: 0.9, roughness: 0.2 });
+    const stoneMat = new THREE.MeshStandardMaterial({ color: 0xd6cbb6, roughness: 0.6 });
+    const balconyMat = new THREE.MeshStandardMaterial({ color: 0xa89985, roughness: 0.5 });
 
-    // 1. KIZ KULESİ (Salacak açıklarında, Boğaz suyunun ortasında taş adacık üzerinde)
+    // 1. KIZ KULESİ (Salacak/Üsküdar açıklarında, Boğaz suyunun ortasındaki kayalık adacıkta)
     this.maidenTowerGroup = new THREE.Group();
-    this.maidenTowerGroup.position.set(20, 0, 65);
+    this.maidenTowerGroup.position.set(35, 0, 65);
 
     const isletGeo = new THREE.CylinderGeometry(24, 28, 4.5, 8);
     const isletMat = new THREE.MeshStandardMaterial({ color: 0x222a36, roughness: 0.9 });
@@ -608,7 +856,6 @@ export class BosphorusScene {
     this.maidenTowerGroup.add(islet);
 
     const fortressGeo = new THREE.CylinderGeometry(14, 15, 8, 8);
-    const stoneMat = new THREE.MeshStandardMaterial({ color: 0xd6cbb6, roughness: 0.6 });
     const fortress = new THREE.Mesh(fortressGeo, stoneMat);
     fortress.position.y = 8;
     this.maidenTowerGroup.add(fortress);
@@ -619,7 +866,6 @@ export class BosphorusScene {
     this.maidenTowerGroup.add(tower);
 
     const balconyGeo = new THREE.CylinderGeometry(9.5, 9.5, 1.6, 16);
-    const balconyMat = new THREE.MeshStandardMaterial({ color: 0xa89985, roughness: 0.5 });
     const balcony = new THREE.Mesh(balconyGeo, balconyMat);
     balcony.position.y = 23;
     this.maidenTowerGroup.add(balcony);
@@ -635,7 +881,7 @@ export class BosphorusScene {
     spire.position.y = 34;
     this.maidenTowerGroup.add(spire);
 
-    // KURAL 3: Kız Kulesi 360° Dönen Yarı Saydam Fener Konisi (ConeGeometry - Zero Heavy Spotlight)
+    // Dönen Yarı Saydam Fener Konisi (ConeGeometry)
     const beamGeo = new THREE.ConeGeometry(7, 55, 16, 1, true);
     beamGeo.rotateX(Math.PI / 2);
     beamGeo.translate(0, 0, 27.5);
@@ -653,9 +899,9 @@ export class BosphorusScene {
 
     this.scene.add(this.maidenTowerGroup);
 
-    // 2. GALATA KULESİ (Karaköy/Beyoğlu tepesi zirvesinde)
+    // 2. GALATA KULESİ (Haliç'in tam karşısı, Karaköy/Beyoğlu tepesi zirvesinde)
     this.galataTowerGroup = new THREE.Group();
-    this.galataTowerGroup.position.set(-100, 8, 55);
+    this.galataTowerGroup.position.set(-105, 16, 45);
 
     const galataMainGeo = new THREE.CylinderGeometry(13, 15, 60, 24);
     const galataStoneMat = new THREE.MeshStandardMaterial({ color: 0xb5a692, roughness: 0.7 });
@@ -686,9 +932,10 @@ export class BosphorusScene {
 
     this.scene.add(this.galataTowerGroup);
 
-    // 3. TARİHİ YARIMADA SİLÜETİ (Ayasofya & Sultanahmet Temsili Domes ve Minareler)
+    // 3. TARİHİ YARIMADA SİLÜETİ (Ayasofya & Sultanahmet Kubbeleri ve 4 Minare)
+    // Sarayburnu sırtında, Boğaz girişi ve Marmara'ya hakim tepe
     this.hagiaSophiaGroup = new THREE.Group();
-    this.hagiaSophiaGroup.position.set(-165, 14, 225);
+    this.hagiaSophiaGroup.position.set(-125, 13, 155);
 
     const mosqueBaseGeo = new THREE.BoxGeometry(42, 14, 42);
     const mosqueBaseMat = new THREE.MeshStandardMaterial({ color: 0xc49a7a, roughness: 0.7 });
@@ -870,7 +1117,7 @@ export class BosphorusScene {
       let targetPos = new THREE.Vector3();
 
       if (mod.district && mod.district.isLandmark === 'maiden_tower') {
-        targetPos.set(20, 30, 65);
+        targetPos.set(35, 30, 65);
         this.buildingObjects.push(this.maidenTowerGroup);
         this.buildingsMeshMap.set(this.maidenTowerGroup, mod);
         this.maidenTowerGroup.userData = { module: mod };
@@ -878,7 +1125,7 @@ export class BosphorusScene {
         continue;
       }
       if (mod.district && mod.district.isLandmark === 'galata_tower') {
-        targetPos.set(-100, 45, 55);
+        targetPos.set(-105, 50, 45);
         this.buildingObjects.push(this.galataTowerGroup);
         this.buildingsMeshMap.set(this.galataTowerGroup, mod);
         this.galataTowerGroup.userData = { module: mod };
@@ -887,29 +1134,38 @@ export class BosphorusScene {
       }
 
       if (mod.district && mod.district.side === 'europe') {
+        // Maslak & Levent Finans Platosu: Dinamik AST kod binaları buraya kümelenir
         targetPos.set(europeX, 0, europeZ);
-        europeZ += 55;
-        if (europeZ > 180) {
+        europeZ += 45;
+        if (europeZ > -45) {
           europeZ = -220;
-          europeX -= 60;
+          europeX -= 45;
         }
       } else if (mod.district && mod.district.side === 'asia') {
         targetPos.set(asiaX, 0, asiaZ);
-        asiaZ += 55;
-        if (asiaZ > 180) {
+        asiaZ += 45;
+        if (asiaZ > -45) {
           asiaZ = -220;
-          asiaX += 60;
+          asiaX += 45;
         }
       } else if (mod.district && mod.district.side === 'historic') {
+        // Tarihi Yarımada: Asla gökdelen olmayacak! Alçak katlı bloklar
         targetPos.set(historicX, 0, historicZ);
-        historicZ += 30;
+        historicZ += 25;
+        if (historicZ > 175) {
+          historicZ = 120;
+          historicX -= 30;
+        }
       } else {
         targetPos.set(islandX, 0, islandZ);
         islandX += 35;
       }
 
+      const isHistoricPeninsula = mod.district && mod.district.side === 'historic';
       const groundY = this.getTerrainHeight(targetPos.x, targetPos.z);
-      const height = Math.min(190, Math.max(35, (mod.loc / 7) + (mod.complexity * 1.6)));
+      const height = isHistoricPeninsula
+        ? Math.min(14, Math.max(6, (mod.loc / 25) + 6))
+        : Math.min(190, Math.max(35, (mod.loc / 7) + (mod.complexity * 1.6)));
       const width = Math.min(42, Math.max(18, Math.sqrt(mod.loc) * 1.3));
       const depth = width;
 
@@ -1169,17 +1425,17 @@ export class BosphorusScene {
 
   flyToDistrict(districtKey) {
     const coords = {
-      'maslak': { x: -180, y: 30, z: -160, camX: -180, camY: 160, camZ: 40 },
-      'levent': { x: -120, y: 20, z: -40, camX: -120, camY: 130, camZ: 140 },
-      'besiktas': { x: -80, y: 15, z: 60, camX: -80, camY: 110, camZ: 220 },
+      'maslak': { x: -180, y: 35, z: -160, camX: -180, camY: 160, camZ: 40 },
+      'levent': { x: -120, y: 25, z: -45, camX: -120, camY: 130, camZ: 140 },
+      'besiktas': { x: -75, y: 15, z: -10, camX: -75, camY: 100, camZ: 150 },
       'bridge': { x: 0, y: 25, z: -30, camX: 0, camY: 120, camZ: 160 },
-      'kadikoy': { x: 140, y: 20, z: -40, camX: 140, camY: 130, camZ: 140 },
-      'uskudar': { x: 90, y: 18, z: 40, camX: 90, camY: 110, camZ: 210 },
+      'kadikoy': { x: 95, y: 18, z: 160, camX: 95, camY: 110, camZ: 280 },
+      'uskudar': { x: 80, y: 18, z: 40, camX: 80, camY: 100, camZ: 160 },
       'atasehir': { x: 190, y: 25, z: -160, camX: 190, camY: 150, camZ: 20 },
-      'historic': { x: -165, y: 20, z: 225, camX: -165, camY: 110, camZ: 380 },
+      'historic': { x: -125, y: 18, z: 155, camX: -125, camY: 95, camZ: 280 },
       'islands': { x: 100, y: 10, z: 340, camX: 100, camY: 90, camZ: 480 },
-      'maiden': { x: 20, y: 15, z: 65, camX: 20, camY: 60, camZ: 135 },
-      'galata': { x: -100, y: 35, z: 55, camX: -100, camY: 90, camZ: 155 },
+      'maiden': { x: 35, y: 15, z: 65, camX: 30, camY: 55, camZ: 140 },
+      'galata': { x: -105, y: 25, z: 45, camX: -85, camY: 80, camZ: 135 },
       'coastguard': { x: 16, y: 10, z: -45, camX: 16, camY: 45, camZ: 25 },
       'ferry': { x: 0, y: 5, z: 80, camX: -30, camY: 35, camZ: 140 }
     };
