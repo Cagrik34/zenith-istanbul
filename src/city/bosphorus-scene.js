@@ -200,71 +200,88 @@ export class BosphorusScene {
   }
 
   /**
-   * Kıyı Şeridi ve Su Güvenlik Tamponu (Shoreline Buffer Margin)
-   * Marmara, Haliç ve Boğaz sularından karayı kesin olarak ayırır.
+   * Kıyı Şeridi Mesafesi Matematiği (Signed Shoreline Distance)
+   * Kara içindeyse pozitif mesafe, su içindeyse negatif mesafe döner.
    */
-  isPointOnLand(x, z, bufferMargin = 0) {
-    if (this.isMarmaraSea(x, z)) return false;
-    if (this.isInsideHalic(x, z, bufferMargin)) return false;
-    const center = this.getBosphorusCenter(z);
-    const halfWidth = this.getStraitHalfWidth(z) + bufferMargin;
-    if (x > center - halfWidth && x < center + halfWidth) return false;
-    return true;
+  getShoreDistance(x, z) {
+    const bCenter = this.getBosphorusCenter(z);
+    const bHalf = this.getStraitHalfWidth(z);
+    const distBosphorus = x < bCenter ? (bCenter - bHalf) - x : x - (bCenter + bHalf);
+
+    let distHalic = 999;
+    if (x <= -60 && x >= -350) {
+      const t = (-65 - x) / 250;
+      if (t >= -0.05 && t <= 1.1) {
+        const halicCenterZ = 95 - t * 80;
+        const halicHalf = 22 - t * 10;
+        distHalic = Math.abs(z - halicCenterZ) - halicHalf;
+      }
+    }
+
+    let distMarmara = 999;
+    if (x < -70) {
+      const coastZ = 190 + (x + 70) * 0.15;
+      distMarmara = coastZ - z;
+    } else if (x > 60) {
+      distMarmara = 220 - z;
+    } else {
+      distMarmara = 170 - z;
+    }
+    if (z > 240) distMarmara = Math.min(distMarmara, 240 - z);
+
+    return Math.min(distBosphorus, distHalic, distMarmara);
   }
 
   /**
-   * AST Gökdelenlerinin Araziye Oturtulması (Terrain-Height Snapping)
+   * Kıyı Şeridi ve Su Güvenlik Tamponu
+   */
+  isPointOnLand(x, z, bufferMargin = 0) {
+    return this.getShoreDistance(x, z) > bufferMargin;
+  }
+
+  /**
+   * AST Gökdelenlerinin ve Kentsel Dokunun Araziye Oturtulması (Organic Terrain-Height)
+   * 90 derecelik dik uçurumlar kaldırılmış; kıyı şeridi boyunca suya doğru yumuşak sahil şevi uygulanır.
    */
   getTerrainHeight(x, z) {
     return this.getGroundElevation(x, z);
   }
 
   getGroundElevation(x, z) {
-    if (!this.isPointOnLand(x, z, 0)) return -14;
+    const shoreDist = this.getShoreDistance(x, z);
 
-    // 1. Tarihi Yarımada (Sarayburnu, Fatih, Sultanahmet, Süleymaniye)
-    // Kuzeyi Haliç, Doğusu Boğaz, Güneyi Marmara Denizi
+    // 1. İç Plato Taban Kotu
+    let plateauHeight = 8;
     if (x < -70 && z >= 85 && z <= 190) {
       const distToSarayburnu = Math.hypot(x - (-85), z - 130);
-      if (distToSarayburnu < 35) {
-        return 10; // Sarayburnu burnu tepesi (Topkapı & Gülhane)
-      }
-      return 13; // Sultanahmet & Süleymaniye sırtı
-    }
-
-    // 2. Galata / Beyoğlu / Taksim Tepesi (Haliç'in kuzeyi, Karaköy sırtları)
-    if (x < -60 && z >= 25 && z < 85) {
+      plateauHeight = distToSarayburnu < 35 ? 10 : 13;
+    } else if (x < -60 && z >= 25 && z < 85) {
       const distToGalata = Math.hypot(x - (-105), z - 45);
-      return Math.max(8, 16 - distToGalata * 0.05);
-    }
-
-    // 3. Beşiktaş / Ortaköy sahil şeridi
-    if (x < -55 && z >= -40 && z < 25) {
-      return 7;
-    }
-
-    // 4. Maslak / Levent / Şişli Platosu (Kuzey Avrupa sırtları - AST çekirdeği)
-    if (x < -65 && z < -40) {
+      plateauHeight = Math.max(8, 16 - distToGalata * 0.05);
+    } else if (x < -55 && z >= -40 && z < 25) {
+      plateauHeight = 7;
+    } else if (x < -65 && z < -40) {
       const distToMaslak = Math.hypot(x - (-180), z - (-160));
-      return Math.max(12, 28 - distToMaslak * 0.05);
-    }
-
-    // 5. Anadolu Yakası (X > 50)
-    if (x > 50) {
-      // Çamlıca Tepesi (Yumuşak kubbe orman tepesi)
+      plateauHeight = Math.max(12, 28 - distToMaslak * 0.05);
+    } else if (x > 50) {
       const distToCamlica = Math.hypot(x - 175, z - 0);
-      if (distToCamlica < 90) {
-        return Math.max(8, 36 - distToCamlica * 0.32);
-      }
-      // Ataşehir Finans Platosu
-      if (z < -60) {
-        return 20;
-      }
-      // Kadıköy & Üsküdar kıyısı
-      return 8;
+      if (distToCamlica < 90) plateauHeight = Math.max(8, 36 - distToCamlica * 0.32);
+      else if (z < -60) plateauHeight = 20;
+      else plateauHeight = 8;
     }
 
-    return 0;
+    // 2. Organik Kıyı Şevi (Sahil Dolgusu - Su Seviyesi Y=0.5 İle Yumuşak Kavuşma)
+    const slopeWidth = 20;
+    if (shoreDist <= 0) {
+      // Su altı deniz tabanı şelfi (0.4'ten -14'e yumuşak derinleşme)
+      return Math.max(-14, 0.4 + shoreDist * 0.7);
+    } else if (shoreDist < slopeWidth) {
+      const t = shoreDist / slopeWidth;
+      const smoothT = t * t * (3 - 2 * t);
+      return 0.6 + smoothT * (plateauHeight - 0.6);
+    }
+
+    return plateauHeight;
   }
 
   /**
@@ -470,11 +487,13 @@ export class BosphorusScene {
   }
 
   /**
-   * Yeşil Kuşaklar ve Şehir Korulukları (Gülhane, Yıldız & Çamlıca)
+   * Yeşil Kuşaklar ve Şehir Korulukları (Gülhane, Yıldız, Maslak & Çamlıca)
+   * Yapay düz diskler kaldırılmış; topografyaya gömülü, kenarları araziyle kaynaşan organik tepe korulukları
    */
   createGreenBelts() {
     this.createParkZone('Gülhane Parkı', -95, 132, 24, 18, 0x14532d);
     this.createParkZone('Yıldız Parkı', -95, -15, 26, 20, 0x166534);
+    this.createParkZone('Maslak Koruluğu', -180, -135, 28, 22, 0x14532d);
     this.createParkZone('Çamlıca Tepesi Koruluğu', 175, 0, 38, 30, 0x14532d);
   }
 
@@ -483,19 +502,21 @@ export class BosphorusScene {
     const groundY = this.getGroundElevation(centerX, centerZ);
     parkGroup.position.set(centerX, groundY, centerZ);
 
-    // Kademeli Yeşil Teras
-    const moundGeo = new THREE.CylinderGeometry(radius * 0.75, radius, 2.2, 16);
+    // Organik Tepe Yükseltisi (Kenarları Zemin Kotuna Sıfır İnen Yumuşak Kubbe Tepe - Sıfır Düz Disk)
+    const moundGeo = new THREE.SphereGeometry(radius, 24, 12, 0, Math.PI * 2, 0, Math.PI / 2);
+    moundGeo.scale(1, 0.10, 1);
     const moundMat = new THREE.MeshStandardMaterial({
       color: baseColor,
       roughness: 0.85,
-      metalness: 0.1
+      metalness: 0.1,
+      flatShading: true
     });
     const mound = new THREE.Mesh(moundGeo, moundMat);
-    mound.position.y = 1.1;
+    mound.position.y = 0.05;
     mound.receiveShadow = true;
     parkGroup.add(mound);
 
-    // 3D Cyber Servi & Çam Ağaçları
+    // 3D Cyber Servi & Çam Ağaçları - Her biri topografyaya doğal biçimde kök salar
     const trunkGeo = new THREE.CylinderGeometry(0.3, 0.45, 2.5, 6);
     const trunkMat = new THREE.MeshStandardMaterial({ color: 0x2b1d0c, roughness: 0.9 });
     const foliageGeo = new THREE.ConeGeometry(1.6, 5.0, 7);
@@ -507,12 +528,19 @@ export class BosphorusScene {
 
     for (let i = 0; i < treeCount; i++) {
       const angle = Math.random() * Math.PI * 2;
-      const dist = Math.random() * (radius * 0.8);
+      const dist = Math.random() * (radius * 0.85);
       const tx = Math.cos(angle) * dist;
       const tz = Math.sin(angle) * dist;
 
+      // Kubbe tepe üzerindeki gerçek kot farkı
+      const rRatio = dist / radius;
+      const moundHeight = Math.sqrt(Math.max(0, 1 - rRatio * rRatio)) * (radius * 0.10);
+
       const tree = new THREE.Group();
-      tree.position.set(tx, 2.2, tz);
+      tree.position.set(tx, moundHeight, tz);
+      tree.rotation.y = Math.random() * Math.PI * 2;
+      const treeScale = 0.8 + Math.random() * 0.4;
+      tree.scale.set(treeScale, treeScale, treeScale);
 
       const trunk = new THREE.Mesh(trunkGeo, trunkMat);
       trunk.position.y = 1.25;
@@ -883,20 +911,41 @@ export class BosphorusScene {
     spire.position.y = 34;
     this.maidenTowerGroup.add(spire);
 
-    // Dönen Yarı Saydam Fener Konisi (ConeGeometry)
-    const beamGeo = new THREE.ConeGeometry(7, 55, 16, 1, true);
+    // Kız Kulesi 360° Dönen Fener Işığı (Volumetric Horizon Beam - Sıfır Su Kesişimi & Yumuşak Degrade)
+    // Eğim: Tamamen yatay / ufka paralel (rotation.x = Math.PI / 2), Kot: Y = 24.5 (Suyun 20 birim üstü)
+    const beamLength = 42;
+    const beamGeo = new THREE.CylinderGeometry(0.6, 3.8, beamLength, 16, 1, true);
     beamGeo.rotateX(Math.PI / 2);
-    beamGeo.translate(0, 0, 27.5);
+    beamGeo.translate(0, 0, beamLength / 2);
+
+    // Yumuşak degrade kanvas dokusu (Kenardaki sert beyaz daire çizgisini %100 yok eder)
+    let beamAlphaTex = null;
+    if (typeof document !== 'undefined') {
+      const canvas = document.createElement('canvas');
+      canvas.width = 64;
+      canvas.height = 256;
+      const ctx = canvas.getContext('2d');
+      const grad = ctx.createLinearGradient(0, 0, 0, 256);
+      grad.addColorStop(0, 'rgba(255, 255, 255, 0.85)');
+      grad.addColorStop(0.35, 'rgba(255, 255, 255, 0.4)');
+      grad.addColorStop(0.8, 'rgba(255, 255, 255, 0.08)');
+      grad.addColorStop(1, 'rgba(255, 255, 255, 0.0)');
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, 64, 256);
+      beamAlphaTex = new THREE.CanvasTexture(canvas);
+    }
+
     const beamMat = new THREE.MeshBasicMaterial({
       color: 0xfff499,
+      alphaMap: beamAlphaTex,
       transparent: true,
-      opacity: 0.28,
+      opacity: 0.42,
       side: THREE.DoubleSide,
       blending: THREE.AdditiveBlending,
       depthWrite: false
     });
     this.maidenLightBeam = new THREE.Mesh(beamGeo, beamMat);
-    this.maidenLightBeam.position.set(0, 23.5, 0);
+    this.maidenLightBeam.position.set(0, 24.5, 0);
     this.maidenTowerGroup.add(this.maidenLightBeam);
 
     this.scene.add(this.maidenTowerGroup);

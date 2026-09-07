@@ -1194,8 +1194,8 @@
       flex: 0 0 170px !important;
     }
     #sample-select {
-      min-width: 185px !important;
-      flex: 0 0 185px !important;
+      min-width: 210px !important;
+      flex: 0 0 210px !important;
       text-overflow: ellipsis !important;
       white-space: nowrap !important;
       overflow: hidden !important;
@@ -1274,8 +1274,8 @@
         min-width: 0 !important;
       }
       #sample-select {
-        min-width: 185px !important;
-        flex: 0 0 185px !important;
+        min-width: 210px !important;
+        flex: 0 0 210px !important;
       }
     }
 
@@ -1286,8 +1286,8 @@
         min-width: 0 !important;
       }
       #sample-select {
-        min-width: 185px !important;
-        flex: 0 0 185px !important;
+        min-width: 210px !important;
+        flex: 0 0 210px !important;
       }
       .brand-icon {
         font-size: 18px !important;
@@ -2885,49 +2885,57 @@
     }
 
     function renderDriftUI() {
+      const panel = document.getElementById('drift-panel');
+      const body = document.getElementById('drift-body');
       const badgeCount = document.getElementById('drift-badge-count');
-      if (badgeCount) badgeCount.textContent = driftHistory.length;
+      const toggleIcon = document.getElementById('drift-toggle-icon');
 
       const svg = document.getElementById('drift-svg');
       const tooltip = document.getElementById('drift-tooltip');
       const list = document.getElementById('drift-history-list');
 
       if (!driftHistory || driftHistory.length === 0) {
-        if (svg) {
-          svg.innerHTML = `
-            <defs>
-              <linearGradient id="driftGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stop-color="#00f0ff" stop-opacity="0.35"/>
-                <stop offset="100%" stop-color="#00f0ff" stop-opacity="0.0"/>
-              </linearGradient>
-            </defs>
-            <path d="M 15 48 Q 75 42, 140 45 T 265 42 L 265 72 L 15 72 Z" fill="url(#driftGrad)" />
-            <path d="M 15 48 Q 75 42, 140 45 T 265 42" fill="none" stroke="#00f0ff" stroke-width="2.2" stroke-linecap="round"/>
-            <line x1="15" y1="58" x2="265" y2="58" stroke="rgba(255,255,255,0.08)" stroke-dasharray="4,4"/>
-            <circle cx="265" cy="42" r="4.5" fill="#00e676" stroke="#060913" stroke-width="1.5">
-              <animate attributeName="r" values="3.5;5.5;3.5" dur="2s" repeatCount="indefinite"/>
-            </circle>
-            <text x="140" y="24" text-anchor="middle" fill="#00f0ff" font-size="10" font-family="'JetBrains Mono', monospace" font-weight="700" letter-spacing="0.5">
-              Zero Architectural Drift (Baseline Synchronized)
-            </text>
-            <text x="140" y="38" text-anchor="middle" fill="var(--text-muted)" font-size="8.5" font-family="'Space Grotesk', sans-serif">
-              Tarjan SCC: 0 | Ingress Drift: 0.00% | Metric Integrity: 100%
-            </text>
-          `;
+        // Kaba gri boş kutuyu DOM'da gizle; ince, zarif tek satırlık telemetri rozetine dönüştür (max-height <= 30px)
+        if (body) body.style.display = 'none';
+        if (panel) {
+          panel.style.display = 'flex';
+          panel.style.alignItems = 'center';
+          panel.style.padding = '5px 10px';
+          panel.style.margin = '4px 0 0 0';
+          panel.style.background = 'rgba(0, 240, 255, 0.04)';
+          panel.style.border = '1px solid rgba(0, 240, 255, 0.2)';
+          panel.style.borderRadius = '6px';
+          panel.style.maxHeight = '30px';
+          panel.style.boxSizing = 'border-box';
         }
-        if (list) {
-          list.innerHTML = `
-            <div style="display: flex; align-items: center; justify-content: space-between; background: rgba(0, 240, 255, 0.06); border: 1px solid rgba(0, 240, 255, 0.25); border-radius: 8px; padding: 6px 10px; font-family: 'JetBrains Mono', monospace; font-size: 9.5px;">
-              <div style="display: flex; align-items: center; gap: 6px;">
-                <span style="color: #00e676; font-size: 10px;">●</span>
-                <span style="color: var(--text-main); font-weight: 600;">Baseline Synchronized</span>
-              </div>
-              <span style="color: var(--accent-cyan); font-weight: 700;">Δ 0.00%</span>
-            </div>
-          `;
+        if (badgeCount) {
+          badgeCount.innerHTML = '● Baseline Sync (Δ 0.00%)';
+          badgeCount.style.background = 'transparent';
+          badgeCount.style.color = '#00e676';
+          badgeCount.style.fontSize = '9px';
         }
+        if (toggleIcon) toggleIcon.style.display = 'none';
         return;
       }
+
+      // Snapshot mevcut olduğunda paneli genişlet
+      if (panel) {
+        panel.style.display = 'block';
+        panel.style.padding = '10px';
+        panel.style.margin = '10px 0 0 0';
+        panel.style.background = 'rgba(6, 11, 24, 0.5)';
+        panel.style.border = '1px solid rgba(0, 240, 255, 0.15)';
+        panel.style.borderRadius = '8px';
+        panel.style.maxHeight = 'none';
+      }
+      if (badgeCount) {
+        badgeCount.textContent = driftHistory.length;
+        badgeCount.style.background = 'rgba(0, 240, 255, 0.15)';
+        badgeCount.style.color = 'var(--accent-cyan)';
+        badgeCount.style.fontSize = '9px';
+      }
+      if (body) body.style.display = isDriftCollapsed ? 'none' : 'block';
+      if (toggleIcon) toggleIcon.style.display = 'inline';
 
       hud.renderDriftChart(svg, tooltip, driftHistory, activeSnapshotIndex, (rec, idx) => {
         inspectSnapshotInHUD(rec, idx);
