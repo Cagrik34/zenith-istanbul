@@ -37,6 +37,7 @@ export class BosphorusScene {
     this.ambientMat = null;
     this.ambientMesh = null;
     this.gridHelper = null;
+    this.parkObjects = [];
 
     // Bridge & Dynamic Telemetry
     this.bridgeGroup = null;
@@ -531,157 +532,177 @@ export class BosphorusScene {
    * Yapay düz diskler kaldırılmış; topografyaya gömülü, kenarları araziyle kaynaşan organik tepe korulukları
    */
   createGreenBelts() {
+    this.parkObjects = [];
+
     // 1. Tarihi Yarımada Burnu: Gülhane Parkı (#15803d zengin nefti yeşil)
-    this.createParkZone('Gülhane Parkı', -105, 136, 28, 20, 24, 0x15803d, 3.6, 0.7);
+    this.createParkZone('Gülhane Parkı', -105, 136, 30, 22, 28, 0x15803d, 4.0, 0.7);
 
     // 2. Beşiktaş Sırtları: Yıldız Parkı & Koruluğu (#166534 zümrüt nefti)
-    this.createParkZone('Yıldız Parkı', -92, -15, 30, 22, 26, 0x166534, 3.8, 1.4);
+    this.createParkZone('Yıldız Parkı', -92, -15, 32, 24, 30, 0x166534, 4.2, 1.4);
 
     // 3. Maslak / Belgrad Etekleri: Maslak Koruluğu
-    this.createParkZone('Maslak Koruluğu', -185, -145, 36, 26, 28, 0x15803d, 4.0, 2.1);
+    this.createParkZone('Maslak Koruluğu', -185, -145, 38, 28, 32, 0x15803d, 4.5, 2.1);
 
     // 4. Anadolu Yakası: Çamlıca Sırtları Masifi (Geniş organik tepe yükseltileri ve çam ormanları)
-    this.createParkZone('Büyük Çamlıca Tepesi Koruluğu', 180, -10, 56, 36, 42, 0x15803d, 4.8, 0.9);
-    this.createParkZone('Küçük Çamlıca & Nakkaştepe Sırtları', 148, 35, 42, 28, 32, 0x166534, 4.0, 2.3);
-    this.createParkZone('Çamlıca Doğu Yamaçları', 235, 10, 38, 25, 24, 0x15803d, 3.5, 1.7);
+    this.createParkZone('Büyük Çamlıca Tepesi Koruluğu', 180, -10, 60, 40, 48, 0x15803d, 5.2, 0.9);
+    this.createParkZone('Küçük Çamlıca & Nakkaştepe Sırtları', 148, 35, 45, 30, 36, 0x166534, 4.4, 2.3);
+    this.createParkZone('Çamlıca Doğu Yamaçları', 235, 10, 40, 26, 28, 0x15803d, 3.8, 1.7);
+    this.createParkZone('Caddebostan & Göztepe Parkı', 175, 140, 36, 22, 26, 0x166534, 3.6, 1.1);
   }
 
   /**
    * Belirgin Nefti Yeşil Organik Zemin Yükseltisi ve Koru Kümeleri
-   * Sert dairesel poker pulu kenarları kaldırılmış; araziye yayılan asimetrik tepe yükseltileri (#15803d / #166534)
+   * Standard solid geometries, roughness: 0.8, emissive: 0x000000, DoubleSide, polygonOffset
    */
   createParkZone(name, centerX, centerZ, radX, radZ, treeCount, baseColor = 0x15803d, peakHeight = 4.2, phaseShift = 0.8) {
     const parkGroup = new THREE.Group();
+    parkGroup.name = 'park_' + name;
+    parkGroup.visible = true;
+    parkGroup.frustumCulled = false;
 
-    // 1. Belirgin Organik Zemin Yükseltisi (Elevated Organic Mound Mesh)
-    const segments = 40;
-    const rings = 8;
-    const vertices = [];
-    const indices = [];
-    const uvs = [];
-
-    // Merkez tepe kotu (Zemin seviyesinden peakHeight kadar yukarıda belirgin 3D tepe)
     const centerBaseElev = this.getGroundElevation(centerX, centerZ);
-    vertices.push(centerX, centerBaseElev + peakHeight, centerZ);
-    uvs.push(0.5, 0.5);
 
-    // Konsantrik asimetrik organik halkalar
-    for (let r = 1; r <= rings; r++) {
-      const ringFrac = r / rings;
-      for (let s = 0; s < segments; s++) {
-        const angle = (s / segments) * Math.PI * 2;
-        // Poker pulu daireselliğini tamamen yok eden çok-frekanslı harmonik asimetri
-        const noise = 0.72 
-          + 0.22 * Math.sin(angle * 3 + phaseShift) 
-          + 0.16 * Math.cos(angle * 2 - phaseShift * 0.7) 
-          + 0.10 * Math.sin(angle * 5 + 1.8);
+    // 1. Ana Organik Tepe Yükseltisi (Solid Elevated 3D Turf Mound)
+    const moundGeo = new THREE.CylinderGeometry(radX * 0.75, radX, peakHeight, 36, 2);
+    moundGeo.scale(1.0, 1.0, radZ / radX);
 
-        const vx = centerX + Math.cos(angle) * radX * ringFrac * noise;
-        const vz = centerZ + Math.sin(angle) * radZ * ringFrac * noise;
-
-        const groundElev = this.getGroundElevation(vx, vz);
-        // Tepe merkezinden kenarlara doğru yumuşak kubbe şevi
-        const domeProfile = Math.cos(ringFrac * Math.PI * 0.5);
-        const vy = groundElev + 0.18 + domeProfile * peakHeight;
-
-        vertices.push(vx, vy, vz);
-        uvs.push(0.5 + Math.cos(angle) * 0.5 * ringFrac, 0.5 + Math.sin(angle) * 0.5 * ringFrac);
-      }
+    // Organik harmonik asimetri
+    const pos = moundGeo.attributes.position;
+    for (let i = 0; i < pos.count; i++) {
+      const vx = pos.getX(i);
+      const vz = pos.getZ(i);
+      const angle = Math.atan2(vz, vx);
+      const noise = 1.0 
+        + 0.16 * Math.sin(angle * 3 + phaseShift) 
+        + 0.12 * Math.cos(angle * 2 - phaseShift * 0.7) 
+        + 0.08 * Math.sin(angle * 5 + 1.8);
+      pos.setX(i, vx * noise);
+      pos.setZ(i, vz * noise);
     }
+    moundGeo.computeVertexNormals();
+    moundGeo.computeBoundingBox();
+    moundGeo.computeBoundingSphere();
 
-    // Yukarı bakan (+Y) düzgün normal yönü (Counter-clockwise winding)
-    // Merkez üçgenleri
-    for (let s = 0; s < segments; s++) {
-      const nextS = (s + 1) % segments;
-      indices.push(0, 1 + nextS, 1 + s);
-    }
-
-    // Konsantrik halka üçgenleri
-    for (let r = 1; r < rings; r++) {
-      const innerStart = 1 + (r - 1) * segments;
-      const outerStart = 1 + r * segments;
-      for (let s = 0; s < segments; s++) {
-        const nextS = (s + 1) % segments;
-        const i0 = innerStart + s;
-        const i1 = innerStart + nextS;
-        const o0 = outerStart + s;
-        const o1 = outerStart + nextS;
-        indices.push(i0, i1, o0);
-        indices.push(i1, o1, o0);
-      }
-    }
-
-    const turfGeo = new THREE.BufferGeometry();
-    turfGeo.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
-    turfGeo.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
-    turfGeo.setIndex(indices);
-    turfGeo.computeVertexNormals();
-
+    // Material directly complying with directive:
+    // MeshStandardMaterial roughness: 0.8, emissive kapalı, doğrudan #15803d
     const turfMat = new THREE.MeshStandardMaterial({
       color: baseColor,
-      roughness: 0.85,
-      metalness: 0.08,
-      emissive: 0x072810,
-      emissiveIntensity: 0.22,
+      roughness: 0.8,
+      metalness: 0.0,
+      emissive: 0x000000,
+      emissiveIntensity: 0.0,
       side: THREE.DoubleSide,
-      flatShading: true
+      flatShading: true,
+      polygonOffset: true,
+      polygonOffsetFactor: -2,
+      polygonOffsetUnits: -2
     });
-    const turfMesh = new THREE.Mesh(turfGeo, turfMat);
+
+    const turfMesh = new THREE.Mesh(moundGeo, turfMat);
+    turfMesh.position.set(centerX, centerBaseElev + peakHeight * 0.45, centerZ);
     turfMesh.receiveShadow = true;
     turfMesh.castShadow = true;
+    turfMesh.visible = true;
+    turfMesh.frustumCulled = false;
+    turfMesh.renderOrder = 2;
     parkGroup.add(turfMesh);
 
-    // 2. 3D Cyber Çam & Servi Koruları (Gür Koru Kümeleri)
-    const trunkGeo = new THREE.CylinderGeometry(0.35, 0.55, 3.2, 6);
-    const trunkMat = new THREE.MeshStandardMaterial({ color: 0x24180a, roughness: 0.95 });
-    const foliageGeo = new THREE.ConeGeometry(2.2, 6.4, 7);
+    // 2. İkincil Organik Yan Tepe (Asimetrik Doğal Topografik Şev)
+    const flankOffsetX = radX * 0.32 * Math.cos(phaseShift);
+    const flankOffsetZ = radZ * 0.32 * Math.sin(phaseShift);
+    const flankGeo = new THREE.CylinderGeometry(radX * 0.48, radX * 0.65, peakHeight * 0.82, 28, 2);
+    flankGeo.scale(1.0, 1.0, radZ / radX);
+    const flankPos = flankGeo.attributes.position;
+    for (let i = 0; i < flankPos.count; i++) {
+      const vx = flankPos.getX(i);
+      const vz = flankPos.getZ(i);
+      const angle = Math.atan2(vz, vx);
+      const noise = 1.0 + 0.14 * Math.sin(angle * 4 + phaseShift * 1.5);
+      flankPos.setX(i, vx * noise);
+      flankPos.setZ(i, vz * noise);
+    }
+    flankGeo.computeVertexNormals();
+    flankGeo.computeBoundingBox();
+    flankGeo.computeBoundingSphere();
+
+    const flankMesh = new THREE.Mesh(flankGeo, turfMat);
+    const flankBaseElev = this.getGroundElevation(centerX + flankOffsetX, centerZ + flankOffsetZ);
+    flankMesh.position.set(centerX + flankOffsetX, flankBaseElev + peakHeight * 0.38, centerZ + flankOffsetZ);
+    flankMesh.receiveShadow = true;
+    flankMesh.castShadow = true;
+    flankMesh.visible = true;
+    flankMesh.frustumCulled = false;
+    flankMesh.renderOrder = 2;
+    parkGroup.add(flankMesh);
+
+    // 3. 3D Cyber Çam & Servi Koruları (Gür Koru Kümeleri)
+    const trunkGeo = new THREE.CylinderGeometry(0.4, 0.65, 3.8, 7);
+    const trunkMat = new THREE.MeshStandardMaterial({
+      color: 0x1c1917,
+      roughness: 0.9,
+      metalness: 0.0,
+      emissive: 0x000000
+    });
+
+    const foliageLowerGeo = new THREE.ConeGeometry(2.6, 5.2, 7);
+    const foliageUpperGeo = new THREE.ConeGeometry(1.9, 4.2, 7);
     const foliageMat = new THREE.MeshStandardMaterial({
       color: baseColor,
-      roughness: 0.72,
-      metalness: 0.12,
-      emissive: 0x072810,
-      emissiveIntensity: 0.25
+      roughness: 0.8,
+      metalness: 0.0,
+      emissive: 0x000000,
+      emissiveIntensity: 0.0,
+      flatShading: true
     });
 
     for (let i = 0; i < treeCount; i++) {
       const angle = Math.random() * Math.PI * 2;
-      const noise = 0.72 
-        + 0.22 * Math.sin(angle * 3 + phaseShift) 
-        + 0.16 * Math.cos(angle * 2 - phaseShift * 0.7) 
-        + 0.10 * Math.sin(angle * 5 + 1.8);
-      const distFrac = Math.random() * 0.82;
+      const noise = 1.0 
+        + 0.16 * Math.sin(angle * 3 + phaseShift) 
+        + 0.12 * Math.cos(angle * 2 - phaseShift * 0.7);
+      const distFrac = Math.sqrt(Math.random()) * 0.88;
       const tx = centerX + Math.cos(angle) * radX * distFrac * noise;
       const tz = centerZ + Math.sin(angle) * radZ * distFrac * noise;
 
       const groundElev = this.getGroundElevation(tx, tz);
-      const domeProfile = Math.cos(distFrac * Math.PI * 0.5);
-      const ty = groundElev + 0.15 + domeProfile * peakHeight;
+      const ty = groundElev + peakHeight * 0.85;
 
       const tree = new THREE.Group();
       tree.position.set(tx, ty, tz);
       tree.rotation.y = Math.random() * Math.PI * 2;
       const treeScale = 0.85 + Math.random() * 0.55;
       tree.scale.set(treeScale, treeScale, treeScale);
+      tree.visible = true;
+      tree.frustumCulled = false;
 
       const trunk = new THREE.Mesh(trunkGeo, trunkMat);
-      trunk.position.y = 1.6;
+      trunk.position.y = 1.9;
+      trunk.visible = true;
+      trunk.frustumCulled = false;
       tree.add(trunk);
 
-      const foliage = new THREE.Mesh(foliageGeo, foliageMat);
-      foliage.position.y = 5.2;
-      foliage.castShadow = true;
-      tree.add(foliage);
+      const foliageLower = new THREE.Mesh(foliageLowerGeo, foliageMat);
+      foliageLower.position.y = 4.4;
+      foliageLower.castShadow = true;
+      foliageLower.visible = true;
+      foliageLower.frustumCulled = false;
+      tree.add(foliageLower);
+
+      const foliageUpper = new THREE.Mesh(foliageUpperGeo, foliageMat);
+      foliageUpper.position.y = 6.6;
+      foliageUpper.castShadow = true;
+      foliageUpper.visible = true;
+      foliageUpper.frustumCulled = false;
+      tree.add(foliageUpper);
 
       parkGroup.add(tree);
     }
 
+    this.parkObjects.push(parkGroup);
     this.scene.add(parkGroup);
     return parkGroup;
   }
 
-  /**
-   * Avrupa, Haliç ve Anadolu Kıyı Sınırlarına Parlayan Kıyı Kılavuz Çizgileri
-   */
   createShorelines() {
     // 1. Neon Turkuaz (#00f0ff) Avrupa, Haliç ve Tarihi Yarımada Kıyı Kılavuz Çizgisi
     const eurPoints = [
@@ -767,22 +788,23 @@ export class BosphorusScene {
    * Kadıköy/Üsküdar: Konut (#cbd5e1 açık arduvaz, #e2e8f0 konut beji)
    */
   createAmbientMetropole() {
-    // 2600 Binalık Genişletilmiş ve Kıtayı Dolduran Kentsel Doku
-    const ambientCount = 2600;
+    // 2800 Binalık Genişletilmiş ve Doğu Platosunu Kesintisiz Dolduran Kentsel Doku
+    const ambientCount = 2800;
     const boxGeo = new THREE.BoxGeometry(1, 1, 1);
 
     this.ambientMat = new THREE.MeshStandardMaterial({
-      color: 0xffffff,
-      roughness: 0.45,
-      metalness: 0.35,
+      color: 0xffffff, // Beyaz taban: Instance renklerinin bozulmadan görüntülenmesi için
+      roughness: 0.55,
+      metalness: 0.25,
       emissive: 0x071120,
-      emissiveIntensity: 0.35,
+      emissiveIntensity: 0.25,
       transparent: true,
-      opacity: 0.92
+      opacity: 0.95
     });
 
     this.ambientMesh = new THREE.InstancedMesh(boxGeo, this.ambientMat, ambientCount);
     this.ambientMesh.raycast = () => {};
+    this.ambientMesh.frustumCulled = false;
 
     const matrix = new THREE.Matrix4();
     const position = new THREE.Vector3();
@@ -790,99 +812,155 @@ export class BosphorusScene {
     const scale = new THREE.Vector3();
     const euler = new THREE.Euler();
 
-    // Semt Renk Paletleri
+    // Semt ve Bölge Renk Paletleri (Hem Açık Hem Koyu Temada Güçlü Kontrast)
     const colorHistoric1 = new THREE.Color(0xb45309); // Kiremit / Terracotta
     const colorHistoric2 = new THREE.Color(0x78350f); // Ahşap / Sıcak Taş
     const colorMaslak1 = new THREE.Color(0x0284c7);   // Cam Mavisi
     const colorMaslak2 = new THREE.Color(0x1e293b);   // Çelik Antrasit
     const colorGalata1 = new THREE.Color(0x475569);   // Beyoğlu Taşı
     const colorGalata2 = new THREE.Color(0x64748b);   // Arduvaz Gri
-    const colorAsia1 = new THREE.Color(0xcbd5e1);     // Açık Arduvaz
-    const colorAsia2 = new THREE.Color(0xe2e8f0);     // Konut Beji
-    const colorSuburbs = new THREE.Color(0xd1d5db);   // Doğal Açık Gri / Varoş Konut
+
+    // Anadolu Yakası Paleti: Beyaz zeminde kaybolmayan belirgin arduvaz, taş ve çelik tonları
+    const colorAsiaSlate = new THREE.Color(0x475569); // Koyu Arduvaz (#475569)
+    const colorAsiaSteel = new THREE.Color(0x334155); // Çelik Grafit (#334155)
+    const colorAsiaStone = new THREE.Color(0x64748b); // Orta Arduvaz (#64748b)
+    const colorAsiaWarm  = new THREE.Color(0x78716c); // Sıcak Taş / Beton (#78716c)
+    const colorAsiaSand  = new THREE.Color(0xa8a29e); // Kumtaşı (#a8a29e)
+    const colorAsiaGlass = new THREE.Color(0x0284c7); // Ticari Cam Mavisi (#0284c7)
+    const asiaPalette = [colorAsiaSlate, colorAsiaSteel, colorAsiaStone, colorAsiaWarm, colorAsiaSand];
 
     let placed = 0;
-    let attempts = 0;
 
-    while (placed < ambientCount && attempts < 10000) {
-      attempts++;
-
-      // Avrupa (%38) ve Anadolu (%62 - Doğu Platosunun Dolumu İçin)
-      const isEurope = Math.random() < 0.38;
-      let x = 0;
-      let z = (Math.random() * 680) - 340;
-
-      if (isEurope) {
-        x = -68 - (Math.random() * 260);
-      } else {
-        // Anadolu Yakası: Boğaz kıyısından (X: 68) doğu kıta sınırına (X: 500) kadar kesintisiz akış
-        const r = Math.random();
-        if (r < 0.52) {
-          x = 68 + Math.random() * 170; // Kadıköy / Üsküdar / Ataşehir Çekirdeği (68 - 238)
-        } else {
-          x = 238 + Math.random() * 262; // Doğu Platosu (Ümraniye, Sancaktepe, Kartal sırtları: 238 - 500)
-          // Kademeli seyrelme (Tapering): Doğuya doğru yoğunluk bıçakla kesilmez, yumuşakça erir
-          const taper = 1.0 - (x - 238) / 262;
-          if (Math.random() > (taper * 0.78 + 0.22)) continue;
-        }
-      }
-
-      // Su poligonuna taşmama (Deniz güvenliği)
+    // ─── Aşama 1: Avrupa Yakası (900 Bina) ───
+    while (placed < 900) {
+      const x = -68 - (Math.random() * 260);
+      const z = (Math.random() * 660) - 330;
       if (!this.isPointOnLand(x, z, 6)) continue;
 
       const groundY = this.getGroundElevation(x, z);
-
       let height = 8;
       let width = 6 + Math.random() * 6;
       let depth = width * (0.8 + Math.random() * 0.4);
-      let chosenColor = colorAsia2;
+      let chosenColor = colorGalata2;
 
-      if (isEurope) {
-        if (x < -70 && z >= 110 && z <= 185) {
-          // 1. Tarihi Yarımada: Alçak katlı (Y: 5-13), kiremit & kumtaşı
-          height = 5 + Math.random() * 8;
-          width = 8 + Math.random() * 7;
-          depth = width * (0.8 + Math.random() * 0.4);
-          chosenColor = Math.random() < 0.55 ? colorHistoric1 : colorHistoric2;
-        } else if (x < -65 && z < -40) {
-          // 2. Maslak / Levent: Yüksek modern gökdelenler (Y: 30-85)
-          height = 25 + Math.random() * 60;
-          width = 8 + Math.random() * 8;
-          depth = width * (0.8 + Math.random() * 0.4);
-          chosenColor = Math.random() < 0.5 ? colorMaslak1 : colorMaslak2;
-        } else if (x < -60 && z >= 15 && z <= 56) {
-          // 3. Galata / Beyoğlu: Orta ölçek geleneksel doku (Y: 8-16)
-          height = 8 + Math.random() * 9;
-          width = 7 + Math.random() * 6;
-          depth = width;
-          chosenColor = Math.random() < 0.5 ? colorGalata1 : colorGalata2;
-        } else {
-          height = 7 + Math.random() * 12;
-          width = 7 + Math.random() * 6;
-          chosenColor = colorGalata2;
-        }
+      if (x < -70 && z >= 105 && z <= 185) {
+        // Tarihi Yarımada: Alçak katlı kiremit ve taş doku
+        height = 6 + Math.random() * 8;
+        width = 8 + Math.random() * 7;
+        depth = width * (0.8 + Math.random() * 0.4);
+        chosenColor = Math.random() < 0.55 ? colorHistoric1 : colorHistoric2;
+      } else if (x < -65 && z < -40) {
+        // Maslak / Levent: Yüksek modern gökdelenler
+        height = 26 + Math.random() * 60;
+        width = 8 + Math.random() * 8;
+        depth = width * (0.8 + Math.random() * 0.4);
+        chosenColor = Math.random() < 0.5 ? colorMaslak1 : colorMaslak2;
+      } else if (x < -60 && z >= 15 && z <= 60) {
+        // Galata / Beyoğlu: Orta ölçek kentsel doku
+        height = 9 + Math.random() * 10;
+        width = 7 + Math.random() * 6;
+        depth = width;
+        chosenColor = Math.random() < 0.5 ? colorGalata1 : colorGalata2;
       } else {
-        // ANADOLU YAKASI KENTSAL DOKUSU
-        if (x > 140 && x < 240 && z < -40) {
-          // Ataşehir / Kozyatağı: Modern finans kuleleri (Y: 18-42)
-          height = 18 + Math.random() * 32;
-          width = 8 + Math.random() * 7;
-          chosenColor = Math.random() < 0.5 ? colorMaslak1 : colorAsia1;
-        } else if (x > 240) {
-          // Doğu Platosu (Ümraniye, Çekmeköy, Sancaktepe, Kartal sırtları)
-          // Kademeli alçalan alçak katlı açık gri ve konut beji bloklar (Beyaz çölü doldurur)
-          const taper = 1.0 - (x - 240) / 260;
-          height = 4.5 + Math.random() * (7.5 * taper + 2.5);
-          width = 7 + Math.random() * 7;
-          depth = width * (0.8 + Math.random() * 0.5);
-          chosenColor = Math.random() < 0.45 ? colorAsia2 : (Math.random() < 0.5 ? colorAsia1 : colorSuburbs);
-        } else {
-          // Kadıköy, Üsküdar: Konut beji ve açık arduvaz (Y: 7-16)
-          height = 7 + Math.random() * 10;
-          width = 7 + Math.random() * 6;
-          chosenColor = Math.random() < 0.5 ? colorAsia1 : colorAsia2;
-        }
+        height = 7 + Math.random() * 12;
+        width = 7 + Math.random() * 6;
+        chosenColor = colorGalata2;
       }
+
+      position.set(x, groundY + (height / 2), z);
+      euler.set(0, (Math.random() - 0.5) * 0.25, 0);
+      quaternion.setFromEuler(euler);
+      scale.set(width, height, depth);
+
+      matrix.compose(position, quaternion, scale);
+      this.ambientMesh.setMatrixAt(placed, matrix);
+      this.ambientMesh.setColorAt(placed, chosenColor);
+      placed++;
+    }
+
+    // ─── Aşama 2: Anadolu Kıyı & Çekirdek Hattı (700 Bina, X: 68 - 150) ───
+    while (placed < 1600) {
+      const x = 68 + Math.random() * 82; // 68 - 150
+      const z = (Math.random() * 440) - 220;
+      if (!this.isPointOnLand(x, z, 6)) continue;
+
+      const groundY = this.getGroundElevation(x, z);
+      let height = 8;
+      let width = 7 + Math.random() * 6;
+      let depth = width * (0.8 + Math.random() * 0.4);
+      let chosenColor = asiaPalette[Math.floor(Math.random() * asiaPalette.length)];
+
+      if (x > 120 && z < -30) {
+        // Ataşehir / Kozyatağı kuleleri
+        height = 18 + Math.random() * 30;
+        width = 8 + Math.random() * 7;
+        chosenColor = Math.random() < 0.35 ? colorAsiaGlass : colorAsiaSteel;
+      } else {
+        // Kadıköy & Üsküdar sahil konutları
+        height = 8 + Math.random() * 12;
+      }
+
+      position.set(x, groundY + (height / 2), z);
+      euler.set(0, (Math.random() - 0.5) * 0.25, 0);
+      quaternion.setFromEuler(euler);
+      scale.set(width, height, depth);
+
+      matrix.compose(position, quaternion, scale);
+      this.ambientMesh.setMatrixAt(placed, matrix);
+      this.ambientMesh.setColorAt(placed, chosenColor);
+      placed++;
+    }
+
+    // ─── Aşama 3: Anadolu Doğu Platosu Kararlı Izgara (X: 100 - 450, Z: -220 - 200) ───
+    // Boş beyaz çölü ortadan kaldıran, X ekseni boyunca kesintisiz dağılan kentsel bloklar
+    const gridCols = 24;
+    const gridRows = 24;
+    const colStep = (450 - 100) / gridCols; // ~14.5 birim
+    const rowStep = (200 - (-220)) / gridRows; // ~17.5 birim
+
+    for (let c = 0; c < gridCols && placed < ambientCount; c++) {
+      const baseX = 100 + c * colStep;
+      for (let r = 0; r < gridRows && placed < ambientCount; r++) {
+        const baseZ = -220 + r * rowStep;
+        const x = baseX + (Math.random() - 0.5) * (colStep * 0.9);
+        const z = baseZ + (Math.random() - 0.5) * (rowStep * 0.9);
+
+        if (!this.isPointOnLand(x, z, 6)) continue;
+
+        // Ufka doğru yumuşak seyrelme (%35)
+        const taper = 1.0 - ((x - 100) / 350) * 0.35;
+        if (Math.random() > taper) continue;
+
+        const groundY = this.getGroundElevation(x, z);
+        // Belirgin 3D gölgeli hacimli kütleler (8 - 22 birim yükseklik)
+        const height = 8.0 + Math.random() * 14.0;
+        const width = 7.5 + Math.random() * 6.5;
+        const depth = width * (0.8 + Math.random() * 0.4);
+        const chosenColor = asiaPalette[Math.floor(Math.random() * asiaPalette.length)];
+
+        position.set(x, groundY + (height / 2), z);
+        euler.set(0, (Math.random() - 0.5) * 0.25, 0);
+        quaternion.setFromEuler(euler);
+        scale.set(width, height, depth);
+
+        matrix.compose(position, quaternion, scale);
+        this.ambientMesh.setMatrixAt(placed, matrix);
+        this.ambientMesh.setColorAt(placed, chosenColor);
+        placed++;
+      }
+    }
+
+    // Kalan yuvaları doğu platosu boyunca aralıklı doldur
+    while (placed < ambientCount) {
+      const x = 110 + Math.random() * 330;
+      const z = (Math.random() * 400) - 200;
+      if (!this.isPointOnLand(x, z, 6)) continue;
+
+      const groundY = this.getGroundElevation(x, z);
+      const height = 8.0 + Math.random() * 12.0;
+      const width = 7.5 + Math.random() * 6.0;
+      const depth = width * (0.8 + Math.random() * 0.4);
+      const chosenColor = asiaPalette[Math.floor(Math.random() * asiaPalette.length)];
 
       position.set(x, groundY + (height / 2), z);
       euler.set(0, (Math.random() - 0.5) * 0.25, 0);
@@ -1547,12 +1625,12 @@ export class BosphorusScene {
     // 2. Işıklandırma (Luminous Night Lighting)
     if (this.ambientLight) {
       this.ambientLight.color.setHex(isDark ? 0x1e293b : 0xffffff);
-      this.ambientLight.intensity = isDark ? 0.7 : 1.25;
+      this.ambientLight.intensity = isDark ? 0.7 : 0.95;
     }
 
     if (this.dirLight) {
       this.dirLight.color.setHex(isDark ? 0x38bdf8 : 0xfff4e0);
-      this.dirLight.intensity = isDark ? 0.9 : 1.7;
+      this.dirLight.intensity = isDark ? 0.9 : 1.15;
     }
 
     // 3. Parlayan Boğaz Suyu (Luminous Bosphorus Glow)
@@ -1577,7 +1655,7 @@ export class BosphorusScene {
 
     // 5. 1500 Ambient Binalar (Kenar ve Pencere Silüetleri)
     if (this.ambientMat) {
-      this.ambientMat.color.setHex(isDark ? 0x1e293b : 0xcfd8e3);
+      this.ambientMat.color.setHex(0xffffff);
       this.ambientMat.emissive.setHex(isDark ? 0x0c1e38 : 0x000000);
       this.ambientMat.emissiveIntensity = isDark ? 0.55 : 0.0;
       this.ambientMat.opacity = isDark ? 0.88 : 0.85;
@@ -1595,7 +1673,7 @@ export class BosphorusScene {
     }
 
     if (this.renderer) {
-      this.renderer.toneMappingExposure = isDark ? 1.15 : 1.35;
+      this.renderer.toneMappingExposure = isDark ? 1.10 : 1.15;
     }
   }
 
@@ -1624,14 +1702,14 @@ export class BosphorusScene {
         this.scene.fog.density = isDark ? 0.0005 : 0.0006;
         this.scene.fog.color.setHex(isDark ? 0x060913 : 0xd8eaf8);
       }
-      if (this.renderer) this.renderer.toneMappingExposure = isDark ? 1.15 : 1.35;
+      if (this.renderer) this.renderer.toneMappingExposure = isDark ? 1.10 : 1.15;
       if (this.ambientLight) {
         this.ambientLight.color.setHex(isDark ? 0x1e293b : 0xffffff);
-        this.ambientLight.intensity = isDark ? 0.7 : 1.25;
+        this.ambientLight.intensity = isDark ? 0.7 : 0.95;
       }
       if (this.dirLight) {
         this.dirLight.color.setHex(isDark ? 0x38bdf8 : 0xfff4e0);
-        this.dirLight.intensity = isDark ? 0.9 : 1.7;
+        this.dirLight.intensity = isDark ? 0.9 : 1.15;
       }
     }
   }
