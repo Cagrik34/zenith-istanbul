@@ -579,6 +579,99 @@
 
     #folder-input { display: none; }
 
+    /* ─── Light (Daylight Bosphorus) Theme Override ─── */
+    :root[data-theme="light"] {
+      --bg-dark: #f1f5f9;
+      --panel-bg: rgba(255, 255, 255, 0.88);
+      --panel-border: rgba(15, 23, 42, 0.12);
+      --accent-cyan: #0284c7;
+      --accent-pink: #db2777;
+      --accent-gold: #b45309;
+      --accent-red: #dc2626;
+      --accent-green: #16a34a;
+      --text-main: #0f172a;
+      --text-muted: #64748b;
+    }
+
+    :root[data-theme="light"] .top-bar,
+    :root[data-theme="light"] .hud-panel,
+    :root[data-theme="light"] .radar-container,
+    :root[data-theme="light"] .terminal-drawer,
+    :root[data-theme="light"] .inspector-drawer {
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+    }
+
+    :root[data-theme="light"] .terminal-drawer {
+      background: rgba(248, 250, 252, 0.92);
+      border-color: rgba(15, 23, 42, 0.1);
+    }
+
+    :root[data-theme="light"] .log-line {
+      border-bottom-color: rgba(15, 23, 42, 0.06);
+    }
+
+    :root[data-theme="light"] .gauge-dial {
+      background: rgba(255, 255, 255, 0.9) !important;
+    }
+
+    :root[data-theme="light"] .stat-card {
+      background: rgba(241, 245, 249, 0.8);
+      border-color: rgba(15, 23, 42, 0.08);
+    }
+
+    :root[data-theme="light"] .radar-container {
+      background: rgba(255, 255, 255, 0.85);
+      border-color: rgba(15, 23, 42, 0.1);
+    }
+
+    :root[data-theme="light"] #radar-canvas {
+      border-color: rgba(15, 23, 42, 0.1);
+    }
+
+    :root[data-theme="light"] .btn-control {
+      border-color: rgba(15, 23, 42, 0.15) !important;
+      background: rgba(241, 245, 249, 0.9) !important;
+      color: var(--text-main) !important;
+    }
+
+    :root[data-theme="light"] .btn-control:hover {
+      background: rgba(226, 232, 240, 1) !important;
+    }
+
+    :root[data-theme="light"] .weather-badge {
+      background: rgba(241, 245, 249, 0.8);
+      border-color: rgba(15, 23, 42, 0.1);
+    }
+
+    :root[data-theme="light"] .drift-panel {
+      background: rgba(241, 245, 249, 0.7);
+      border-color: rgba(15, 23, 42, 0.08);
+    }
+
+    :root[data-theme="light"] .incident-alert {
+      background: rgba(254, 226, 226, 0.9);
+      border-color: rgba(220, 38, 38, 0.3);
+    }
+
+    :root[data-theme="light"] .inspector-drawer {
+      background: rgba(255, 255, 255, 0.92);
+      border-color: rgba(15, 23, 42, 0.12);
+    }
+
+    #btn-toggle-theme {
+      transition: all 0.25s ease;
+      min-width: 80px;
+    }
+    #btn-toggle-theme .theme-icon {
+      display: inline-block;
+      transition: transform 0.35s ease;
+    }
+    #btn-toggle-theme:hover .theme-icon {
+      transform: rotate(180deg);
+    }
+
+
     .weather-badge {
       display: flex;
       align-items: center;
@@ -671,6 +764,7 @@
 
         
         <button id="btn-toggle-audio" class="btn-control" title="Toggle Spatial Audio Synthesizer">🔇 Audio: Muted</button>
+        <button id="btn-toggle-theme" class="btn-control" title="Toggle Dark / Light Bosphorus Theme"><span class="theme-icon">🌙</span> Dark</button>
       </div>
     </header>
 
@@ -1531,10 +1625,11 @@
 
       radarCtx.clearRect(0, 0, w, h);
 
-      radarCtx.fillStyle = '#040814';
+      const radarBg = currentTheme === 'light' ? '#e2e8f0' : '#040814';
+      radarCtx.fillStyle = radarBg;
       radarCtx.fillRect(0, 0, w, h);
 
-      radarCtx.fillStyle = 'rgba(0, 240, 255, 0.12)';
+      radarCtx.fillStyle = currentTheme === 'light' ? 'rgba(2, 132, 199, 0.12)' : 'rgba(0, 240, 255, 0.12)';
       radarCtx.beginPath();
       radarCtx.moveTo(w * 0.44, 0);
       radarCtx.bezierCurveTo(w * 0.46, h * 0.35, w * 0.48, h * 0.65, w * 0.45, h);
@@ -1843,6 +1938,41 @@
         };
       } catch (e) {}
     }
+    
+    // ─── Theme Toggle (Dark / Light Bosphorus) ───
+    const btnToggleTheme = document.getElementById('btn-toggle-theme');
+    let currentTheme = localStorage.getItem('zenith_theme') || 'dark';
+
+    function applyTheme(theme) {
+      currentTheme = theme;
+      document.documentElement.setAttribute('data-theme', theme);
+      localStorage.setItem('zenith_theme', theme);
+
+      if (btnToggleTheme) {
+        const isDark = theme === 'dark';
+        btnToggleTheme.innerHTML = isDark
+          ? '<span class="theme-icon">🌙</span> Dark'
+          : '<span class="theme-icon">☀️</span> Light';
+      }
+
+      // Sync Three.js 3D scene
+      if (bosphorusScene && typeof bosphorusScene.setTheme === 'function') {
+        bosphorusScene.setTheme(theme);
+      }
+
+      // Sync radar canvas background
+      drawRadar();
+    }
+
+    // Apply saved theme on load
+    applyTheme(currentTheme);
+
+    if (btnToggleTheme) {
+      btnToggleTheme.addEventListener('click', () => {
+        applyTheme(currentTheme === 'dark' ? 'light' : 'dark');
+      });
+    }
+
     // Drag & Drop directory support for Web Showcase
     window.addEventListener('dragover', (e) => {
       e.preventDefault();

@@ -123,11 +123,12 @@ export class BosphorusScene {
     this.scene.add(this.waterMesh);
 
     const europeGeo = new THREE.BoxGeometry(320, 20, 700);
-    const landMat = new THREE.MeshStandardMaterial({
+    this.landMat = new THREE.MeshStandardMaterial({
       color: 0x0a101f,
       roughness: 0.8,
       metalness: 0.2
     });
+    const landMat = this.landMat;
     const europeCoast = new THREE.Mesh(europeGeo, landMat);
     europeCoast.position.set(-220, 8, 0);
     europeCoast.receiveShadow = true;
@@ -576,6 +577,75 @@ export class BosphorusScene {
   /**
    * Kod sağlığına göre atmosferi değiştirir (Sis, Yağmur, Gece berraklığı)
    */
+
+  /**
+   * Switches the entire 3D scene between Dark (Cyber Night) and Light (Daylight Bosphorus) modes.
+   * @param {'dark'|'light'} theme
+   */
+  setTheme(theme) {
+    const isDark = theme === 'dark';
+
+    // Sky / Background
+    this.scene.background.setHex(isDark ? 0x060913 : 0xc8e6f5);
+
+    // Fog
+    if (this.scene.fog) {
+      this.scene.fog.color.setHex(isDark ? 0x060913 : 0xd0e8f8);
+      this.scene.fog.density = isDark ? 0.0035 : 0.0018;
+    }
+
+    // Ambient Light
+    if (this.ambientLight) {
+      this.ambientLight.color.setHex(isDark ? 0x101b38 : 0xffffff);
+      this.ambientLight.intensity = isDark ? 1.8 : 1.1;
+    }
+
+    // Directional (Sun) Light
+    if (this.dirLight) {
+      this.dirLight.color.setHex(isDark ? 0x5080ff : 0xfff4e0);
+      this.dirLight.intensity = isDark ? 2.2 : 1.6;
+      this.dirLight.position.set(isDark ? 150 : 200, isDark ? 350 : 500, isDark ? 100 : 250);
+    }
+
+    // Bridge Spotlight
+    if (this.bridgeSpot) {
+      this.bridgeSpot.intensity = isDark ? 3.5 : 1.0;
+    }
+
+    // Water surface
+    if (this.waterMat) {
+      this.waterMat.color.setHex(isDark ? 0x051329 : 0x007799);
+      this.waterMat.roughness = isDark ? 0.15 : 0.3;
+      this.waterMat.metalness = isDark ? 0.85 : 0.6;
+      this.waterMat.needsUpdate = true;
+    }
+
+    // Land masses
+    if (this.landMat) {
+      this.landMat.color.setHex(isDark ? 0x0a101f : 0x8fbc8f);
+      this.landMat.needsUpdate = true;
+    }
+
+    // Tone mapping exposure
+    if (this.renderer) {
+      this.renderer.toneMappingExposure = isDark ? 1.15 : 1.4;
+    }
+
+    // Building emissive balance
+    for (const obj of this.buildingObjects) {
+      obj.traverse((child) => {
+        if (child.isMesh && child.material && child.material.emissiveIntensity !== undefined) {
+          child.material.emissiveIntensity = isDark
+            ? (child.material._zenithOriginalEmissive || child.material.emissiveIntensity)
+            : Math.min(0.08, child.material.emissiveIntensity);
+          if (isDark && !child.material._zenithOriginalEmissive) {
+            child.material._zenithOriginalEmissive = child.material.emissiveIntensity;
+          }
+        }
+      });
+    }
+  }
+
   setAtmosphere(isJammed, trafficDensity = 50, hasSecurityLeaks = false) {
     this.isRaining = isJammed || trafficDensity >= 60;
     this.hasSecurityLeaks = hasSecurityLeaks;
