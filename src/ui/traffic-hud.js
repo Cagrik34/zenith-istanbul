@@ -181,14 +181,23 @@ export class TrafficHUD {
     svg.innerHTML = '';
 
     if (!history || history.length === 0) {
-      const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-      text.setAttribute('x', '140');
-      text.setAttribute('y', '44');
-      text.setAttribute('text-anchor', 'middle');
-      text.setAttribute('fill', 'rgba(255,255,255,0.3)');
-      text.setAttribute('font-size', '10');
-      text.textContent = 'No telemetry history points recorded yet';
-      svg.appendChild(text);
+      svg.innerHTML = `
+        <g class="drift-empty-state">
+          <line x1="24" y1="34" x2="256" y2="34" stroke="rgba(0, 240, 255, 0.35)" stroke-width="2" stroke-dasharray="8,5">
+            <animate attributeName="stroke-dashoffset" values="0;26" dur="2s" repeatCount="indefinite" />
+          </line>
+          <circle cx="140" cy="34" r="4.5" fill="#00f0ff">
+            <animate attributeName="r" values="3.5;6;3.5" dur="2s" repeatCount="indefinite" />
+            <animate attributeName="opacity" values="0.4;1;0.4" dur="2s" repeatCount="indefinite" />
+          </circle>
+          <text x="140" y="54" text-anchor="middle" fill="var(--text-main, #ffffff)" font-size="10.5" font-family="'Space Grotesk', sans-serif" font-weight="600" letter-spacing="0.3">
+            Topolojik telemetri toplanıyor...
+          </text>
+          <text x="140" y="68" text-anchor="middle" fill="var(--accent-cyan, #00f0ff)" font-size="9" font-family="'JetBrains Mono', monospace" font-weight="700">
+            0 Drift Snapshot
+          </text>
+        </g>
+      `;
       return;
     }
 
@@ -336,7 +345,12 @@ export class TrafficHUD {
     container.innerHTML = '';
 
     if (!history || history.length === 0) {
-      container.innerHTML = `<div style="text-align:center; color:var(--text-muted); font-size:10px; padding:6px;">No history records</div>`;
+      container.innerHTML = `
+        <div style="text-align:center; color:var(--text-muted); font-size:10px; padding:10px 4px; display:flex; flex-direction:column; align-items:center; gap:4px;">
+          <span style="font-size:13px; opacity:0.7;">📡</span>
+          <span style="font-size:9.5px; opacity:0.85;">Aktif telemetri anlık görüntüsü bekleniyor</span>
+        </div>
+      `;
       return;
     }
 
