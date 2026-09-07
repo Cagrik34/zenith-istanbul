@@ -718,6 +718,14 @@
       border: 1px solid rgba(0, 240, 255, 0.15);
       border-radius: 8px;
     }
+    /* Architecture Drift: Drift verisi (history > 0) oluşana kadar CSS ile KESİN olarak gizle */
+    #drift-panel:not(.has-drift-data),
+    #drift-body:not(.has-drift-data),
+    #drift-chart-container:not(.has-drift-data),
+    #drift-chart-wrapper:not(.has-drift-data) {
+      display: none !important;
+    }
+
     .drift-panel {
       margin-top: 10px;
       background: rgba(6, 11, 24, 0.5);
@@ -1568,7 +1576,7 @@
         </div>
 
         
-        <div class="drift-panel" id="drift-panel">
+        <div class="drift-panel" id="drift-panel" style="display: none !important;">
           <div class="drift-header" id="drift-toggle-header">
             <div style="display: flex; align-items: center; gap: 6px;">
               <span style="font-size: 11px; font-weight: 700; color: var(--accent-cyan);">Architecture Drift</span>
@@ -1580,9 +1588,9 @@
             </div>
           </div>
 
-          <div class="drift-body" id="drift-body" style="margin-top: 8px;">
+          <div class="drift-body" id="drift-body" style="display: none !important; margin-top: 8px;">
             
-            <div id="drift-chart-wrapper" style="position: relative; width: 100%; height: 80px; background: rgba(6, 11, 24, 0.6); border: 1px solid rgba(255, 255, 255, 0.06); border-radius: 6px; overflow: hidden;">
+            <div id="drift-chart-container" class="drift-chart-wrapper" style="display: none !important; position: relative; width: 100%; height: 80px; background: rgba(6, 11, 24, 0.6); border: 1px solid rgba(255, 255, 255, 0.06); border-radius: 6px; overflow: hidden;">
               <svg id="drift-svg" width="100%" height="100%" viewBox="0 0 280 80" preserveAspectRatio="none" style="display: block;"></svg>
               <div id="drift-tooltip" style="display: none; position: absolute; background: rgba(6, 11, 24, 0.96); border: 1px solid var(--accent-cyan); border-radius: 6px; padding: 5px 8px; font-size: 10px; pointer-events: none; z-index: 50; box-shadow: 0 4px 16px rgba(0,0,0,0.6); min-width: 125px;"></div>
             </div>
@@ -2870,15 +2878,7 @@
         if (local) {
           driftHistory = JSON.parse(local);
         } else {
-          const now = Date.now();
-          driftHistory = [
-            { id: 'snap_1', timestamp: new Date(now - 14400000).toISOString(), gitCommit: '8b07398', trafficIndex: 82, cyclicDeadlocks: 3, securityExposures: 2, isolatedModules: 1 },
-            { id: 'snap_2', timestamp: new Date(now - 10800000).toISOString(), gitCommit: 'fafab6d', trafficIndex: 65, cyclicDeadlocks: 2, securityExposures: 1, isolatedModules: 2 },
-            { id: 'snap_3', timestamp: new Date(now - 7200000).toISOString(), gitCommit: '005db7b', trafficIndex: 40, cyclicDeadlocks: 1, securityExposures: 0, isolatedModules: 3 },
-            { id: 'snap_4', timestamp: new Date(now - 3600000).toISOString(), gitCommit: 'e1a983c', trafficIndex: 22, cyclicDeadlocks: 0, securityExposures: 0, isolatedModules: 4 },
-            { id: 'snap_5', timestamp: new Date(now).toISOString(), gitCommit: 'v1.0.0', trafficIndex: 0, cyclicDeadlocks: 0, securityExposures: 0, isolatedModules: 5 }
-          ];
-          localStorage.setItem('zenith_web_drift_history', JSON.stringify(driftHistory));
+          driftHistory = [];
         }
       } catch (err) {}
       renderDriftUI();
@@ -2894,28 +2894,40 @@
       const tooltip = document.getElementById('drift-tooltip');
       const list = document.getElementById('drift-history-list');
 
+      const chartCont = document.getElementById('drift-chart-container') || document.getElementById('drift-chart-wrapper');
+
       if (!driftHistory || driftHistory.length === 0) {
-        // Kaba gri boş kutuyu DOM'da gizle; ince, zarif tek satırlık telemetri rozetine dönüştür (max-height <= 30px)
-        if (body) body.style.display = 'none';
+        // Telemetri verisi yoksa gri kutuyu DOM ve CSS'te KESİN olarak gizle (display: none !important;)
         if (panel) {
-          panel.style.display = 'flex';
-          panel.style.alignItems = 'center';
-          panel.style.padding = '5px 10px';
-          panel.style.margin = '4px 0 0 0';
-          panel.style.background = 'rgba(0, 240, 255, 0.04)';
-          panel.style.border = '1px solid rgba(0, 240, 255, 0.2)';
-          panel.style.borderRadius = '6px';
-          panel.style.maxHeight = '30px';
-          panel.style.boxSizing = 'border-box';
+          panel.classList.remove('has-drift-data');
+          panel.style.setProperty('display', 'none', 'important');
         }
-        if (badgeCount) {
-          badgeCount.innerHTML = '● Baseline Sync (Δ 0.00%)';
-          badgeCount.style.background = 'transparent';
-          badgeCount.style.color = '#00e676';
-          badgeCount.style.fontSize = '9px';
+        if (body) {
+          body.classList.remove('has-drift-data');
+          body.style.setProperty('display', 'none', 'important');
         }
-        if (toggleIcon) toggleIcon.style.display = 'none';
+        if (chartCont) {
+          chartCont.classList.remove('has-drift-data');
+          chartCont.style.setProperty('display', 'none', 'important');
+        }
         return;
+      }
+
+      // SADECE driftHistory.length > 0 olduğunda paneli genişlet ve görünür yap
+      if (panel) {
+        panel.classList.add('has-drift-data');
+        panel.style.removeProperty('display');
+        panel.style.display = 'block';
+      }
+      if (body) {
+        body.classList.add('has-drift-data');
+        body.style.removeProperty('display');
+        body.style.display = isDriftCollapsed ? 'none' : 'block';
+      }
+      if (chartCont) {
+        chartCont.classList.add('has-drift-data');
+        chartCont.style.removeProperty('display');
+        chartCont.style.display = 'block';
       }
 
       // Snapshot mevcut olduğunda paneli genişlet

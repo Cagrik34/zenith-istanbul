@@ -121,7 +121,7 @@ export const SAMPLE_REPOSITORIES = {
         complexity: 28,
         imports: [],
         exports: ['renderOldCanvas'],
-        district: { side: 'islands', district: 'Prens Adaları', color: '#64748b' },
+        district: { side: 'europe', district: 'Maslak Sırtları (Isolated Subgraph)', color: '#475569' },
         isCore: false,
         healthScore: 70
       }
