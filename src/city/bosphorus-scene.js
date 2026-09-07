@@ -8,9 +8,15 @@ import * as THREE from 'https://esm.sh/three@0.170.0';
 import { OrbitControls } from 'https://esm.sh/three@0.170.0/examples/jsm/controls/OrbitControls.js';
 
 export class BosphorusScene {
-  constructor(canvasContainer, onBuildingClick) {
+  constructor(canvasContainer, onBuildingClick, onBuildingHover = null) {
     this.container = canvasContainer;
     this.onBuildingClick = onBuildingClick;
+    this.onBuildingHover = onBuildingHover;
+    this.isCinematicTour = false;
+    this.cinematicAngle = 0;
+    this.cinematicRadius = 340;
+    this.cinematicHeight = 170;
+    this.onCinematicChange = null;
 
     this.scene = null;
     this.camera = null;
@@ -78,8 +84,16 @@ export class BosphorusScene {
 
     this.setupRainSystem();
 
+    this.controls.addEventListener('start', () => {
+      if (this.isCinematicTour) {
+        this.isCinematicTour = false;
+        if (this.onCinematicChange) this.onCinematicChange(false);
+      }
+    });
+
     window.addEventListener('resize', () => this.onWindowResize());
     this.renderer.domElement.addEventListener('pointerdown', (e) => this.onPointerDown(e));
+    this.renderer.domElement.addEventListener('pointermove', (e) => this.onPointerMove(e));
 
     this.animate();
   }
@@ -690,6 +704,43 @@ export class BosphorusScene {
     this.cameraLerpTarget = new THREE.Vector3(target.camX, target.camY, target.camZ);
   }
 
+  onPointerMove(event) {
+    if (!this.onBuildingHover) return;
+    const rect = this.renderer.domElement.getBoundingClientRect();
+    this.mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+    this.mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+
+    this.raycaster.setFromCamera(this.mouse, this.camera);
+    const intersects = this.raycaster.intersectObjects(this.buildingObjects, true);
+
+    if (intersects.length > 0) {
+      let topGroup = intersects[0].object;
+      while (topGroup.parent && topGroup.parent !== this.scene) {
+        topGroup = topGroup.parent;
+      }
+
+      if (topGroup.userData && topGroup.userData.module) {
+        this.renderer.domElement.style.cursor = 'pointer';
+        this.onBuildingHover(topGroup.userData.module, event.clientX, event.clientY);
+        return;
+      }
+    }
+
+    this.renderer.domElement.style.cursor = 'default';
+    this.onBuildingHover(null);
+  }
+
+  toggleCinematicTour() {
+    this.isCinematicTour = !this.isCinematicTour;
+    if (this.isCinematicTour) {
+      this.cinematicAngle = Math.atan2(this.camera.position.z, this.camera.position.x);
+      this.cinematicRadius = 340;
+      this.cinematicHeight = 170;
+      this.controls.target.set(-20, 25, 0);
+    }
+    return this.isCinematicTour;
+  }
+
   onPointerDown(event) {
     const rect = this.renderer.domElement.getBoundingClientRect();
     this.mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
@@ -788,7 +839,14 @@ export class BosphorusScene {
       this.rainParticles.geometry.attributes.position.needsUpdate = true;
     }
 
-    if (this.cameraLerpTarget) {
+    if (this.isCinematicTour) {
+      this.cinematicAngle += delta * 0.12;
+      const radius = this.cinematicRadius || 340;
+      this.camera.position.x = Math.cos(this.cinematicAngle) * radius;
+      this.camera.position.z = Math.sin(this.cinematicAngle) * radius;
+      this.camera.position.y = this.cinematicHeight || 170;
+      this.controls.target.set(-20, 25, 0);
+    } else if (this.cameraLerpTarget) {
       this.camera.position.lerp(this.cameraLerpTarget, 0.05);
       if (this.camera.position.distanceTo(this.cameraLerpTarget) < 2) {
         this.cameraLerpTarget = null;

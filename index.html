@@ -707,6 +707,28 @@
       color: #060913 !important;
     }
 
+  
+    #building-tooltip {
+      position: fixed;
+      display: none;
+      pointer-events: none;
+      z-index: 99999;
+      background: var(--panel-bg);
+      border: 1px solid var(--panel-border);
+      backdrop-filter: blur(14px);
+      padding: 8px 12px;
+      border-radius: 8px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45), 0 0 12px var(--hud-shadow);
+      min-width: 180px;
+      transition: opacity 0.15s ease;
+      font-family: var(--font-mono);
+    }
+    :root[data-theme="light"] #building-tooltip {
+      background: rgba(255, 255, 255, 0.95);
+      border-color: rgba(15, 23, 42, 0.16);
+      box-shadow: 0 8px 24px rgba(15, 23, 42, 0.15);
+    }
+
   </style>
 </head>
 <body>
@@ -763,6 +785,8 @@
         </div>
 
         
+        <button id="btn-cinematic-tour" class="btn-control" title="360° Boğaz Sinematik Sunum Turu">🎥 360° Tur</button>
+        <button id="btn-vapur-dudugu" class="btn-control" title="Karaköy-Kadıköy Vapur Düdüğü & Martı Sesleri">🚢 Vapur Düdüğü</button>
         <button id="btn-toggle-audio" class="btn-control" title="Toggle Spatial Audio Synthesizer">🔇 Audio: Muted</button>
         <button id="btn-toggle-theme" class="btn-control" title="Toggle Dark / Light Bosphorus Theme"><span class="theme-icon">🌙</span> Dark</button>
       </div>
@@ -993,9 +1017,45 @@
     let lastRefactorPayload = null;
 
     const canvasContainer = document.getElementById('viewport-container');
-    const bosphorusScene = new BosphorusScene(canvasContainer, (moduleData) => {
-      showBuildingInspector(moduleData);
-    });
+    const tooltipEl = document.getElementById('building-tooltip');
+
+    const bosphorusScene = new BosphorusScene(
+      canvasContainer,
+      (moduleData) => {
+        showBuildingInspector(moduleData);
+      },
+      (mod, clientX, clientY) => {
+        if (!tooltipEl) return;
+        if (!mod) {
+          tooltipEl.style.display = 'none';
+          return;
+        }
+
+        const isCycle = trafficEngine.circularChains.some(chain => chain.includes(mod.id));
+        tooltipEl.innerHTML = `
+          <div style="font-weight: 700; font-size: 11px; color: ${mod.district.color || 'var(--accent-cyan)'}; display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+            <span>🏢 ${escapeHtml(mod.name)}</span>
+            ${isCycle ? '<span style="background: #ff1744; color: #fff; font-size: 8px; padding: 1px 4px; border-radius: 3px; font-weight: 800;">SCC</span>' : ''}
+          </div>
+          <div style="display: flex; gap: 8px; font-size: 10px; color: var(--text-muted); margin-top: 4px;">
+            <span>LOC: <strong style="color: var(--text-main);">${mod.loc || 0}</strong></span>
+            <span>Cmplx: <strong style="color: var(--text-main);">${mod.complexity || 0}</strong></span>
+            <span>Health: <strong style="color: ${mod.healthScore > 80 ? 'var(--accent-green)' : '#ff9100'};">${mod.healthScore || 100}%</strong></span>
+          </div>
+          <div style="font-size: 9px; color: var(--text-muted); margin-top: 3px; border-top: 1px solid var(--panel-border); padding-top: 3px;">
+            📍 ${mod.district.side === 'europe' ? 'Avrupa' : 'Anadolu'} • <span style="color: ${mod.district.color || 'var(--accent-cyan)'}; font-weight: 600;">${escapeHtml(mod.district.district)}</span>
+          </div>
+        `;
+
+        tooltipEl.style.display = 'block';
+        const tipWidth = 200;
+        const tipHeight = 70;
+        const posX = Math.min(window.innerWidth - tipWidth - 12, clientX + 16);
+        const posY = Math.min(window.innerHeight - tipHeight - 12, clientY + 16);
+        tooltipEl.style.left = `${posX}px`;
+        tooltipEl.style.top = `${posY}px`;
+      }
+    );
 
     const trafficParticles = new TrafficParticles(bosphorusScene.scene);
 
@@ -1464,6 +1524,24 @@
       navigator.clipboard.writeText(lastRefactorDiff);
       alert('Git yaması panoya kopyalandı!');
     });
+
+    const btnDownloadPatch = document.getElementById('btn-download-patch');
+    if (btnDownloadPatch) {
+      btnDownloadPatch.addEventListener('click', () => {
+        if (!lastRefactorDiff) {
+          alert('Uygulanacak veya indirilecek yama bulunamadı.');
+          return;
+        }
+        const blob = new Blob([lastRefactorDiff], { type: 'text/plain;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'zenith-remediation.patch';
+        a.click();
+        URL.revokeObjectURL(url);
+        logToTerminal('💾 [YAMA İNDİRİLDİ] "zenith-remediation.patch" dosyası bilgisayarınıza kaydedildi.', 'success');
+      });
+    }
 
     document.getElementById('btn-apply-patch-live').addEventListener('click', async () => {
       if (!lastRefactorPayload || !lastRefactorPayload.files) {
@@ -1973,6 +2051,27 @@
       });
     }
 
+    
+    const btnCinematicTour = document.getElementById('btn-cinematic-tour');
+    if (btnCinematicTour) {
+      btnCinematicTour.addEventListener('click', () => {
+        const active = bosphorusScene.toggleCinematicTour();
+        btnCinematicTour.innerHTML = active ? '🎬 360° Tur: Açık' : '🎥 360° Tur';
+        btnCinematicTour.style.borderColor = active ? 'var(--accent-cyan)' : 'rgba(0, 240, 255, 0.35)';
+        btnCinematicTour.style.color = active ? 'var(--accent-cyan)' : 'var(--text-main)';
+        if (active) {
+          logToTerminal('🎬 [SİNEMATİK TUR] 360° Boğaz sunum turu başlatıldı.', 'info');
+        } else {
+          logToTerminal('⏸️ [SİNEMATİK TUR] Manuel kamera kontrolüne dönüldü.', 'info');
+        }
+      });
+      bosphorusScene.onCinematicChange = (active) => {
+        btnCinematicTour.innerHTML = active ? '🎬 360° Tur: Açık' : '🎥 360° Tur';
+        btnCinematicTour.style.borderColor = active ? 'var(--accent-cyan)' : 'rgba(0, 240, 255, 0.35)';
+        btnCinematicTour.style.color = active ? 'var(--accent-cyan)' : 'var(--text-main)';
+      };
+    }
+
     // Drag & Drop directory support for Web Showcase
     window.addEventListener('dragover', (e) => {
       e.preventDefault();
@@ -2101,5 +2200,6 @@
       startApplication();
     }
   </script>
+  <div id="building-tooltip"></div>
 </body>
 </html>
