@@ -1630,6 +1630,21 @@
     import { TrafficHUD } from './src/ui/traffic-hud.js';
     import { AgentDispatcher } from './src/agent/agent-dispatcher.js';
     import { SAMPLE_REPOSITORIES } from './src/data/samples.js';
+    import * as THREE from 'https://esm.sh/three@0.170.0';
+
+    // ─── Safe HTML Escaper (XSS & Runtime ReferenceError Protection) ───
+    function escapeHtml(str) {
+      if (str === null || str === undefined) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    // ─── Scope-Safe Vector3 Factory ───
+    const createVec3 = (x, y, z) => (typeof THREE !== 'undefined' && THREE.Vector3 ? createVec3(x, y, z) : { x, y, z });
 
     const isStaticHost = window.location.hostname.includes('github.io') || window.location.protocol === 'file:';
 
@@ -1911,8 +1926,8 @@
 
       // Camera auto-framing on Maslak & Beşiktaş skyscrapers
       if (bosphorusScene) {
-        bosphorusScene.controlsLerpTarget = new THREE.Vector3(-40, 30, -30);
-        bosphorusScene.cameraLerpTarget = new THREE.Vector3(-60, 180, 240);
+        bosphorusScene.controlsLerpTarget = createVec3(-40, 30, -30);
+        bosphorusScene.cameraLerpTarget = createVec3(-60, 180, 240);
       }
 
       // Update sector radar
@@ -2012,8 +2027,8 @@
           trafficEngine.loadModules(parsedList);
           refreshCityUI();
           logToTerminal(`✅ [ŞEHİR İNŞA EDİLDİ] "${cleanRepo}" deposu başarıyla 3D İstanbul metropolüne dönüştürüldü.`, 'success');
-          bosphorusScene.controlsLerpTarget = new THREE.Vector3(-40, 30, -30);
-          bosphorusScene.cameraLerpTarget = new THREE.Vector3(-60, 180, 240);
+          bosphorusScene.controlsLerpTarget = createVec3(-40, 30, -30);
+          bosphorusScene.cameraLerpTarget = createVec3(-60, 180, 240);
           drawRadar();
         } catch (err) {
           logToTerminal(`ℹ️ [GITHUB RESTRICTED] ${err.message}`, 'warning');
@@ -2099,8 +2114,8 @@
           trafficEngine.loadModules(mockModules);
           refreshCityUI();
           logToTerminal(`✅ [AST METROPOLÜ OLUŞTURULDU] "${cleanRepo}" (${mockModules.length} modül) 3D şehre yerleştirildi.`, 'success');
-          bosphorusScene.controlsLerpTarget = new THREE.Vector3(-40, 30, -30);
-          bosphorusScene.cameraLerpTarget = new THREE.Vector3(-60, 180, 240);
+          bosphorusScene.controlsLerpTarget = createVec3(-40, 30, -30);
+          bosphorusScene.cameraLerpTarget = createVec3(-60, 180, 240);
           drawRadar();
         }
       });
@@ -2510,6 +2525,9 @@
     const radarCanvas = document.getElementById('radar-canvas');
     const radarCtx = radarCanvas.getContext('2d');
 
+    let radarNeedsUpdate = true;
+    window.requestRadarUpdate = () => { radarNeedsUpdate = true; };
+
     function drawRadar() {
       if (!radarCanvas || !radarCtx) return;
       const w = radarCanvas.width;
@@ -2863,7 +2881,7 @@
       }
 
       // Sync radar canvas background
-      drawRadar();
+      if (typeof window.requestRadarUpdate === 'function') window.requestRadarUpdate(); else drawRadar();
     }
 
     // Apply saved theme on load
@@ -2919,7 +2937,15 @@
           files.push({ file, relPath: (currentPath + file.name).replace(/\\/g, '/') });
         } else if (entry.isDirectory) {
           const reader = entry.createReader();
-          const entries = await new Promise(res => reader.readEntries(res));
+          let entries = [];
+          let batch;
+          do {
+            batch = await new Promise(res => reader.readEntries(res));
+            if (batch && batch.length > 0) {
+              entries = entries.concat(batch);
+            }
+          } while (batch && batch.length > 0);
+
           for (const child of entries) {
             await traverseEntry(child, currentPath + entry.name + '/');
           }
@@ -2960,10 +2986,26 @@
       }
     });
 
+    // OrbitControls movement listener for camera dot on radar
+    if (bosphorusScene && bosphorusScene.controls) {
+      bosphorusScene.controls.addEventListener('change', () => {
+        if (typeof window.requestRadarUpdate === 'function') window.requestRadarUpdate();
+      });
+    }
+
     function updateParticlesLoop() {
       requestAnimationFrame(updateParticlesLoop);
       trafficParticles.update();
-      drawRadar();
+
+      // If camera is lerping or cinematic tour is active, mark radar as dirty
+      if (bosphorusScene && (bosphorusScene.cameraLerpTarget || bosphorusScene.isCinematicTour)) {
+        radarNeedsUpdate = true;
+      }
+
+      if (radarNeedsUpdate) {
+        drawRadar();
+        radarNeedsUpdate = false;
+      }
     }
     updateParticlesLoop();
 
@@ -3028,8 +3070,8 @@
         trafficEngine.loadModules(window.__ZENITH_EMBEDDED_MODULES__);
         refreshCityUI();
         loadDriftHistory();
-        bosphorusScene.controlsLerpTarget = new THREE.Vector3(-40, 30, -30);
-        bosphorusScene.cameraLerpTarget = new THREE.Vector3(-60, 180, 240);
+        bosphorusScene.controlsLerpTarget = createVec3(-40, 30, -30);
+        bosphorusScene.cameraLerpTarget = createVec3(-60, 180, 240);
         drawRadar();
         return;
       }
@@ -3064,8 +3106,8 @@
             persistScanSnapshot(trafficEngine.generateTelemetryReport());
             loadDriftHistory();
             initLiveSseWatcher();
-            bosphorusScene.controlsLerpTarget = new THREE.Vector3(-40, 30, -30);
-            bosphorusScene.cameraLerpTarget = new THREE.Vector3(-60, 180, 240);
+            bosphorusScene.controlsLerpTarget = createVec3(-40, 30, -30);
+            bosphorusScene.cameraLerpTarget = createVec3(-60, 180, 240);
             drawRadar();
             return;
           }
