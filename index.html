@@ -729,6 +729,294 @@
       box-shadow: 0 8px 24px rgba(15, 23, 42, 0.15);
     }
 
+  
+    /* ─── Single-Row Toolbar & Top Bar Polish ─── */
+    header.top-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: var(--panel-bg);
+      border: 1px solid var(--panel-border);
+      backdrop-filter: blur(16px);
+      padding: 6px 12px !important;
+      border-radius: 12px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+      gap: 6px !important;
+      flex-wrap: nowrap !important;
+      overflow-x: auto !important;
+      scrollbar-width: thin;
+      white-space: nowrap;
+    }
+    header.top-bar::-webkit-scrollbar {
+      height: 3px;
+    }
+    header.top-bar::-webkit-scrollbar-thumb {
+      background: rgba(0, 240, 255, 0.3);
+      border-radius: 3px;
+    }
+    :root[data-theme="light"] header.top-bar::-webkit-scrollbar-thumb,
+    body.light-theme header.top-bar::-webkit-scrollbar-thumb {
+      background: rgba(15, 23, 42, 0.2);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 8px !important;
+      flex-shrink: 0 !important;
+    }
+    .brand-icon {
+      font-size: 22px !important;
+    }
+    .brand-text h1, .brand-title {
+      font-size: 16px !important;
+      font-weight: 800;
+      letter-spacing: 0.5px;
+      white-space: nowrap;
+    }
+    .brand-text p {
+      font-size: 9px !important;
+      margin: 0;
+      white-space: nowrap;
+    }
+
+    .header-controls {
+      display: flex;
+      align-items: center;
+      gap: 5px !important;
+      flex-wrap: nowrap !important;
+      flex-shrink: 0 !important;
+    }
+
+    .search-box {
+      display: flex;
+      align-items: center;
+      background: rgba(14, 23, 44, 0.8);
+      border: 1px solid rgba(0, 240, 255, 0.3);
+      border-radius: 8px;
+      padding: 2px 6px !important;
+      flex-shrink: 0 !important;
+    }
+    .search-box input {
+      background: transparent;
+      border: none;
+      color: var(--text-main);
+      font-size: 11px !important;
+      padding: 4px 4px !important;
+      outline: none;
+      width: 115px !important;
+      font-family: 'Space Grotesk', sans-serif;
+    }
+
+    .github-fetch-bar {
+      display: flex;
+      align-items: center;
+      background: rgba(14, 23, 44, 0.85);
+      border: 1px solid rgba(0, 240, 255, 0.35);
+      border-radius: 8px;
+      padding: 2px 4px !important;
+      flex-shrink: 0 !important;
+    }
+    .github-fetch-bar input {
+      background: transparent;
+      border: none;
+      color: var(--text-main);
+      padding: 4px 6px !important;
+      font-size: 11px !important;
+      outline: none;
+      width: 135px !important;
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .github-fetch-bar button {
+      background: var(--accent-cyan);
+      color: #060913;
+      border: none;
+      padding: 4px 7px !important;
+      border-radius: 6px;
+      font-size: 10.5px !important;
+      font-weight: 700;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    select, button.btn-control {
+      padding: 4.5px 8px !important;
+      font-size: 10.5px !important;
+      white-space: nowrap;
+      flex-shrink: 0 !important;
+    }
+
+    /* Filter buttons styling */
+    .filter-group-wrapper {
+      display: flex;
+      gap: 4px;
+      background: rgba(6, 11, 24, 0.7);
+      padding: 4px;
+      border-radius: 6px;
+      border: 1px solid rgba(255,255,255,0.06);
+    }
+    .btn-filter {
+      flex: 1;
+      padding: 4px 6px;
+      font-size: 10px;
+      background: transparent;
+      color: var(--text-muted);
+      border: 1px solid transparent;
+      border-radius: 4px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .btn-filter.active {
+      background: var(--accent-cyan);
+      color: #060913;
+    }
+
+    /* ─── Light Mode Overrides (Explicit & Comprehensive) ─── */
+    :root[data-theme="light"] .brand-title,
+    :root[data-theme="light"] .brand-text h1,
+    body.light-theme .brand-title,
+    body.light-theme .brand-text h1 {
+      background: linear-gradient(135deg, #0f172a 0%, #0284c7 100%) !important;
+      -webkit-background-clip: text !important;
+      -webkit-text-fill-color: transparent !important;
+    }
+    :root[data-theme="light"] .brand-text p,
+    body.light-theme .brand-text p {
+      color: #475569 !important;
+    }
+
+    :root[data-theme="light"] input,
+    :root[data-theme="light"] select,
+    :root[data-theme="light"] .search-box,
+    :root[data-theme="light"] .github-fetch-bar,
+    :root[data-theme="light"] #input-github-repo,
+    :root[data-theme="light"] #sample-select,
+    :root[data-theme="light"] #input-search,
+    body.light-theme input,
+    body.light-theme select,
+    body.light-theme .search-box,
+    body.light-theme .github-fetch-bar,
+    body.light-theme #input-github-repo,
+    body.light-theme #sample-select,
+    body.light-theme #input-search {
+      background: #ffffff !important;
+      color: #0f172a !important;
+      border: 1px solid #cbd5e1 !important;
+    }
+    :root[data-theme="light"] select option,
+    body.light-theme select option {
+      background: #ffffff !important;
+      color: #0f172a !important;
+    }
+    :root[data-theme="light"] .search-box input,
+    :root[data-theme="light"] .github-fetch-bar input,
+    body.light-theme .search-box input,
+    body.light-theme .github-fetch-bar input {
+      color: #0f172a !important;
+    }
+    :root[data-theme="light"] .search-box input::placeholder,
+    :root[data-theme="light"] .github-fetch-bar input::placeholder,
+    body.light-theme .search-box input::placeholder,
+    body.light-theme .github-fetch-bar input::placeholder {
+      color: #94a3b8 !important;
+    }
+
+    :root[data-theme="light"] .gauge-wrapper,
+    :root[data-theme="light"] .gauge-card,
+    body.light-theme .gauge-wrapper,
+    body.light-theme .gauge-card {
+      background: rgba(241, 245, 249, 0.85) !important;
+      border: 1px solid #cbd5e1 !important;
+      color: #0f172a !important;
+    }
+    :root[data-theme="light"] .gauge-info h3,
+    body.light-theme .gauge-info h3 {
+      color: #0f172a !important;
+    }
+    :root[data-theme="light"] .gauge-info p,
+    :root[data-theme="light"] #gauge-status-desc,
+    body.light-theme .gauge-info p,
+    body.light-theme #gauge-status-desc {
+      color: #475569 !important;
+    }
+
+    :root[data-theme="light"] .filter-group-wrapper,
+    body.light-theme .filter-group-wrapper {
+      background: rgba(241, 245, 249, 0.9) !important;
+      border-color: #cbd5e1 !important;
+    }
+    :root[data-theme="light"] .btn-filter,
+    body.light-theme .btn-filter {
+      background: #e2e8f0 !important;
+      color: #334155 !important;
+      border: 1px solid #cbd5e1 !important;
+    }
+    :root[data-theme="light"] .btn-filter:hover,
+    body.light-theme .btn-filter:hover {
+      background: #cbd5e1 !important;
+      color: #0f172a !important;
+    }
+    :root[data-theme="light"] .btn-filter.active,
+    body.light-theme .btn-filter.active {
+      background: #0284c7 !important;
+      color: #ffffff !important;
+      border-color: #0284c7 !important;
+    }
+
+    :root[data-theme="light"] .radar-pill,
+    body.light-theme .radar-pill {
+      background: #f1f5f9 !important;
+      color: #0f172a !important;
+      border: 1px solid #cbd5e1 !important;
+    }
+    :root[data-theme="light"] .radar-pill:hover,
+    body.light-theme .radar-pill:hover {
+      background: #0284c7 !important;
+      color: #ffffff !important;
+      border-color: #0284c7 !important;
+      box-shadow: 0 0 8px rgba(2, 132, 199, 0.4) !important;
+    }
+
+    :root[data-theme="light"] #building-tooltip,
+    body.light-theme #building-tooltip {
+      background: rgba(255, 255, 255, 0.95) !important;
+      color: #0f172a !important;
+      border: 1px solid #cbd5e1 !important;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1) !important;
+    }
+
+    /* Modal Overlay & Cards */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(0, 0, 0, 0.7);
+      backdrop-filter: blur(8px);
+      z-index: 999999;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-card {
+      background: var(--panel-bg);
+      border: 1px solid var(--panel-border);
+      border-radius: 12px;
+      padding: 24px;
+      box-shadow: 0 16px 48px rgba(0, 0, 0, 0.6);
+      backdrop-filter: blur(16px);
+      color: var(--text-main);
+    }
+    :root[data-theme="light"] .modal-card,
+    body.light-theme .modal-card {
+      background: #ffffff !important;
+      border-color: #cbd5e1 !important;
+      box-shadow: 0 16px 48px rgba(15, 23, 42, 0.15) !important;
+      color: #0f172a !important;
+    }
+
   </style>
 </head>
 <body>
@@ -744,7 +1032,7 @@
       <div class="brand">
         <div class="brand-icon">🌉</div>
         <div class="brand-text">
-          <h1>Zenithİstanbul</h1>
+          <h1 class="brand-title" id="header-title">Zenithİstanbul</h1>
           <p>3D Codebase Metropole & Autonomous Agent Command Deck</p>
         </div>
       </div>
@@ -760,6 +1048,7 @@
         <div class="github-fetch-bar" title="Transform public GitHub repository into 3D architectural city">
           <input type="text" id="input-github-repo" placeholder="owner/repo (e.g. expressjs/express)">
           <button id="btn-fetch-github">Ingest & Parse</button>
+          <button id="btn-open-pat-modal" class="btn-control" style="border-left: 1px solid rgba(0,240,255,0.3); border-radius: 0 6px 6px 0; background: rgba(0,240,255,0.1);" title="GitHub Personal Access Token (PAT) Ayarları">🔑 Token</button>
         </div>
 
         
@@ -803,13 +1092,13 @@
         </div>
 
         
-        <div style="display: flex; gap: 4px; background: rgba(6, 11, 24, 0.7); padding: 4px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.06);">
-          <button id="btn-filter-all" class="btn-filter active" style="flex: 1; padding: 4px 6px; font-size: 10px; background: var(--accent-cyan); color: #060913; border: none; border-radius: 4px; font-weight: 700; cursor: pointer;">All</button>
-          <button id="btn-filter-cycles" class="btn-filter" style="flex: 1; padding: 4px 6px; font-size: 10px; background: transparent; color: var(--text-muted); border: none; border-radius: 4px; font-weight: 700; cursor: pointer;">🚨 SCC Cycles</button>
-          <button id="btn-filter-bridges" class="btn-filter" style="flex: 1; padding: 4px 6px; font-size: 10px; background: transparent; color: var(--text-muted); border: none; border-radius: 4px; font-weight: 700; cursor: pointer;">🌉 Ingress Bridges</button>
+        <div class="filter-group-wrapper">
+          <button id="btn-filter-all" class="btn-filter active">All</button>
+          <button id="btn-filter-cycles" class="btn-filter">🚨 SCC Cycles</button>
+          <button id="btn-filter-bridges" class="btn-filter">🌉 Ingress Bridges</button>
         </div>
 
-        <div class="gauge-wrapper">
+        <div class="gauge-wrapper gauge-card">
           <div class="gauge-dial" id="gauge-dial">%0</div>
           <div class="gauge-info">
             <h3 id="gauge-status-title">Topology Nominal</h3>
@@ -1342,9 +1631,19 @@
         logToTerminal(`🌐 [GITHUB API] "${cleanRepo}" deposunun Git Tree haritası taranıyor...`, 'header');
 
         try {
+          const pat = localStorage.getItem('zenith_github_pat');
+          const reqHeaders = {};
+          if (pat) {
+            reqHeaders['Authorization'] = `Bearer ${pat}`;
+            logToTerminal('🔑 [GITHUB AUTH] Kimlik doğrulamalı istek gönderiliyor (Saatlik 5.000 istek kotası)...', 'info');
+          }
+
           const controller = new AbortController();
-          const timeoutId = setTimeout(() => controller.abort(), 3500);
-          const branchRes = await fetch(`https://api.github.com/repos/${cleanRepo}`, { signal: controller.signal });
+          const timeoutId = setTimeout(() => controller.abort(), 4500);
+          const branchRes = await fetch(`https://api.github.com/repos/${cleanRepo}`, { 
+            headers: reqHeaders,
+            signal: controller.signal 
+          });
           clearTimeout(timeoutId);
 
           if (!branchRes.ok) {
@@ -1354,7 +1653,9 @@
           const repoMeta = await branchRes.json();
           const defaultBranch = repoMeta.default_branch || 'main';
 
-          const treeRes = await fetch(`https://api.github.com/repos/${cleanRepo}/git/trees/${defaultBranch}?recursive=1`);
+          const treeRes = await fetch(`https://api.github.com/repos/${cleanRepo}/git/trees/${defaultBranch}?recursive=1`, {
+            headers: reqHeaders
+          });
           if (!treeRes.ok) throw new Error(`Git tree unavailable (Status: ${treeRes.status})`);
           const treeData = await treeRes.json();
 
@@ -1474,32 +1775,66 @@
       const query = e.target.value.toLowerCase().trim();
       if (!query) {
         bosphorusScene.clearLaserConnections();
+        if (typeof bosphorusScene.clearSearchBeacon === 'function') bosphorusScene.clearSearchBeacon();
+        bosphorusScene.buildingObjects.forEach(b => b.visible = true);
         return;
       }
 
+      let firstMatch = null;
+      let matchCount = 0;
+
       for (const [mesh, mod] of bosphorusScene.buildingsMeshMap.entries()) {
         const matches = mod.name.toLowerCase().includes(query) || 
-                        mod.district.district.toLowerCase().includes(query) ||
+                        (mod.district && mod.district.district && mod.district.district.toLowerCase().includes(query)) ||
                         mod.path.toLowerCase().includes(query);
 
+        mesh.visible = matches;
         if (matches) {
-          bosphorusScene.focusOnBuilding(mesh.position);
-          showBuildingInspector(mod);
-          break;
+          matchCount++;
+          if (!firstMatch) {
+            firstMatch = { mesh, mod };
+          }
         }
+      }
+
+      if (firstMatch) {
+        bosphorusScene.focusOnBuilding(firstMatch.mesh.position);
+        if (typeof bosphorusScene.addSearchBeacon === 'function') {
+          bosphorusScene.addSearchBeacon(firstMatch.mesh.position);
+        }
+        showBuildingInspector(firstMatch.mod);
+        logToTerminal(`🔍 [ARAMA] "${query}" ile eşleşen ${matchCount} modül bulundu. "${firstMatch.mod.name}" odaklandı.`, 'info');
+      } else {
+        if (typeof bosphorusScene.clearSearchBeacon === 'function') bosphorusScene.clearSearchBeacon();
+        logToTerminal(`🔍 [ARAMA] "${query}" ile eşleşen modül bulunamadı.`, 'warning');
       }
     });
 
     document.getElementById('btn-download-report').addEventListener('click', () => {
+      // 1. Markdown Telemetry Report
       const md = trafficEngine.exportArchitectureReportMarkdown();
-      const blob = new Blob([md], { type: 'text/markdown;charset=utf-8;' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'zenith-istanbul-mimari-rapor.md';
-      a.click();
-      URL.revokeObjectURL(url);
-      logToTerminal('📊 [RAPOR İNDİRİLDİ] "zenith-istanbul-mimari-rapor.md" bilgisayarınıza kaydedildi.', 'success');
+      const blobMd = new Blob([md], { type: 'text/markdown;charset=utf-8;' });
+      const urlMd = URL.createObjectURL(blobMd);
+      const aMd = document.createElement('a');
+      aMd.href = urlMd;
+      aMd.download = 'zenith-architecture-report.md';
+      aMd.click();
+      URL.revokeObjectURL(urlMd);
+
+      // 2. 2D Vector Architecture Diagram (SVG)
+      if (typeof trafficEngine.exportArchitectureSvg === 'function') {
+        const svg = trafficEngine.exportArchitectureSvg();
+        const blobSvg = new Blob([svg], { type: 'image/svg+xml;charset=utf-8;' });
+        const urlSvg = URL.createObjectURL(blobSvg);
+        const aSvg = document.createElement('a');
+        aSvg.href = urlSvg;
+        aSvg.download = 'zenith-architecture.svg';
+        aSvg.click();
+        URL.revokeObjectURL(urlSvg);
+        logToTerminal('📊 [RAPOR VE ŞEMA İNDİRİLDİ] "zenith-architecture-report.md" ve 2D Vektörel "zenith-architecture.svg" kaydedildi.', 'success');
+      } else {
+        logToTerminal('📊 [RAPOR İNDİRİLDİ] "zenith-architecture-report.md" kaydedildi.', 'success');
+      }
     });
 
     const diffModal = document.getElementById('diff-modal');
@@ -1622,11 +1957,11 @@
 
     function setFilterActive(activeBtn) {
       [btnFilterAll, btnFilterCycles, btnFilterBridges].forEach(b => {
-        b.style.background = 'transparent';
-        b.style.color = 'var(--text-muted)';
+        b.classList.remove('active');
+        b.style.background = '';
+        b.style.color = '';
       });
-      activeBtn.style.background = 'var(--accent-cyan)';
-      activeBtn.style.color = '#060913';
+      activeBtn.classList.add('active');
     }
 
     btnFilterAll.addEventListener('click', () => {
@@ -1703,11 +2038,19 @@
 
       radarCtx.clearRect(0, 0, w, h);
 
-      const radarBg = currentTheme === 'light' ? '#e2e8f0' : '#040814';
+      const isLight = currentTheme === 'light';
+      const radarBg = isLight ? 'rgba(248, 250, 252, 0.95)' : '#040814';
       radarCtx.fillStyle = radarBg;
       radarCtx.fillRect(0, 0, w, h);
 
-      radarCtx.fillStyle = currentTheme === 'light' ? 'rgba(2, 132, 199, 0.12)' : 'rgba(0, 240, 255, 0.12)';
+      // Clean outer border on radar canvas in light mode
+      if (isLight) {
+        radarCtx.strokeStyle = '#cbd5e1';
+        radarCtx.lineWidth = 1;
+        radarCtx.strokeRect(0.5, 0.5, w - 1, h - 1);
+      }
+
+      radarCtx.fillStyle = isLight ? 'rgba(2, 132, 199, 0.15)' : 'rgba(0, 240, 255, 0.12)';
       radarCtx.beginPath();
       radarCtx.moveTo(w * 0.44, 0);
       radarCtx.bezierCurveTo(w * 0.46, h * 0.35, w * 0.48, h * 0.65, w * 0.45, h);
@@ -2024,6 +2367,8 @@
     function applyTheme(theme) {
       currentTheme = theme;
       document.documentElement.setAttribute('data-theme', theme);
+      document.body.classList.toggle('light-theme', theme === 'light');
+      document.body.classList.toggle('dark-theme', theme === 'dark');
       localStorage.setItem('zenith_theme', theme);
 
       if (btnToggleTheme) {
@@ -2139,6 +2484,60 @@
     }
     updateParticlesLoop();
 
+    
+    // ─── GitHub Personal Access Token (PAT) Modal Handlers ───
+    const modalPat = document.getElementById('modal-github-pat');
+    const inputPat = document.getElementById('input-github-pat');
+    const btnOpenPat = document.getElementById('btn-open-pat-modal');
+    const btnSavePat = document.getElementById('btn-save-pat');
+    const btnClearPat = document.getElementById('btn-clear-pat');
+    const btnClosePat = document.getElementById('btn-close-pat-modal');
+    const btnClosePatBtn = document.getElementById('btn-close-pat-modal-btn');
+
+    function updatePatButtonIndicator() {
+      const hasPat = !!localStorage.getItem('zenith_github_pat');
+      if (btnOpenPat) {
+        btnOpenPat.innerHTML = hasPat ? '🔑 Token: Aktif' : '🔑 Token';
+        btnOpenPat.style.color = hasPat ? 'var(--accent-green)' : 'var(--text-main)';
+        btnOpenPat.style.borderColor = hasPat ? 'var(--accent-green)' : 'rgba(0,240,255,0.3)';
+      }
+    }
+    updatePatButtonIndicator();
+
+    if (btnOpenPat) {
+      btnOpenPat.addEventListener('click', () => {
+        if (inputPat) inputPat.value = localStorage.getItem('zenith_github_pat') || '';
+        if (modalPat) modalPat.style.display = 'flex';
+      });
+    }
+
+    if (btnSavePat) {
+      btnSavePat.addEventListener('click', () => {
+        const token = inputPat ? inputPat.value.trim() : '';
+        if (!token) {
+          alert('Lütfen geçerli bir GitHub Token girin veya temizleyin.');
+          return;
+        }
+        localStorage.setItem('zenith_github_pat', token);
+        updatePatButtonIndicator();
+        if (modalPat) modalPat.style.display = 'none';
+        logToTerminal('🔑 [GITHUB AUTH] Kişisel Erişim Belirteci (PAT) kaydedildi. 5.000 req/hr kotası aktif.', 'success');
+      });
+    }
+
+    if (btnClearPat) {
+      btnClearPat.addEventListener('click', () => {
+        localStorage.removeItem('zenith_github_pat');
+        if (inputPat) inputPat.value = '';
+        updatePatButtonIndicator();
+        if (modalPat) modalPat.style.display = 'none';
+        logToTerminal('ℹ️ [GITHUB AUTH] Kişisel Erişim Belirteci silindi. Anonim mod devrede.', 'info');
+      });
+    }
+
+    if (btnClosePat) btnClosePat.addEventListener('click', () => modalPat.style.display = 'none');
+    if (btnClosePatBtn) btnClosePatBtn.addEventListener('click', () => modalPat.style.display = 'none');
+
     // Application Bootstrap Router
     async function startApplication() {
       if (window.__ZENITH_EMBEDDED_MODULES__ && window.__ZENITH_EMBEDDED_MODULES__.length > 0) {
@@ -2201,5 +2600,32 @@
     }
   </script>
   <div id="building-tooltip"></div>
+
+  <!-- GitHub PAT Modal -->
+  <div id="modal-github-pat" class="modal-overlay" style="display: none;">
+    <div class="modal-card" style="max-width: 480px; width: 90%;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+        <h2 style="font-size: 16px; color: var(--accent-cyan); margin: 0; display: flex; align-items: center; gap: 8px;">
+          <span>🔑</span> <span>GitHub Personal Access Token (PAT)</span>
+        </h2>
+        <button class="btn-close" id="btn-close-pat-modal">✕</button>
+      </div>
+      <p style="font-size: 12px; color: var(--text-muted); line-height: 1.5; margin-bottom: 14px;">
+        GitHub API anonim kullanıcılara saatte sadece 60 istek sınırı uygular. Kişisel erişim belirtecinizi (PAT) girerek <strong>saatte 5.000 istek kotasıyla</strong> büyük depoları derinlemesine tarayabilirsiniz. Token yalnızca tarayıcınızın yerel belleğinde saklanır.
+      </p>
+      <div style="margin-bottom: 16px;">
+        <label style="display: block; font-size: 11px; font-weight: 600; color: var(--text-main); margin-bottom: 6px;">GitHub Token (Classic veya Fine-grained):</label>
+        <input type="password" id="input-github-pat" placeholder="ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" style="width: 100%; padding: 8px 12px; border-radius: 6px; font-family: monospace; font-size: 12px; box-sizing: border-box;">
+      </div>
+      <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px;">
+        <button id="btn-clear-pat" class="btn-control" style="border-color: var(--accent-red); color: var(--accent-red);">🗑️ Token'ı Temizle</button>
+        <div style="display: flex; gap: 8px;">
+          <button id="btn-close-pat-modal-btn" class="btn-control">Vazgeç</button>
+          <button id="btn-save-pat" class="btn-control btn-primary">💾 Kaydet</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
 </body>
 </html>

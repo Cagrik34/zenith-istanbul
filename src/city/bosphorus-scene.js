@@ -48,6 +48,10 @@ export class BosphorusScene {
 
     this.cameraLerpTarget = null;
     this.controlsLerpTarget = null;
+    this.hemiLight = null;
+    this.gridHelper = null;
+    this.searchBeaconGroup = null;
+    this.searchBeaconStartTime = 0;
 
     this.init();
   }
@@ -85,9 +89,25 @@ export class BosphorusScene {
     this.setupRainSystem();
 
     this.controls.addEventListener('start', () => {
-      if (this.isCinematicTour) {
+      
+    if (this.searchBeaconGroup) {
+      const elapsed = this.clock.getElapsedTime() - this.searchBeaconStartTime;
+      if (elapsed > 3.0) {
+        this.clearSearchBeacon();
+      } else {
+        const pulse = 1 + (elapsed % 0.8) * 0.45;
+        const fade = Math.max(0, 1 - (elapsed / 3.0));
+        this.searchBeaconGroup.children.forEach(c => {
+          c.scale.set(pulse, 1, pulse);
+          if (c.material) c.material.opacity = fade * 0.85;
+        });
+        this.searchBeaconGroup.rotation.y += 0.04;
+      }
+    }
+
+    if (this.isCinematicTour) {
         this.isCinematicTour = false;
-        if (this.onCinematicChange) this.onCinematicChange(false);
+        if (this.onCinematicChange) this.onCinematicChange(false, 'user-interrupted');
       }
     });
 
@@ -100,6 +120,8 @@ export class BosphorusScene {
 
   setupLights() {
     this.ambientLight = new THREE.AmbientLight(0x101b38, 1.8);
+    this.hemiLight = new THREE.HemisphereLight(0xffffff, 0x101b38, 0.8);
+    this.scene.add(this.hemiLight);
     this.scene.add(this.ambientLight);
 
     this.dirLight = new THREE.DirectionalLight(0x5080ff, 2.2);
@@ -188,6 +210,7 @@ export class BosphorusScene {
     const gridHelper = new THREE.GridHelper(800, 40, 0x1a294d, 0x0c162e);
     gridHelper.position.y = 18.2;
     this.scene.add(gridHelper);
+    this.gridHelper = gridHelper;
   }
 
   createLandmarks() {
@@ -764,6 +787,52 @@ export class BosphorusScene {
     }
   }
 
+  
+  addSearchBeacon(pos) {
+    this.clearSearchBeacon();
+    const group = new THREE.Group();
+    group.position.set(pos.x, 19, pos.z);
+
+    // Glowing ground ring
+    const ringGeo = new THREE.RingGeometry(4, 16, 32);
+    ringGeo.rotateX(-Math.PI / 2);
+    const ringMat = new THREE.MeshBasicMaterial({
+      color: 0x00f0ff,
+      side: THREE.DoubleSide,
+      transparent: true,
+      opacity: 0.95
+    });
+    const ring = new THREE.Mesh(ringGeo, ringMat);
+    group.add(ring);
+
+    // Vertical cyan beacon laser
+    const beamGeo = new THREE.CylinderGeometry(1.5, 3.5, 90, 16, 1, true);
+    const beamMat = new THREE.MeshBasicMaterial({
+      color: 0x00f0ff,
+      transparent: true,
+      opacity: 0.55,
+      side: THREE.DoubleSide
+    });
+    const beam = new THREE.Mesh(beamGeo, beamMat);
+    beam.position.y = 45;
+    group.add(beam);
+
+    this.scene.add(group);
+    this.searchBeaconGroup = group;
+    this.searchBeaconStartTime = this.clock.getElapsedTime();
+  }
+
+  clearSearchBeacon() {
+    if (this.searchBeaconGroup) {
+      this.scene.remove(this.searchBeaconGroup);
+      this.searchBeaconGroup.traverse(c => {
+        if (c.geometry) c.geometry.dispose();
+        if (c.material) c.material.dispose();
+      });
+      this.searchBeaconGroup = null;
+    }
+  }
+
   focusOnBuilding(pos) {
     this.controlsLerpTarget = new THREE.Vector3(pos.x, pos.y, pos.z);
     this.cameraLerpTarget = new THREE.Vector3(pos.x, pos.y + 60, pos.z + 90);
@@ -840,12 +909,14 @@ export class BosphorusScene {
     }
 
     if (this.isCinematicTour) {
-      this.cinematicAngle += delta * 0.12;
-      const radius = this.cinematicRadius || 340;
+      this.cinematicAngle += delta * 0.14;
+      const radius = 280;
+      const height = 120 + Math.sin(this.cinematicAngle * 1.5) * 30;
       this.camera.position.x = Math.cos(this.cinematicAngle) * radius;
       this.camera.position.z = Math.sin(this.cinematicAngle) * radius;
-      this.camera.position.y = this.cinematicHeight || 170;
-      this.controls.target.set(-20, 25, 0);
+      this.camera.position.y = height;
+      this.camera.lookAt(-10, 20, 0);
+      this.controls.target.set(-10, 20, 0);
     } else if (this.cameraLerpTarget) {
       this.camera.position.lerp(this.cameraLerpTarget, 0.05);
       if (this.camera.position.distanceTo(this.cameraLerpTarget) < 2) {
