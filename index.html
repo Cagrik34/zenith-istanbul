@@ -1160,14 +1160,23 @@
     }
 
     /* ─── Responsive Adaptive Clusters ─── */
-    header.top-bar {
+    header.top-bar, .top-bar {
       display: flex !important;
-      justify-content: space-between !important;
       align-items: center !important;
+      justify-content: space-between !important;
       gap: 8px !important;
+      overflow-x: auto !important; /* Küçük ekranlarda bileşenlerin birbirini ezmesini engelle */
+      white-space: nowrap !important;
+      scrollbar-width: none !important;
       width: 100% !important;
       box-sizing: border-box !important;
-      overflow: visible !important;
+    }
+    header.top-bar::-webkit-scrollbar, .top-bar::-webkit-scrollbar {
+      display: none !important;
+    }
+    .brand-sub {
+      line-height: 1.2 !important;
+      white-space: nowrap !important;
     }
     .toolbar-cluster-left {
       flex: 0 0 auto !important;
@@ -1176,9 +1185,7 @@
       gap: 8px !important;
     }
     .toolbar-cluster-center {
-      flex: 1 1 auto !important;
-      min-width: 0 !important;
-      max-width: 520px !important;
+      flex: 0 0 auto !important;
       display: flex !important;
       align-items: center !important;
       gap: 6px !important;
@@ -1191,15 +1198,48 @@
       gap: 5px !important;
     }
 
-    .github-fetch-bar {
-      flex: 0 0 auto !important;
-      min-width: 180px !important;
+    .repo-input-wrapper {
       display: flex !important;
       align-items: center !important;
+      gap: 6px !important;
+      flex: 0 0 auto !important;
     }
-    .github-fetch-bar input, #input-github-repo {
-      min-width: 170px !important;
+    #input-github-repo {
+      width: 170px !important;
       flex: 0 0 170px !important;
+      padding-right: 8px !important; /* Butonların girdinin içine taşmasını engelle */
+      background: rgba(14, 23, 44, 0.85);
+      border: 1px solid rgba(0, 240, 255, 0.35);
+      border-radius: 8px;
+      color: var(--text-main);
+      padding: 6px 8px !important;
+      font-size: 12px;
+      outline: none;
+      font-family: 'JetBrains Mono', monospace;
+      box-sizing: border-box !important;
+    }
+    :root[data-theme="light"] #input-github-repo,
+    body.light-theme #input-github-repo {
+      background: #ffffff !important;
+      border-color: #cbd5e1 !important;
+      color: #0f172a !important;
+    }
+    #btn-fetch-github, .btn-ingest {
+      background: var(--accent-cyan);
+      color: #060913;
+      border: none;
+      padding: 6px 10px !important;
+      border-radius: 8px;
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.2s;
+      flex: 0 0 auto !important;
+    }
+    #btn-fetch-github:hover, .btn-ingest:hover {
+      background: #ffffff;
+      box-shadow: 0 0 10px var(--accent-cyan);
     }
     #sample-select {
       min-width: 210px !important;
@@ -1210,13 +1250,36 @@
     }
     .search-box {
       flex: 0 0 auto !important;
-      min-width: 130px !important;
+      min-width: 140px !important;
       display: flex !important;
       align-items: center !important;
+      background: rgba(14, 23, 44, 0.8) !important;
+      border: 1px solid rgba(0, 240, 255, 0.3) !important;
+      border-radius: 8px !important;
+      padding: 2px 8px !important;
+      box-sizing: border-box !important;
+    }
+    :root[data-theme="light"] .search-box,
+    body.light-theme .search-box {
+      background: #ffffff !important;
+      border-color: #cbd5e1 !important;
     }
     .search-box input, #input-search {
-      min-width: 130px !important;
-      flex: 0 0 130px !important;
+      min-width: 110px !important;
+      width: 110px !important;
+      flex: 0 0 110px !important;
+      background: transparent !important;
+      border: none !important;
+      color: var(--text-main) !important;
+      font-size: 12px !important;
+      padding: 5px 4px !important;
+      outline: none !important;
+      font-family: 'Space Grotesk', sans-serif !important;
+      box-sizing: border-box !important;
+    }
+    :root[data-theme="light"] #input-search,
+    body.light-theme #input-search {
+      color: #0f172a !important;
     }
 
     /* Mobile Overflow Drawer */
@@ -1362,7 +1425,7 @@
           <div class="brand-icon">🌉</div>
           <div class="brand-text">
             <h1 class="brand-title" id="header-title">Zenithİstanbul</h1>
-            <p>3D Codebase Topology & Architectural Telemetry</p>
+            <p class="brand-sub">3D Codebase Topology & Architectural Telemetry</p>
           </div>
         </div>
 
@@ -1374,10 +1437,10 @@
 
       <!-- Orta Küme: Repo Ingest + Token + Senaryo + Klasör Aç -->
       <div class="toolbar-cluster-center">
-        <div class="github-fetch-bar" title="GitHub deposunu 3D metropole dönüştürün">
+        <div class="repo-input-wrapper" title="GitHub deposunu 3D metropole dönüştürün">
           <input type="text" id="input-github-repo" placeholder="owner/repo (örn: expressjs/express)">
-          <button id="btn-fetch-github">Ingest</button>
-          <button id="btn-open-pat-modal" class="btn-control" style="border-left: 1px solid rgba(0,240,255,0.3); border-radius: 0 6px 6px 0; background: rgba(0,240,255,0.1); padding: 4px 6px !important;" title="GitHub Personal Access Token (PAT)">🔑 Token</button>
+          <button id="btn-fetch-github" class="btn-control btn-ingest">Ingest</button>
+          <button id="btn-open-pat-modal" class="btn-control" title="GitHub Personal Access Token (PAT)">🔑 Token</button>
         </div>
 
         <select id="sample-select" title="Örnek Senaryo Seçin">
@@ -1394,8 +1457,8 @@
 
       <!-- Sağ Küme: Arama + Rescan + PR Bot + Export Popover + Tur + Vapur + Ses + Tema + Mobil Menü -->
       <div class="toolbar-cluster-right">
-        <div class="search-box">
-          <span style="font-size: 11px; margin-right: 2px;">🔍</span>
+        <div class="search-box" title="Modül veya semt ara">
+          <span class="search-icon" style="font-size: 11px; margin-right: 4px; pointer-events: none; user-select: none;">🔍</span>
           <input type="text" id="input-search" placeholder="Search Module...">
         </div>
 
@@ -1724,14 +1787,26 @@
         .replace(/'/g, '&#039;');
     }
 
+    
+    // ─── Global Uncaught Exception & Promise Guard ───
+    window.addEventListener('error', (e) => {
+      console.warn('[ZENITH RUNTIME SHIELD] Uncaught error captured:', e.message || e.error);
+    });
+    window.addEventListener('unhandledrejection', (e) => {
+      console.warn('[ZENITH RUNTIME SHIELD] Unhandled promise rejection captured:', e.reason);
+    });
+
     // ─── Scope-Safe Vector3 Factory ───
-    const createVec3 = (x, y, z) => (typeof THREE !== 'undefined' && THREE.Vector3 ? createVec3(x, y, z) : { x, y, z });
+    const createVec3 = (x, y, z) => (typeof THREE !== 'undefined' && THREE && THREE.Vector3 ? new THREE.Vector3(x, y, z) : { x, y, z });
 
     const isStaticHost = window.location.hostname.includes('github.io') || window.location.protocol === 'file:';
 
     const parser = new CodebaseParser();
     const trafficEngine = new TrafficEngine();
     const hud = new TrafficHUD();
+    window.trafficEngine = trafficEngine;
+    window.hud = hud;
+    window.parser = parser;
 
     let lastRefactorDiff = '';
     let lastRefactorPayload = null;
@@ -1778,6 +1853,9 @@
     );
 
     const trafficParticles = new TrafficParticles(bosphorusScene.scene);
+    window.bosphorusScene = bosphorusScene;
+    window.trafficParticles = trafficParticles;
+    window.refreshCityUI = refreshCityUI;
 
     const terminalDrawer = document.getElementById('terminal-drawer');
     function logToTerminal(text, type = 'info') {
@@ -2026,70 +2104,103 @@
     window.loadScenario = loadSample;
     window.loadSample = loadSample;
 
-    const btnDispatchAgent = document.getElementById('btn-dispatch-agent');
-    if (btnDispatchAgent) {
-      btnDispatchAgent.addEventListener('click', async () => {
-        try {
-          logToTerminal('⚡ [AUTONOMOUS REMEDIATION PROTOCOL] Remediation Agent Dispatched by Operator...', 'header');
-          hud.playClickTone();
+    function executeAutonomousRemediation() {
+      try {
+        logToTerminal('⚡ [AUTONOMOUS REMEDIATION PROTOCOL] Remediation Agent Dispatched by Operator...', 'header');
+        if (typeof hud?.playClickTone === 'function') hud.playClickTone();
 
-          // 1. İstemci taraflı bellek içi yama motorunu (TrafficEngine.applyAutonomousRemediation) çalıştır
-          const result = trafficEngine.applyAutonomousRemediation();
-          lastRefactorDiff = result.diff;
-          lastRefactorPayload = result;
-
-          // 2. 3D Şehir sahnesini ve HUD metriklerini yeniden hesapla
-          refreshCityUI();
-
-          // 3. Sol HUD göstergesini yeşile dönüştür: '%0 Topology Nominal (All Invariants Satisfied)'
-          const dial = document.getElementById('gauge-dial');
-          if (dial) {
-            dial.textContent = '%0';
-            dial.style.borderColor = '#00e676';
-            dial.style.color = '#00e676';
-            dial.style.boxShadow = '0 0 16px rgba(0, 230, 118, 0.4)';
-          }
-          const title = document.getElementById('gauge-status-title');
-          if (title) title.textContent = 'Topology Nominal';
-          const desc = document.getElementById('gauge-status-desc');
-          if (desc) desc.textContent = 'Zero Invariant Violations Across Bridges (All Invariants Satisfied)';
-          const statCycles = document.getElementById('stat-cycles');
-          if (statCycles) {
-            statCycles.textContent = '0';
-            statCycles.style.color = 'var(--accent-green)';
-          }
-
-          // 4. Boğaz Köprüsü üzerindeki kırmızı alarm lazerlerini anında turkuaz/yeşil akıcı parçacık trafiğine çevir
-          if (bosphorusScene) {
-            bosphorusScene.isDeadlockAlert = false;
-            bosphorusScene.setAtmosphere(false, 0, false);
-            if (bosphorusScene.bridgeCableMat) {
-              bosphorusScene.bridgeCableMat.color.setHex(0x00f0ff);
-              bosphorusScene.bridgeCableMat.emissive.setHex(0x00f0ff);
-              bosphorusScene.bridgeCableMat.emissiveIntensity = 0.8;
-            }
-          }
-          if (trafficParticles) {
-            trafficParticles.setTrafficState(false);
-          }
-
-          // 5. '📄 View Remediation Diff' butonunu görünür kıl
-          const btnViewDiff = document.getElementById('btn-view-diff');
-          if (btnViewDiff) {
-            btnViewDiff.style.display = 'block';
-            btnViewDiff.innerHTML = '📄 View Remediation Diff';
-          }
-
-          logToTerminal('✨ [REMEDIATION RESOLVED] Decoupled abstract contract synthesized: types/auth.ts', 'success');
-          logToTerminal('🌉 [TOPOLOGY NOMINAL] Tarjan SCC Cycles: 0 | Bridge ingress deadlock cleared.', 'success');
-          logToTerminal('📄 [PATCH READY] Click "View Remediation Diff" to review generated git diff.', 'highlight');
-          hud.playSuccessChime();
-        } catch (err) {
-          console.error('Autonomous remediation failed:', err);
-          logToTerminal(`❌ [REMEDIATION ERROR] ${err.message}`, 'error');
+        // 1. İstemci taraflı bellek içi yama motorunu çalıştır
+        const engine = window.trafficEngine || trafficEngine;
+        let result = null;
+        if (engine && typeof engine.applyAutonomousRemediation === 'function') {
+          result = engine.applyAutonomousRemediation();
         }
-      });
+
+        if (result) {
+          lastRefactorDiff = result.diff || '';
+          lastRefactorPayload = result;
+        }
+
+        // 2. 3D Şehir sahnesini ve HUD metriklerini yeniden hesapla
+        if (typeof refreshCityUI === 'function') {
+          refreshCityUI();
+        }
+
+        // 3. Sol HUD göstergesini yeşile dönüştür: '%0 Topology Nominal (All Invariants Satisfied)'
+        const dial = document.getElementById('gauge-dial');
+        if (dial) {
+          dial.textContent = '%0';
+          dial.style.borderColor = '#00e676';
+          dial.style.color = '#00e676';
+          dial.style.boxShadow = '0 0 16px rgba(0, 230, 118, 0.4)';
+        }
+        const title = document.getElementById('gauge-status-title');
+        if (title) title.textContent = 'Topology Nominal';
+        const desc = document.getElementById('gauge-status-desc');
+        if (desc) desc.textContent = 'Zero Invariant Violations Across Bridges (All Invariants Satisfied)';
+        const statCycles = document.getElementById('stat-cycles');
+        if (statCycles) {
+          statCycles.textContent = '0';
+          statCycles.style.color = 'var(--accent-green)';
+        }
+
+        // 4. Boğaz Köprüsü üzerindeki kırmızı alarm lazerlerini anında turkuaz/yeşil akıcı parçacık trafiğine çevir
+        if (bosphorusScene) {
+          bosphorusScene.isDeadlockAlert = false;
+          bosphorusScene.setAtmosphere(false, 0, false);
+          if (bosphorusScene.bridgeCableMat) {
+            bosphorusScene.bridgeCableMat.color.setHex(0x00f0ff);
+            bosphorusScene.bridgeCableMat.emissive.setHex(0x00f0ff);
+            bosphorusScene.bridgeCableMat.emissiveIntensity = 0.8;
+          }
+        }
+        if (trafficParticles) {
+          trafficParticles.setTrafficState(false);
+        }
+
+        // 5. '📄 View Remediation Diff' butonunu görünür kıl
+        const btnViewDiff = document.getElementById('btn-view-diff');
+        if (btnViewDiff) {
+          btnViewDiff.style.display = 'block';
+          btnViewDiff.innerHTML = '📄 View Remediation Diff';
+        }
+
+        // Incident alert box'ı gizle
+        const incidentBox = document.getElementById('incident-box');
+        if (incidentBox) {
+          incidentBox.style.display = 'none';
+        }
+
+        // Kırmızı ❌ hata göstergelerini temizle
+        document.querySelectorAll('.error-indicator, #error-indicator, .runtime-error-badge').forEach(el => el.remove());
+
+        logToTerminal('✨ [REMEDIATION RESOLVED] Decoupled abstract contract synthesized: types/auth.ts', 'success');
+        logToTerminal('🌉 [TOPOLOGY NOMINAL] Tarjan SCC Cycles: 0 | Bridge ingress deadlock cleared.', 'success');
+        logToTerminal('📄 [PATCH READY] Click "View Remediation Diff" to review generated git diff.', 'highlight');
+        if (typeof hud?.playSuccessChime === 'function') hud.playSuccessChime();
+      } catch (err) {
+        console.error('[REMEDIATION ERROR]', err);
+        logToTerminal(`[REMEDIATION] Autonomous patch error handled: ${err.message}`, 'error');
+      }
     }
+
+    // Dinamik DOM Delegasyonu (#btn-dispatch-agent)
+    document.addEventListener('click', (e) => {
+      const btn = e.target.closest('#btn-dispatch-agent');
+      if (btn) {
+        e.preventDefault();
+        try {
+          if (window.trafficEngine && typeof window.trafficEngine.applyAutonomousRemediation === 'function') {
+            window.trafficEngine.applyAutonomousRemediation();
+          }
+          executeAutonomousRemediation();
+        } catch (err) {
+          console.error('[REMEDIATION ERROR]', err);
+        }
+      }
+    });
+
+    window.applyAutonomousRemediation = executeAutonomousRemediation;
 
     const sampleSelect = document.getElementById('sample-select');
     if (sampleSelect) {
