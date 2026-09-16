@@ -1791,6 +1791,43 @@
   </div>
 
   
+  <!-- Protocol Diagnostic & File:/// Protocol Shield -->
+  <script>
+    (function() {
+      if (window.location.protocol === 'file:') {
+        window.addEventListener('DOMContentLoaded', function() {
+          var container = document.getElementById('viewport-container');
+          if (container) {
+            container.innerHTML = '<div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);max-width:560px;width:90%;background:rgba(6,11,24,0.95);border:2px solid #ff1744;border-radius:14px;padding:28px;box-shadow:0 0 40px rgba(255,23,68,0.35);text-align:center;font-family:system-ui,-apple-system,sans-serif;color:#f8fafc;z-index:9999;backdrop-filter:blur(12px);">' +
+              '<div style="font-size:42px;margin-bottom:12px;">⚠️</div>' +
+              '<h2 style="font-size:17px;color:#ff5252;margin:0 0 10px 0;font-weight:800;letter-spacing:0.5px;">LOCAL FILE PROTOCOL (CORS) ENGELİ</h2>' +
+              '<p style="font-size:12px;color:#94a3b8;line-height:1.6;margin-bottom:18px;">Modern tarayıcılar (Chrome, Edge, Brave), <code>file:///</code> protokolü üzerinden yerel ES modüllerinin (<code>import/export</code>) yüklenmesini güvenlik gerekçesiyle engeller. Bu nedenle 3D sahne ve telemetri motoru doğrudan dosya çift tıklamasıyla çalışamaz.</p>' +
+              '<div style="background:rgba(15,23,42,0.85);border:1px solid rgba(0,240,255,0.25);border-radius:8px;padding:14px;text-align:left;margin-bottom:18px;">' +
+                '<div style="font-size:11px;color:#00f0ff;font-weight:700;margin-bottom:6px;">🚀 ÇÖZÜM YÖNTEMLERİ:</div>' +
+                '<div style="font-size:12px;color:#e2e8f0;line-height:1.7;">' +
+                  '<strong>1. Yerel Geliştirme Sunucusu (Önerilen):</strong><br>' +
+                  'Terminalde <code>npm start</code> çalıştırın (Otomatik olarak <code>http://localhost:4173</code> adresini açar).<br><br>' +
+                  '<strong>2. Doğrudan Canlı Web Sürümü:</strong><br>' +
+                  '<a href="https://cagrik34.github.io/zenith-istanbul/" target="_blank" style="color:#00e676;font-weight:700;text-decoration:underline;">cagrik34.github.io/zenith-istanbul</a>' +
+                '</div>' +
+              '</div>' +
+              '<a href="https://cagrik34.github.io/zenith-istanbul/" target="_blank" style="display:inline-block;background:linear-gradient(135deg,#00f0ff,#00e676);color:#060913;font-weight:800;font-size:12px;padding:10px 22px;border-radius:6px;text-decoration:none;box-shadow:0 0 18px rgba(0,240,255,0.4);">🌐 Canlı Web Showcase\'i Aç</a>' +
+            '</div>';
+          }
+          var terminal = document.getElementById('terminal-drawer');
+          if (terminal) {
+            var errLine = document.createElement('div');
+            errLine.className = 'log-line error';
+            errLine.style.color = '#ff1744';
+            errLine.style.fontWeight = '700';
+            errLine.textContent = '🚨 [CORS ENGELİ] "file://" protokolünde ES Modülleri çalıştırılamaz. Lütfen terminalden "npm start" çalıştırın veya GitHub Pages canlı sürümünü açın.';
+            terminal.appendChild(errLine);
+          }
+        });
+      }
+    })();
+  </script>
+
   <script type="module">
     import { CodebaseParser } from './src/core/ast-parser.js';
     import { TrafficEngine } from './src/core/traffic-engine.js';
