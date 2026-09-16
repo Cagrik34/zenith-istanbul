@@ -3,7 +3,14 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
-import { SwarmCoordinator, redactSecrets } from '../src/agent/swarm-coordinator.js';
+import {
+  SwarmCoordinator,
+  redactSecrets,
+  repairLiteralLineBreaksInJsonStrings,
+  selectBroadcastTargets,
+  mergeTaskLedger,
+  patchTaskInLedger
+} from '../src/agent/swarm-coordinator.js';
 
 test('SwarmCoordinator - Workspace initialization creates core files and agent rosters', () => {
   const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'zenith-swarm-test-'));
@@ -186,4 +193,45 @@ test('SwarmCoordinator - Autonomic heartbeat tick executes reflex and resolves i
   } finally {
     fs.rmSync(tmpDir, { recursive: true, force: true });
   }
+});
+
+test('SwarmCoordinator - JSON string repair cures literal line breaks without corrupting parse', () => {
+  const invalidJsonWithLiteralNewline = '{\n  "title": "Fix cycle",\n  "diff": "line1\nline2"\n}';
+  const { text, changed } = repairLiteralLineBreaksInJsonStrings(invalidJsonWithLiteralNewline);
+  assert.equal(changed, true);
+  const parsed = JSON.parse(text);
+  assert.equal(parsed.title, 'Fix cycle');
+  assert.equal(parsed.diff, 'line1\nline2');
+});
+
+test('SwarmCoordinator - Broadcast fan-out excludes sender and archived agents', () => {
+  const agents = {
+    'agent.commander': { id: 'agent.commander' },
+    'agent.bridge_engineer': { id: 'agent.bridge_engineer' },
+    'agent.retired': { id: 'agent.retired', archived: true }
+  };
+
+  const targets = selectBroadcastTargets(agents, 'agent.commander');
+  assert.deepEqual(targets, ['agent.bridge_engineer']);
+});
+
+test('SwarmCoordinator - Task ledger merging preserves custom fields on disk', () => {
+  const existing = [
+    { id: 'AKOM-101', title: 'Cycle resolution', priority: 'high', deliverable: 'contract.ts', notes: 'Keep safe' }
+  ];
+  const incoming = [
+    { id: 'AKOM-101', title: 'Cycle resolution (Renamed)', status: 'done' }
+  ];
+
+  const merged = mergeTaskLedger(existing, incoming);
+  assert.equal(merged.length, 1);
+  assert.equal(merged[0].title, 'Cycle resolution (Renamed)');
+  assert.equal(merged[0].deliverable, 'contract.ts');
+  assert.equal(merged[0].notes, 'Keep safe');
+  assert.equal(merged[0].status, 'done');
+
+  // Patching one task in ledger
+  const patched = patchTaskInLedger(merged, 'AKOM-101', { priority: 'low' });
+  assert.equal(patched[0].priority, 'low');
+  assert.equal(patched[0].deliverable, 'contract.ts');
 });

@@ -57,6 +57,9 @@ import { loadModelCatalog, validateModelId } from './model-catalog.js';
 
 const HOP_CAP = 12;
 
+/**
+ * 5-Tier Cryptographic Secret Redaction Battery
+ */
 export function redactSecrets(text) {
   if (typeof text !== 'string' || !text) return typeof text === 'string' ? text : '';
   let s = text;
@@ -71,7 +74,105 @@ export function redactSecrets(text) {
   );
   // 4. Authorization bearer tokens
   s = s.replace(/\b(bearer)\s+[A-Za-z0-9._~+/=-]{8,}/gi, '$1 [REDACTED_TOKEN]');
+  // 5. Named key-value credential pairs
+  s = s.replace(
+    /\b((?:[a-z0-9]+[_-])*(?:api[_-]?key|secret[_-]?access[_-]?key|secret|token|password|passwd|pwd|access[_-]?token|refresh[_-]?token|client[_-]?secret|signing[_-]?secret|webhook[_-]?secret|auth[_-]?token|bot[_-]?token|private[_-]?key))(\s*[:=]\s*)(["']?)[^\s"',}]{6,}\3/gi,
+    (_m, k) => `${k}=[REDACTED]`
+  );
   return s;
+}
+
+/**
+ * Repairs literal CR/LF characters inside JSON string values.
+ * Prevents JSON.parse failures when multi-line LLM diffs or shell outputs are published.
+ */
+export function repairLiteralLineBreaksInJsonStrings(raw) {
+  let text = '';
+  let inString = false;
+  let escaped = false;
+  let changed = false;
+
+  for (const ch of raw) {
+    if (!inString) {
+      text += ch;
+      if (ch === '"') inString = true;
+      continue;
+    }
+
+    if (escaped) {
+      text += ch;
+      escaped = false;
+      continue;
+    }
+
+    if (ch === '\\') {
+      text += ch;
+      escaped = true;
+      continue;
+    }
+
+    if (ch === '"') {
+      text += ch;
+      inString = false;
+      continue;
+    }
+
+    if (ch === '\n') {
+      text += '\\n';
+      changed = true;
+      continue;
+    }
+
+    if (ch === '\r') {
+      text += '\\r';
+      changed = true;
+      continue;
+    }
+
+    text += ch;
+  }
+
+  return { text, changed };
+}
+
+/**
+ * Pure function selecting live broadcast targets, excluding sender and archived agents.
+ */
+export function selectBroadcastTargets(agents, fromId) {
+  return Object.keys(agents || {}).filter(id => {
+    const a = agents[id];
+    if (!a) return false;
+    if (id === fromId) return false;
+    if (a.archived) return false;
+    return true;
+  });
+}
+
+/**
+ * Folds incoming tasks over existing tasks preserving custom on-disk fields.
+ */
+export function mergeTaskLedger(existing, incoming) {
+  const incomingList = Array.isArray(incoming) ? incoming : [];
+  const existingList = Array.isArray(existing) ? existing : [];
+  const byId = new Map();
+  for (const entry of existingList) {
+    if (entry && typeof entry === 'object' && entry.id) {
+      byId.set(entry.id, entry);
+    }
+  }
+  return incomingList.map(entry => {
+    if (!entry || typeof entry !== 'object' || !entry.id) return entry;
+    const prior = byId.get(entry.id);
+    return prior ? { ...prior, ...entry } : entry;
+  });
+}
+
+/**
+ * Patches one task in the ledger without discarding other fields or cards.
+ */
+export function patchTaskInLedger(rawTasks, id, patch) {
+  const list = Array.isArray(rawTasks) ? rawTasks : [];
+  return list.map(entry => (entry && entry.id === id ? { ...entry, ...patch } : entry));
 }
 
 export class SwarmCoordinator {
@@ -359,8 +460,8 @@ export class SwarmCoordinator {
     const resolveTarget = t => (t === 'commander' || t === 'god' ? commanderId : t);
 
     let targets = [];
-    if (msg.to === 'broadcast') {
-      targets = Object.keys(reg.agents).filter(a => a !== msg.from);
+    if (msg.to === 'broadcast' || msg.to === 'all') {
+      targets = selectBroadcastTargets(reg.agents, msg.from);
     } else {
       const resolved = resolveTarget(msg.to);
       if (resolved !== msg.from) targets = [resolved];
@@ -392,8 +493,8 @@ export class SwarmCoordinator {
   }
 
   /**
-   * Scans all agent outboxes, delivers pending files to target inboxes,
-   * and moves them to .sent/ to prevent reprocessing.
+   * Scans all agent outboxes, repairs literal line breaks, delivers pending
+   * files to target inboxes, and quarantines malformed files safely.
    */
   drainOutbox() {
     const agentsDir = path.join(this.swarmRoot, 'agents');
@@ -410,7 +511,9 @@ export class SwarmCoordinator {
       for (const f of files) {
         const full = path.join(outbox, f);
         try {
-          const raw = JSON.parse(fs.readFileSync(full, 'utf8'));
+          const rawContent = fs.readFileSync(full, 'utf8');
+          const { text: repaired } = repairLiteralLineBreaksInJsonStrings(rawContent);
+          const raw = JSON.parse(repaired);
           raw.from = agentId;
           raw.hops = (raw.hops || 0) + 1;
           this.routeMessage(raw);
@@ -421,15 +524,60 @@ export class SwarmCoordinator {
           routedTotal++;
         } catch (e) {
           try {
-            const sentDir = path.join(outbox, '.sent');
-            fs.mkdirSync(sentDir, { recursive: true });
-            fs.renameSync(full, path.join(sentDir, `bad-${f}`));
+            const malformedDir = path.join(outbox, '.malformed');
+            fs.mkdirSync(malformedDir, { recursive: true });
+            fs.renameSync(full, path.join(malformedDir, f));
+            this.appendLog({
+              kind: 'outbox_malformed',
+              agentId,
+              file: f,
+              error: e.message
+            });
           } catch (r) {}
         }
       }
     }
 
     return routedTotal;
+  }
+
+  /**
+   * Returns pending inbox message count for an agent.
+   */
+  inboxBacklog(agentId) {
+    const inbox = path.join(this.swarmRoot, 'agents', agentId, 'inbox');
+    if (!fs.existsSync(inbox)) return 0;
+    try {
+      return fs.readdirSync(inbox).filter(f => f.endsWith('.json') && !f.startsWith('.')).length;
+    } catch (e) {
+      return 0;
+    }
+  }
+
+  /**
+   * Overwrites tasks preserving custom on-disk fields.
+   */
+  writeTasks(tasks) {
+    const existing = this.getTasks();
+    const merged = mergeTaskLedger(existing, tasks);
+    this.atomicWriteJson(path.join(this.swarmRoot, 'tasks.json'), merged);
+    return merged;
+  }
+
+  /**
+   * Patches a single task in the ledger.
+   */
+  patchTask(id, patch) {
+    const existing = this.getTasks();
+    const patched = patchTaskInLedger(existing, id, { ...patch, updatedAt: new Date().toISOString() });
+    this.atomicWriteJson(path.join(this.swarmRoot, 'tasks.json'), patched);
+    this.appendLog({
+      ts: Date.now(),
+      kind: 'task_patched',
+      taskId: id,
+      patch
+    });
+    return patched.find(t => t.id === id) || null;
   }
 
   /**
@@ -600,7 +748,7 @@ export class SwarmCoordinator {
       setTimeout(() => {
         this.updateAgentStatus(agentId, 'idle');
         this.updateAgentStatus('agent.commander', 'idle');
-      }, 2000);
+      }, 5000);
 
     } else if (agentId === 'agent.security_sentinel' && msg.act === 'request') {
       this.updateAgentStatus(agentId, 'working');
@@ -624,7 +772,7 @@ export class SwarmCoordinator {
       setTimeout(() => {
         this.updateAgentStatus(agentId, 'idle');
         this.updateAgentStatus('agent.commander', 'idle');
-      }, 2000);
+      }, 5000);
 
     } else if (agentId === 'agent.commander' && msg.act === 'done') {
       this.appendLog({

@@ -3218,15 +3218,17 @@
       if (rosterGrid && data.registry?.agents) {
         rosterGrid.innerHTML = Object.values(data.registry.agents).map(agent => {
           const statusColors = { idle: '#94a3b8', working: '#00f0ff', blocked: '#ff1744', done: '#00e676' };
+          const statusLabels = { idle: '● HAZIR (STANDBY)', working: '● ÇALIŞIYOR (WORKING)', blocked: '● BLOKE', done: '● TAMAMLANDI' };
           const stColor = statusColors[agent.status] || '#94a3b8';
+          const stLabel = statusLabels[agent.status] || `● ${agent.status.toUpperCase()}`;
           const isWorking = agent.status === 'working';
-          const glowStyle = isWorking ? `box-shadow: 0 0 14px ${agent.color}60; border-color: ${agent.color};` : '';
+          const glowStyle = isWorking ? `box-shadow: 0 0 16px ${agent.color}80; border-color: ${agent.color}; transform: translateY(-2px);` : '';
           return `
             <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-left: 4px solid ${agent.color}; border-radius: 8px; padding: 12px; display: flex; flex-direction: column; gap: 6px; transition: all 0.3s; ${glowStyle}">
               <div style="display: flex; justify-content: space-between; align-items: center;">
                 <strong style="color: #fff; font-size: 13px;">${escapeHtml(agent.name)}</strong>
                 <span style="font-size: 10px; font-family: monospace; font-weight: 700; color: ${stColor}; background: ${stColor}15; padding: 2px 7px; border-radius: 4px; border: 1px solid ${stColor}40;">
-                  ● ${agent.status.toUpperCase()}
+                  ${stLabel}
                 </span>
               </div>
               <div style="font-size: 11px; color: ${agent.color}; font-weight: 600;">${escapeHtml(agent.role)}</div>
@@ -3636,7 +3638,9 @@
         });
         if (res.ok) {
           loadSwarmStatus();
-          switchSwarmTab('tasks');
+          if (currentSwarmTab === 'graph') {
+            renderMemoryGraph();
+          }
         }
       } catch (e) {}
     });
