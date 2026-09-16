@@ -1262,12 +1262,44 @@
       gap: 8px !important;
       overflow-x: auto !important; /* Küçük ekranlarda bileşenlerin birbirini ezmesini engelle */
       white-space: nowrap !important;
-      scrollbar-width: none !important;
+      scrollbar-width: thin !important;
+      scrollbar-color: var(--accent-cyan) rgba(6, 11, 24, 0.7) !important;
       width: 100% !important;
       box-sizing: border-box !important;
+      padding-bottom: 7px !important;
+      scroll-behavior: smooth;
     }
     header.top-bar::-webkit-scrollbar, .top-bar::-webkit-scrollbar {
-      display: none !important;
+      height: 4px !important;
+      display: block !important;
+    }
+    header.top-bar::-webkit-scrollbar-track, .top-bar::-webkit-scrollbar-track {
+      background: rgba(6, 11, 24, 0.6) !important;
+      border-radius: 4px !important;
+      margin: 0 16px !important;
+    }
+    header.top-bar::-webkit-scrollbar-thumb, .top-bar::-webkit-scrollbar-thumb {
+      background: linear-gradient(90deg, #00f0ff, #00e676, #ff007f) !important;
+      border-radius: 4px !important;
+      box-shadow: 0 0 8px rgba(0, 240, 255, 0.6) !important;
+    }
+    header.top-bar::-webkit-scrollbar-thumb:hover, .top-bar::-webkit-scrollbar-thumb:hover {
+      background: linear-gradient(90deg, #ffffff, #00f0ff, #00e676) !important;
+      box-shadow: 0 0 12px rgba(0, 240, 255, 0.9) !important;
+    }
+
+    :root[data-theme="light"] header.top-bar,
+    body.light-theme header.top-bar {
+      scrollbar-color: #0284c7 rgba(226, 232, 240, 0.8) !important;
+    }
+    :root[data-theme="light"] header.top-bar::-webkit-scrollbar-track,
+    body.light-theme header.top-bar::-webkit-scrollbar-track {
+      background: rgba(226, 232, 240, 0.8) !important;
+    }
+    :root[data-theme="light"] header.top-bar::-webkit-scrollbar-thumb,
+    body.light-theme header.top-bar::-webkit-scrollbar-thumb {
+      background: linear-gradient(90deg, #0284c7, #16a34a) !important;
+      box-shadow: 0 0 6px rgba(2, 132, 199, 0.4) !important;
     }
     .brand-sub {
       line-height: 1.2 !important;
@@ -1423,6 +1455,21 @@
       color: var(--text-muted);
     }
 
+    /* Breakpoint 0: <= 1680px (Optimal Desktop - Compact brand sub & inputs so all controls fit on standard 1080p scaled screens) */
+    @media (max-width: 1680px) {
+      .brand-sub, .brand-text p {
+        display: none !important;
+      }
+      #sample-select {
+        min-width: 175px !important;
+        flex: 0 1 185px !important;
+      }
+      #input-github-repo {
+        width: 145px !important;
+        flex: 0 1 145px !important;
+      }
+    }
+
     /* Breakpoint 1: <= 1400px (Icon-only mode for secondary actions) */
     @media (max-width: 1400px) {
       .btn-label {
@@ -1440,8 +1487,8 @@
         min-width: 0 !important;
       }
       #sample-select {
-        min-width: 210px !important;
-        flex: 0 0 210px !important;
+        min-width: 160px !important;
+        flex: 0 1 170px !important;
       }
     }
 
@@ -1452,8 +1499,8 @@
         min-width: 0 !important;
       }
       #sample-select {
-        min-width: 210px !important;
-        flex: 0 0 210px !important;
+        min-width: 150px !important;
+        flex: 0 1 160px !important;
       }
       .brand-icon {
         font-size: 18px !important;
@@ -3686,6 +3733,17 @@
         rescanLiveProject();
       }
     });
+
+    // Top Bar Horizontal Mouse Wheel Navigation
+    const topBar = document.querySelector('header.top-bar');
+    if (topBar) {
+      topBar.addEventListener('wheel', (e) => {
+        if (e.deltaY !== 0) {
+          e.preventDefault();
+          topBar.scrollLeft += e.deltaY * 0.9;
+        }
+      }, { passive: false });
+    }
 
     // OrbitControls movement listener for camera dot on radar
     if (bosphorusScene && bosphorusScene.controls) {
