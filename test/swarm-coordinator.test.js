@@ -146,3 +146,44 @@ test('SwarmCoordinator - Task lifecycle and incident triage dispatch', async () 
     fs.rmSync(tmpDir, { recursive: true, force: true });
   }
 });
+
+test('SwarmCoordinator - Autonomic heartbeat tick executes reflex and resolves inboxes', async () => {
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'zenith-swarm-test-'));
+  try {
+    const coordinator = new SwarmCoordinator(tmpDir);
+
+    // 1. Dispatch incident
+    await coordinator.dispatchIncident({
+      type: 'cycle',
+      chain: ['src/services/auth.ts', 'src/services/user.ts'],
+      title: 'Cyclic Jam Test Drill',
+      details: 'Test autonomous reflex'
+    });
+
+    const bridgeInbox = path.join(tmpDir, '.zenith', 'swarm', 'agents', 'agent.bridge_engineer', 'inbox');
+    const filesBefore = fs.readdirSync(bridgeInbox).filter(f => f.endsWith('.json'));
+    assert.equal(filesBefore.length, 1);
+
+    // 2. Run single heartbeat tick: Bridge engineer should process message and generate outbox reply
+    coordinator.heartbeatTick();
+
+    const filesAfter = fs.readdirSync(bridgeInbox).filter(f => f.endsWith('.json'));
+    assert.equal(filesAfter.length, 0);
+
+    const doneDir = path.join(bridgeInbox, '.done');
+    assert.equal(fs.readdirSync(doneDir).filter(f => f.endsWith('.json')).length, 1);
+
+    // Verify task is marked done
+    const tasks = coordinator.getTasks();
+    assert.equal(tasks[0].status, 'done');
+
+    // Run second tick to deliver bridge engineer's outbox reply to commander
+    coordinator.heartbeatTick();
+
+    // Verify blackboard was updated
+    const board = coordinator.getBoard();
+    assert.ok(board.includes('[RESOLVED]'));
+  } finally {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  }
+});

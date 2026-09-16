@@ -453,6 +453,7 @@ function runInteractiveServer() {
   }
 
   const swarm = new SwarmCoordinator(targetDir);
+  swarm.startHeartbeat(3000);
 
   const server = http.createServer(async (req, res) => {
     const originHeader = req.headers['origin'];
