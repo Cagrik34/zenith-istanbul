@@ -24,7 +24,50 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const projectRoot = path.resolve(__dirname, '..');
 
+const pkgPath = path.join(projectRoot, 'package.json');
+let version = '1.0.0';
+try {
+  const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
+  version = pkg.version || '1.0.0';
+} catch (e) {}
+
 const args = process.argv.slice(2);
+
+if (args.includes('--help') || args.includes('-h')) {
+  console.log(`
+\x1b[36m🌉 ZenithIstanbul\x1b[0m — \x1b[37m3D Codebase Metropole & Architectural CI Gatekeeper\x1b[0m (v${version})
+
+\x1b[33mUSAGE:\x1b[0m
+  node bin/cli.js [options] [directory]
+
+\x1b[33mOPTIONS:\x1b[0m
+  \x1b[32m-h, --help\x1b[0m              Show this help manual and exit
+  \x1b[32m-v, --version\x1b[0m           Output version number and exit
+  \x1b[32m-c, --ci\x1b[0m                Run in headless CI audit mode (no WebGL UI)
+  \x1b[32m--fail-on-cycle\x1b[0m         Exit with code 1 if Tarjan SCC circular dependencies are found
+  \x1b[32m--fail-on-leak\x1b[0m          Exit with code 1 if client-side security leaks (CWE) are found
+  \x1b[32m--json\x1b[0m                  Output machine-readable telemetry report in JSON format (CI mode)
+  \x1b[32m--export-html <file>\x1b[0m    Synthesize 3D HTML architectural report to standalone file
+  \x1b[32m--port <number>\x1b[0m         Custom HTTP port for local telemetry server (default: 4173)
+
+\x1b[33mEXAMPLES:\x1b[0m
+  \x1b[90m# Launch interactive 3D visualizer on current repository:\x1b[0m
+  npm start
+
+  \x1b[90m# Headless CI gatekeeper audit blocking PRs on architectural violations:\x1b[0m
+  node bin/cli.js --ci --fail-on-cycle --fail-on-leak .
+
+  \x1b[90m# Standalone HTML report export:\x1b[0m
+  node bin/cli.js --export-html architecture-report.html .
+`);
+  process.exit(0);
+}
+
+if (args.includes('--version') || args.includes('-v')) {
+  console.log(`zenith-istanbul v${version}`);
+  process.exit(0);
+}
+
 const isCI = args.includes('--ci') || args.includes('-c');
 const failOnCycle = args.includes('--fail-on-cycle');
 const failOnLeak = args.includes('--fail-on-leak');
@@ -33,11 +76,24 @@ const isJson = args.includes('--json');
 const exportHtmlIdx = args.indexOf('--export-html');
 const exportHtmlPath = exportHtmlIdx !== -1 ? (args[exportHtmlIdx + 1] || 'zenith-istanbul-report.html') : null;
 
-const targetArg = args.find((a, i) => !a.startsWith('-') && (exportHtmlIdx === -1 || i !== exportHtmlIdx + 1)) || '.';
+const portIdx = args.indexOf('--port');
+const portArg = portIdx !== -1 ? parseInt(args[portIdx + 1], 10) : null;
+const PORT = portArg || parseInt(process.env.PORT, 10) || 4173;
+
+const targetArg = args.find((a, i) => {
+  if (a.startsWith('-')) return false;
+  if (exportHtmlIdx !== -1 && i === exportHtmlIdx + 1) return false;
+  if (portIdx !== -1 && i === portIdx + 1) return false;
+  return true;
+}) || '.';
+
 const targetDir = path.resolve(targetArg);
 const posixTargetDir = targetDir.replace(/\\/g, '/');
 
-const PORT = parseInt(process.env.PORT, 10) || 4173;
+if (!fs.existsSync(targetDir)) {
+  console.error(`\x1b[31m[ZenithIstanbul Error]\x1b[0m Target directory does not exist: "${posixTargetDir}"`);
+  process.exit(1);
+}
 
 /**
  * Scans and parses directory AST
@@ -59,7 +115,7 @@ function scanAndParseDirectory(dir) {
       const relativePath = path.relative(dir, fullPath).replace(/\\/g, '/');
 
       if (entry.isDirectory()) {
-        if (!['node_modules', '.git', 'dist', 'build', '.next', '.turbo', '.idea', 'coverage', '.cache', '.zenith'].includes(entry.name)) {
+        if (!['node_modules', '.git', 'dist', 'build', '.next', '.turbo', '.idea', 'coverage', '.cache', '.zenith', 'test', 'tests', '__tests__'].includes(entry.name)) {
           scan(fullPath);
         }
       } else if (entry.isFile() && parser.isAuditableFile(relativePath)) {
@@ -234,7 +290,7 @@ function runInteractiveServer() {
 
   const ignoredDirs = new Set([
     'node_modules', '.git', 'dist', 'build', '.next', '.turbo', 
-    '.idea', 'coverage', '.cache', 'tmp', '.zenith'
+    '.idea', 'coverage', '.cache', 'tmp', '.zenith', 'test', 'tests', '__tests__'
   ]);
 
   function broadcastChange(normalizedPath) {

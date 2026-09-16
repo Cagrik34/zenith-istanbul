@@ -4,9 +4,29 @@
   <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🌉</text></svg>">
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ZenithIstanbul — 3D Codebase Topology & Architectural Telemetry</title>
-  <meta name="description" content="İstanbul Boğazı ve meşhur trafiğinden esinlenen; Git repolarını 3D yaşayan bir şehre dönüştüren sıfır maliyetli kod mimarisi ve otonom ajan operasyon merkezi.">
-  
+  <title>ZenithIstanbul — 3D Codebase Metropole, Tarjan SCC Cycle Detector & CI Gatekeeper</title>
+  <meta name="title" content="ZenithIstanbul — 3D Codebase Metropole & Architectural CI Gatekeeper">
+  <meta name="description" content="Transform codebases into an interactive 3D Istanbul metropole across the Bosphorus. Detect Tarjan SCC circular dependencies and block architectural drift with zero external dependencies.">
+  <meta name="keywords" content="threejs, codebase-visualizer, webgl, tarjan-scc, circular-dependency, architecture-gatekeeper, static-analysis, istanbul, software-architecture">
+  <meta name="author" content="Çağrı Giray KEŞAN">
+  <link rel="canonical" href="https://cagrik34.github.io/zenith-istanbul/">
+  <meta name="theme-color" content="#060913">
+
+  <!-- Open Graph / Facebook / LinkedIn -->
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://cagrik34.github.io/zenith-istanbul/">
+  <meta property="og:title" content="ZenithIstanbul — 3D Codebase Metropole & Architectural CI Gatekeeper">
+  <meta property="og:description" content="Transform codebases into an interactive 3D Istanbul metropole across the Bosphorus. Detect Tarjan SCC circular dependencies and block architectural drift with zero external dependencies.">
+  <meta property="og:image" content="https://cagrik34.github.io/zenith-istanbul/assets/og-preview.jpg">
+  <meta property="og:site_name" content="ZenithIstanbul">
+
+  <!-- Twitter -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:url" content="https://cagrik34.github.io/zenith-istanbul/">
+  <meta name="twitter:title" content="ZenithIstanbul — 3D Codebase Metropole & Architectural CI Gatekeeper">
+  <meta name="twitter:description" content="Transform codebases into an interactive 3D Istanbul metropole across the Bosphorus. Detect Tarjan SCC circular dependencies and block architectural drift with zero external dependencies.">
+  <meta name="twitter:image" content="https://cagrik34.github.io/zenith-istanbul/assets/og-preview.jpg">
+  <meta name="twitter:creator" content="@Cagrik34">
   
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -1520,6 +1540,10 @@
           <span class="theme-icon">🌙</span> <span class="btn-label" id="theme-label">Dark</span>
         </button>
 
+        <button id="btn-toggle-lang" class="btn-control" title="Toggle Language (EN / TR)">
+          <span class="btn-icon">🌐</span> <span class="btn-label" id="lang-label">EN</span>
+        </button>
+
         <!-- Mobile Overflow Trigger -->
         <button id="btn-toolbar-overflow" class="btn-control" style="display: none;" title="Ek Menü">
           <span>⋮</span> <span style="font-size: 10px;">Menü</span>
@@ -1530,19 +1554,19 @@
     <!-- Mobil Overflow Açılır Çekmecesi -->
     <div id="mobile-overflow-drawer" class="mobile-overflow-drawer interactive" style="display: none;">
       <div class="mobile-drawer-header">
-        <strong>⚡ Hızlı Kontrol Menüsü</strong>
+        <strong id="mobile-drawer-title">⚡ Hızlı Kontrol Menüsü</strong>
         <button class="btn-close" id="btn-close-mobile-drawer">✕</button>
       </div>
       <div class="mobile-drawer-content">
         <div class="mobile-group">
-          <label>GitHub Repository:</label>
+          <label id="mobile-label-repo">GitHub Repository:</label>
           <div style="display: flex; gap: 4px; margin-top: 4px;">
             <input type="text" id="input-github-repo-mobile" placeholder="owner/repo" style="flex: 1; padding: 5px 8px; font-size: 11px; border-radius: 6px;">
             <button id="btn-fetch-github-mobile" class="btn-control btn-primary" style="padding: 5px 10px;">Ingest</button>
           </div>
         </div>
         <div class="mobile-group" style="margin-top: 8px;">
-          <label>Senaryo Seç:</label>
+          <label id="mobile-label-sample">Senaryo Seç:</label>
           <select id="sample-select-mobile" style="width: 100%; margin-top: 4px; padding: 5px 8px;">
             <option value="circular-jam-demo">🚨 Cyclic Deadlock Scenario</option>
             <option value="zenith-nexus">🌐 Zenith Nexus Topology</option>
@@ -1555,7 +1579,8 @@
           <button id="btn-tour-mobile" class="btn-control" style="text-align: left;">🎥 360° Tur</button>
           <button id="btn-vapur-mobile" class="btn-control" style="text-align: left;">🚢 Vapur</button>
           <button id="btn-audio-mobile" class="btn-control" style="text-align: left;">🔇 Ses Aç/Kapat</button>
-          <button id="btn-token-mobile" class="btn-control" style="text-align: left;">🔑 GitHub PAT</button>
+          <button id="btn-lang-mobile" class="btn-control" style="text-align: left;">🌐 Dil: EN</button>
+          <button id="btn-token-mobile" class="btn-control" style="text-align: left; grid-column: span 2;">🔑 GitHub PAT</button>
         </div>
       </div>
     </div>
@@ -3207,6 +3232,227 @@
     if (btnToggleTheme) {
       btnToggleTheme.addEventListener('click', () => {
         applyTheme(currentTheme === 'dark' ? 'light' : 'dark');
+      });
+    }
+
+    // ─── Internationalization (i18n) Engine ───
+    let currentLang = localStorage.getItem('zenith_lang') || 'en';
+    const btnToggleLang = document.getElementById('btn-toggle-lang');
+    const btnLangMobile = document.getElementById('btn-lang-mobile');
+
+    const i18n = {
+      en: {
+        brandSub: '3D Codebase Topology & Architectural Telemetry',
+        ingestPlaceholder: 'owner/repo (e.g. expressjs/express)',
+        ingestBtn: 'Ingest',
+        tokenBtn: '🔑 Token',
+        openFolder: '📁 Ingest Directory',
+        searchPlaceholder: 'Search Module...',
+        rescanBtn: '🔄 Rescan',
+        prBotBtn: '💬 PR Bot',
+        exportBtn: '📊 Export',
+        exportHeader: '📦 Architecture Export',
+        exportMdTitle: 'Markdown Telemetry Report (.md)',
+        exportMdSub: 'Tarjan SCC, metrics and architectural health audit',
+        exportSvgTitle: '2D Vector Architecture Diagram (.svg)',
+        exportSvgSub: 'District blocks and curved dependency arrows',
+        exportAllTitle: 'Download Both (Markdown + SVG)',
+        exportAllSub: 'Zero browser alert download with 400ms delay',
+        tourBtn: '🎥 360° Tour',
+        tourBtnActive: '🎬 Tour: Active',
+        vapurBtn: '🚢 Ferry',
+        audioOff: '🔇 Audio: Off',
+        audioOn: '🔊 Audio: On',
+        langBadge: 'EN',
+        mobileTitle: '⚡ Quick Control Deck',
+        mobileRepo: 'GitHub Repository:',
+        mobileSample: 'Select Scenario:',
+        patModalTitle: 'GitHub Personal Access Token (PAT)',
+        patModalDesc: 'GitHub API limits unauthenticated requests to 60/hr. Provide a Personal Access Token (PAT) for <strong>5,000 requests/hr</strong> to deep-scan large repositories. Stored strictly in local browser storage.',
+        patClearBtn: '🗑️ Clear Token',
+        patCancelBtn: 'Cancel',
+        patSaveBtn: '💾 Save',
+        diffModalTitle: 'Unified Remediation Patch (Git Diff)',
+        copyPatchBtn: '📋 Copy Patch',
+        downloadPatchBtn: '💾 Export .patch File',
+        applyPatchBtn: '🛠️ Apply Remediation Patch to Disk',
+        incidentTitle: 'Cyclic Deadlock Detected (Tarjan SCC Invariant Violation)',
+        incidentDesc: 'Directed acyclic graph invariant broken across ingress bridge modules.',
+        dispatchBtn: 'Dispatch Autonomous Remediation Agent',
+        sampleJam: '🚨 Cyclic Deadlock (Tarjan SCC)',
+        sampleNexus: '🌐 Zenith Nexus (Hybrid RAG)',
+        sampleVercel: '▲ Vercel AI SDK (App Router)',
+      },
+      tr: {
+        brandSub: '3D Kod Topolojisi ve Mimari Telemetri Merkezi',
+        ingestPlaceholder: 'owner/repo (örn: expressjs/express)',
+        ingestBtn: 'Yükle',
+        tokenBtn: '🔑 Token',
+        openFolder: '📁 Klasör Yükle',
+        searchPlaceholder: 'Modül veya semt ara...',
+        rescanBtn: '🔄 Yenile',
+        prBotBtn: '💬 PR Bot',
+        exportBtn: '📊 Dışa Aktar',
+        exportHeader: '📦 Mimari Dışa Aktarma',
+        exportMdTitle: 'Markdown Telemetri Raporu (.md)',
+        exportMdSub: 'Tarjan SCC, metrikler ve mimari sağlık denetimi',
+        exportSvgTitle: '2D Vektörel Mimari Şema (.svg)',
+        exportSvgSub: 'Semt blokları ve kavisli bağımlılık okları',
+        exportAllTitle: 'Hepsini İndir (İkisi Birden)',
+        exportAllSub: '400ms güvenlik gecikmesiyle tarayıcı uyarısız indirme',
+        tourBtn: '🎥 360° Tur',
+        tourBtnActive: '🎬 Tur: Açık',
+        vapurBtn: '🚢 Vapur',
+        audioOff: '🔇 Ses: Kapalı',
+        audioOn: '🔊 Ses: Açık',
+        langBadge: 'TR',
+        mobileTitle: '⚡ Hızlı Kontrol Menüsü',
+        mobileRepo: 'GitHub Deposu:',
+        mobileSample: 'Senaryo Seç:',
+        patModalTitle: 'GitHub Kişisel Erişim Belirteci (PAT)',
+        patModalDesc: 'GitHub API anonim kullanıcılara saatte sadece 60 istek sınırı uygular. Kişisel erişim belirtecinizi (PAT) girerek <strong>saatte 5.000 istek kotasıyla</strong> büyük depoları derinlemesine tarayabilirsiniz. Token yalnızca tarayıcınızın yerel belleğinde saklanır.',
+        patClearBtn: '🗑️ Token\'ı Temizle',
+        patCancelBtn: 'Vazgeç',
+        patSaveBtn: '💾 Kaydet',
+        diffModalTitle: 'Birleşik Onarım Yaması (Git Diff)',
+        copyPatchBtn: '📋 Yamayı Kopyala',
+        downloadPatchBtn: '💾 .patch Dosyası İndir',
+        applyPatchBtn: '🛠️ Yamayı Diske Uygula',
+        incidentTitle: 'Döngüsel Kilit Algılandı (Tarjan SCC İhlali)',
+        incidentDesc: 'Köprü giriş modüllerinde yönlü döngüsüz çizge (DAG) kuralı bozuldu.',
+        dispatchBtn: 'Otonom Onarım Ajanını Gönder',
+        sampleJam: '🚨 Boğaziçi Köprü Kilidi (Tarjan SCC)',
+        sampleNexus: '🌐 Zenith Nexus (Hibrit RAG)',
+        sampleVercel: '▲ Vercel AI SDK (App Router)',
+      }
+    };
+
+    function applyLanguage(lang) {
+      currentLang = lang;
+      document.documentElement.lang = lang;
+      localStorage.setItem('zenith_lang', lang);
+      const dict = i18n[lang] || i18n.en;
+
+      if (btnToggleLang) {
+        btnToggleLang.innerHTML = `<span class="btn-icon">🌐</span> <span class="btn-label">${dict.langBadge}</span>`;
+      }
+      if (btnLangMobile) {
+        btnLangMobile.textContent = `🌐 Dil: ${dict.langBadge}`;
+      }
+
+      const brandSub = document.querySelector('.brand-sub');
+      if (brandSub) brandSub.textContent = dict.brandSub;
+
+      const repoInput = document.getElementById('input-github-repo');
+      if (repoInput) repoInput.placeholder = dict.ingestPlaceholder;
+
+      const btnFetchGithub = document.getElementById('btn-fetch-github');
+      if (btnFetchGithub) btnFetchGithub.textContent = dict.ingestBtn;
+
+      const btnOpenPat = document.getElementById('btn-open-pat-modal');
+      if (btnOpenPat) btnOpenPat.textContent = dict.tokenBtn;
+
+      const btnOpenFolder = document.getElementById('btn-open-folder');
+      if (btnOpenFolder) btnOpenFolder.innerHTML = `<span class="btn-icon">📁</span> <span class="btn-label">${dict.openFolder.replace('📁 ', '')}</span>`;
+
+      const searchInput = document.getElementById('input-search');
+      if (searchInput) searchInput.placeholder = dict.searchPlaceholder;
+
+      const btnRescan = document.getElementById('btn-rescan-project');
+      if (btnRescan) btnRescan.innerHTML = `<span class="btn-icon">🔄</span> <span class="btn-label">${dict.rescanBtn.replace('🔄 ', '')}</span>`;
+
+      const btnPrBot = document.getElementById('btn-copy-pr-comment');
+      if (btnPrBot) btnPrBot.innerHTML = `<span class="btn-icon">💬</span> <span class="btn-label">${dict.prBotBtn.replace('💬 ', '')}</span>`;
+
+      const btnDownloadReport = document.getElementById('btn-download-report');
+      if (btnDownloadReport) btnDownloadReport.innerHTML = `<span class="btn-icon">📊</span> <span class="btn-label">${dict.exportBtn.replace('📊 ', '')}</span> <span style="font-size: 8px; opacity: 0.8; margin-left: 2px;">▼</span>`;
+
+      const exportHeader = document.querySelector('.export-popover-header span');
+      if (exportHeader) exportHeader.textContent = dict.exportHeader;
+
+      const mdStrong = document.querySelector('#btn-export-md strong');
+      const mdSmall = document.querySelector('#btn-export-md small');
+      if (mdStrong) mdStrong.textContent = dict.exportMdTitle;
+      if (mdSmall) mdSmall.textContent = dict.exportMdSub;
+
+      const svgStrong = document.querySelector('#btn-export-svg strong');
+      const svgSmall = document.querySelector('#btn-export-svg small');
+      if (svgStrong) svgStrong.textContent = dict.exportSvgTitle;
+      if (svgSmall) svgSmall.textContent = dict.exportSvgSub;
+
+      const allStrong = document.querySelector('#btn-export-all strong');
+      const allSmall = document.querySelector('#btn-export-all small');
+      if (allStrong) allStrong.textContent = dict.exportAllTitle;
+      if (allSmall) allSmall.textContent = dict.exportAllSub;
+
+      const btnVapur = document.getElementById('btn-vapur-dudugu');
+      if (btnVapur) btnVapur.innerHTML = `<span class="btn-icon">🚢</span> <span class="btn-label">${dict.vapurBtn.replace('🚢 ', '')}</span>`;
+
+      const btnAudio = document.getElementById('btn-toggle-audio');
+      if (btnAudio) {
+        btnAudio.innerHTML = isAudioMuted 
+          ? `<span class="btn-icon" id="audio-icon">🔇</span> <span class="btn-label" id="audio-label">${dict.audioOff}</span>`
+          : `<span class="btn-icon" id="audio-icon">🔊</span> <span class="btn-label" id="audio-label">${dict.audioOn}</span>`;
+      }
+
+      const patModalTitle = document.querySelector('#modal-github-pat h2 span:last-child');
+      if (patModalTitle) patModalTitle.textContent = dict.patModalTitle;
+
+      const patModalDesc = document.querySelector('#modal-github-pat p');
+      if (patModalDesc) patModalDesc.innerHTML = dict.patModalDesc;
+
+      const btnClearPat = document.getElementById('btn-clear-pat');
+      if (btnClearPat) btnClearPat.textContent = dict.patClearBtn;
+
+      const btnClosePat = document.getElementById('btn-close-pat-modal-btn');
+      if (btnClosePat) btnClosePat.textContent = dict.patCancelBtn;
+
+      const btnSavePat = document.getElementById('btn-save-pat');
+      if (btnSavePat) btnSavePat.textContent = dict.patSaveBtn;
+
+      const diffModalTitle = document.querySelector('#diff-modal h2');
+      if (diffModalTitle) diffModalTitle.textContent = dict.diffModalTitle;
+
+      const btnCopyDiff = document.getElementById('btn-copy-diff');
+      if (btnCopyDiff) btnCopyDiff.textContent = dict.copyPatchBtn;
+
+      const btnDownDiff = document.getElementById('btn-download-patch');
+      if (btnDownDiff) btnDownDiff.textContent = dict.downloadPatchBtn;
+
+      const btnApplyDiff = document.getElementById('btn-apply-patch-live');
+      if (btnApplyDiff) btnApplyDiff.textContent = dict.applyPatchBtn;
+
+      const incTitle = document.querySelector('.incident-title');
+      if (incTitle) incTitle.textContent = dict.incidentTitle;
+
+      const incDesc = document.getElementById('incident-desc');
+      if (incDesc) incDesc.textContent = dict.incidentDesc;
+
+      const btnDispatch = document.querySelector('#btn-dispatch-agent span');
+      if (btnDispatch) btnDispatch.textContent = dict.dispatchBtn;
+
+      const sampleOpt0 = document.querySelector('#sample-select option[value="circular-jam-demo"]');
+      const sampleOpt1 = document.querySelector('#sample-select option[value="zenith-nexus"]');
+      const sampleOpt2 = document.querySelector('#sample-select option[value="vercel-ai-sdk"]');
+      if (sampleOpt0) sampleOpt0.textContent = dict.sampleJam;
+      if (sampleOpt1) sampleOpt1.textContent = dict.sampleNexus;
+      if (sampleOpt2) sampleOpt2.textContent = dict.sampleVercel;
+    }
+
+    // Apply saved language on load
+    applyLanguage(currentLang);
+
+    if (btnToggleLang) {
+      btnToggleLang.addEventListener('click', () => {
+        applyLanguage(currentLang === 'en' ? 'tr' : 'en');
+      });
+    }
+
+    if (btnLangMobile) {
+      btnLangMobile.addEventListener('click', () => {
+        applyLanguage(currentLang === 'en' ? 'tr' : 'en');
+        const mobileDrawer = document.getElementById('mobile-overflow-drawer');
+        if (mobileDrawer) mobileDrawer.style.display = 'none';
       });
     }
 

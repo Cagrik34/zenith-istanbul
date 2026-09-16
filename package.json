@@ -10,6 +10,7 @@
   "files": [
     "bin/",
     "src/",
+    "assets/",
     "index.html",
     "serve.js",
     "README.md",
@@ -18,7 +19,9 @@
   "scripts": {
     "dev": "node bin/cli.js",
     "start": "node bin/cli.js",
-    "test": "node bin/cli.js --ci --fail-on-cycle --fail-on-leak ."
+    "test": "node --test test/*.test.js && node bin/cli.js --ci --fail-on-cycle --fail-on-leak .",
+    "test:unit": "node --test test/*.test.js",
+    "test:gatekeeper": "node bin/cli.js --ci --fail-on-cycle --fail-on-leak ."
   },
   "keywords": [
     "ast",

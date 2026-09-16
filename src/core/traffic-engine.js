@@ -177,8 +177,11 @@ export class TrafficEngine {
         const targetMod = this.modules.get(targetId);
         if (!targetMod) continue;
 
-        const isCrossBoundary = (sourceMod.district.side === 'europe' && targetMod.district.side === 'asia') ||
-                                (sourceMod.district.side === 'asia' && targetMod.district.side === 'europe');
+        const sourceSide = sourceMod.district?.side || (sourceMod.id.includes('ui') || sourceMod.id.includes('client') || sourceMod.id.includes('view') ? 'europe' : 'asia');
+        const targetSide = targetMod.district?.side || (targetMod.id.includes('ui') || targetMod.id.includes('client') || targetMod.id.includes('view') ? 'europe' : 'asia');
+
+        const isCrossBoundary = (sourceSide === 'europe' && targetSide === 'asia') ||
+                                (sourceSide === 'asia' && targetSide === 'europe');
 
         if (isCrossBoundary) {
           const isJammed = this.isEdgeInCircularDependency(sourceId, targetId);
@@ -189,8 +192,8 @@ export class TrafficEngine {
             targetId,
             sourceName: sourceMod.name,
             targetName: targetMod.name,
-            sourceSide: sourceMod.district.side,
-            targetSide: targetMod.district.side,
+            sourceSide,
+            targetSide,
             isJammed, // Kırmızı kilitli mi?
             bridgeName: this.bridges.length % 2 === 0 ? '15 Temmuz Şehitler Köprüsü' : 'Fatih Sultan Mehmet Köprüsü',
             incidentReport: isJammed ? `🚨 Trafik Kilit! ${sourceMod.name} ile ${targetMod.name} arasında döngüsel bağımlılık köprüyü tıkadı.` : null
@@ -303,6 +306,7 @@ export class TrafficEngine {
 
     return {
       density: this.trafficDensity,
+      trafficIndex: this.trafficDensity,
       telemetryMetrics: this.telemetryMetrics,
       statusText,
       alertLevel,
@@ -310,6 +314,7 @@ export class TrafficEngine {
       circularDependencies: this.circularChains.length,
       jammedBridges: jammedCount,
       deadCodeCount: this.deadCodeModules.length,
+      deadCodeModules: this.deadCodeModules.length,
       securityLeaks: this.securityLeaks,
       securityLeakCount: this.securityLeaks.length,
       chains: this.circularChains

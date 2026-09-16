@@ -2,15 +2,17 @@
 
 > **3D Codebase Topology Visualizer, Tarjan SCC Cycle Detector & Architectural CI Gatekeeper**
 
-[![npm version](https://img.shields.io/npm/v/zenith-istanbul.svg?style=flat-square)](https://www.npmjs.com/package/zenith-istanbul)
 [![CI Gatekeeper](https://img.shields.io/github/actions/workflow/status/Cagrik34/zenith-istanbul/zenith-gatekeeper.yml?branch=main&style=flat-square&label=CI%20Gatekeeper)](https://github.com/Cagrik34/zenith-istanbul/actions)
+[![Web Showcase](https://img.shields.io/badge/Live%20Demo-GitHub%20Pages-00f0ff.svg?style=flat-square)](https://cagrik34.github.io/zenith-istanbul/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg?style=flat-square)](LICENSE)
 [![Node.js](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen.svg?style=flat-square)](https://nodejs.org)
 
+![ZenithIstanbul 3D Codebase Metropole](assets/og-preview.jpg)
+
 ZenithIstanbul is an interactive 3D software architecture visualization platform and automated gatekeeper. It statically analyzes JavaScript and TypeScript codebases, parses AST dependencies, evaluates Tarjan strongly connected components (SCC), and maps modular graph topology into an interactive geospatial digital twin.
 
-- **Web Showcase**: [cagrik34.github.io/zenith-istanbul](https://cagrik34.github.io/zenith-istanbul/)
-- **Command Line**: `npx zenith-istanbul [path]`
+- **🌐 Live Web Showcase**: [cagrik34.github.io/zenith-istanbul](https://cagrik34.github.io/zenith-istanbul/)
+- **⚡ Zero External Runtime Dependencies**: High-performance stack-based DFS and WebGL context with native Node.js core.
 
 ---
 
@@ -63,7 +65,7 @@ $$\text{Traffic Index} = \min\left(100, \text{round}\left(\frac{|\text{SCC Edges
 ### 4. Headless CI Gatekeeper
 - Designed for GitHub Actions and pre-commit hooks:
   ```bash
-  npx zenith-istanbul --ci --fail-on-cycle --fail-on-leak .
+  node bin/cli.js --ci --fail-on-cycle --fail-on-leak .
   ```
 - Exits with non-zero status codes upon invariant violations, blocking unauthorized PR merges.
 
@@ -71,22 +73,44 @@ $$\text{Traffic Index} = \min\left(100, \text{round}\left(\frac{|\text{SCC Edges
 
 ## Quick Start
 
-### Local Analysis
-```bash
-# Run interactive 3D visualizer on current directory
-npx zenith-istanbul .
+### 1. Live Web Showcase (No Installation Required)
+Open [cagrik34.github.io/zenith-istanbul](https://cagrik34.github.io/zenith-istanbul/) in any modern browser:
+- **GitHub Ingest**: Enter any public repository (`owner/repo`, e.g. `expressjs/express`) to visualize its topology.
+- **Curated Scenarios**: Instantly load and inspect realistic architectural models (Cyclic Jam, Zenith Nexus, Vercel AI SDK).
+- **Directory Drag & Drop**: Drag your local source folder straight into the browser window for client-side static analysis.
 
-# Run on a specific project directory
-npx zenith-istanbul /path/to/project
+### 2. Local Interactive Telemetry Server
+```bash
+# Clone the repository
+git clone https://github.com/Cagrik34/zenith-istanbul.git
+cd zenith-istanbul
+
+# Launch interactive 3D visualizer on local codebase (http://localhost:4173)
+npm start
+
+# Run visualizer on a specific external project path
+node bin/cli.js /path/to/project
 ```
 
-### Export Standalone Reports
+### 3. Verification & Testing
+```bash
+# Run unit tests and architectural gatekeeper audit
+npm test
+
+# Run unit tests only
+npm run test:unit
+
+# Run gatekeeper audit only
+npm run test:gatekeeper
+```
+
+### 4. Standalone Architectural Reports
 ```bash
 # Export single-file self-contained 3D HTML report
-npx zenith-istanbul --export-html architecture-report.html .
+node bin/cli.js --export-html architecture-report.html .
 ```
 
-### CI Workflow Integration (`.github/workflows/zenith-gatekeeper.yml`)
+### 5. CI Workflow Integration (`.github/workflows/zenith-gatekeeper.yml`)
 ```yaml
 name: Zenith Gatekeeper
 on: [push, pull_request]
@@ -99,13 +123,21 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+      - name: Run Unit Tests
+        run: npm run test:unit
       - name: Architectural Gatekeeper Audit
-        run: npx zenith-istanbul --ci --fail-on-cycle --fail-on-leak . >> $GITHUB_STEP_SUMMARY
+        run: node bin/cli.js --ci --fail-on-cycle --fail-on-leak . >> $GITHUB_STEP_SUMMARY
 ```
+
+---
+
+## Contributing
+
+Please read [CONTRIBUTING.md](CONTRIBUTING.md) for details on code of conduct and development workflow.
 
 ---
 
 ## License
 
-Distributed under the [MIT License](LICENSE).
+Distributed under the [MIT License](LICENSE).  
 Author: [Çağrı Giray KEŞAN](https://github.com/Cagrik34)

@@ -20,7 +20,10 @@ export class CodebaseParser {
       /dist/i,
       /build/i,
       /\.next/i,
-      /\.turbo/i
+      /\.turbo/i,
+      /\.test\.[jt]sx?$/i,
+      /\.spec\.[jt]sx?$/i,
+      /(?:^|[\\/])(?:test|tests|__tests__)[\\/]/i
     ];
 
     this.supportedExtensions = ['.js', '.jsx', '.ts', '.tsx', '.mjs', '.cjs', '.py', '.vue', '.svelte'];
