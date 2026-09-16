@@ -231,7 +231,8 @@
       justify-content: space-between;
       align-items: flex-start;
       flex: 1;
-      margin: 14px 0;
+      min-height: 0;
+      margin: 10px 0;
       gap: 16px;
       position: relative;
     }
@@ -398,46 +399,94 @@
     /* RIGHT INSPECTOR DRAWER */
     .inspector-drawer {
       width: 360px;
-      max-height: 80vh;
+      max-width: calc(100vw - 32px);
+      max-height: calc(100vh - 110px) !important;
       background: var(--panel-bg);
       border: 1px solid var(--panel-border);
-      backdrop-filter: blur(16px);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
       border-radius: 14px;
       padding: 16px;
-      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
+      box-shadow: 0 16px 48px rgba(0, 0, 0, 0.7), 0 0 24px rgba(0, 240, 255, 0.15);
       display: none; /* Tıklanınca flex olur */
       flex-direction: column;
       gap: 12px;
       overflow-y: auto;
-      animation: fadeIn 0.25s ease;
+      overflow-x: hidden;
+      position: relative;
+      z-index: 25;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(0, 240, 255, 0.35) transparent;
+      box-sizing: border-box;
+      animation: fadeInRight 0.25s cubic-bezier(0.16, 1, 0.3, 1);
     }
 
-    @keyframes fadeIn {
+    .inspector-drawer::-webkit-scrollbar {
+      width: 6px;
+    }
+    .inspector-drawer::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    .inspector-drawer::-webkit-scrollbar-thumb {
+      background: rgba(0, 240, 255, 0.3);
+      border-radius: 3px;
+    }
+
+    @keyframes fadeInRight {
       from { opacity: 0; transform: translateX(20px); }
       to { opacity: 1; transform: translateX(0); }
     }
 
     .inspector-header {
+      position: sticky;
+      top: -16px;
+      margin-top: -16px;
+      margin-left: -16px;
+      margin-right: -16px;
+      padding: 14px 16px 10px 16px;
+      background: var(--panel-bg);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      border-bottom: 1px solid var(--panel-border);
+      z-index: 10;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-      padding-bottom: 8px;
+      border-top-left-radius: 14px;
+      border-top-right-radius: 14px;
     }
 
     .inspector-header h2 {
-      font-size: 14px;
+      font-size: 13.5px;
       font-weight: 700;
       color: var(--accent-cyan);
       word-break: break-all;
+      margin: 0;
+      font-family: 'JetBrains Mono', monospace;
     }
 
     .btn-close {
-      background: none;
-      border: none;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.15);
       color: var(--text-muted);
-      font-size: 18px;
+      width: 26px;
+      height: 26px;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      font-weight: 700;
       cursor: pointer;
+      transition: all 0.2s ease;
+      flex-shrink: 0;
+    }
+
+    .btn-close:hover {
+      background: rgba(255, 23, 68, 0.25);
+      border-color: #ff1744;
+      color: #ff1744;
+      transform: scale(1.08);
     }
 
     .metric-row {
@@ -529,12 +578,13 @@
     /* 2D AKOM RADAR MINIMAP (BOTTOM RIGHT) */
     .radar-container {
       position: absolute;
-      bottom: 180px;
+      bottom: 38px;
       right: 18px;
       width: 190px;
       background: var(--panel-bg);
       border: 1px solid var(--panel-border);
       backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
       border-radius: 12px;
       padding: 10px;
       box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
@@ -542,6 +592,31 @@
       flex-direction: column;
       gap: 6px;
       z-index: 15;
+      transition: right 0.35s cubic-bezier(0.16, 1, 0.3, 1), bottom 0.25s ease, opacity 0.2s ease, transform 0.25s ease;
+    }
+
+    /* When Inspector Drawer is open on the right (360px), smoothly shift radar to the left */
+    body.has-inspector .radar-container,
+    .workspace.has-inspector .radar-container {
+      right: 396px !important; /* 360px drawer + 18px right margin + 18px gap */
+      bottom: 38px !important;
+    }
+
+    /* Collapsed state for radar minimap */
+    .radar-container.is-collapsed #radar-canvas,
+    .radar-container.is-collapsed .radar-nav-pills {
+      display: none !important;
+    }
+    .radar-container.is-collapsed {
+      padding: 6px 12px !important;
+      width: auto !important;
+    }
+
+    @media (max-width: 960px) {
+      body.has-inspector .radar-container,
+      .workspace.has-inspector .radar-container {
+        display: none !important; /* Narrow viewports: prevent clutter by hiding radar while inspecting */
+      }
     }
 
     .radar-header {
@@ -1533,7 +1608,7 @@
         </button>
 
         <button id="btn-toggle-audio" class="btn-control secondary-action" title="Toggle Spatial Audio Synthesizer">
-          <span class="btn-icon" id="audio-icon">🔇</span> <span class="btn-label" id="audio-label">Ses: Kapalı</span>
+          <span class="btn-icon" id="audio-icon">🔇</span> <span class="btn-label" id="audio-label">Audio: Off</span>
         </button>
 
         <button id="btn-toggle-theme" class="btn-control" title="Toggle Dark / Light Bosphorus Theme">
@@ -1748,10 +1823,13 @@
       </aside>
 
       
-      <div class="radar-container interactive">
+      <div class="radar-container interactive" id="radar-container">
         <div class="radar-header">
-          <span>Topological Sector Radar</span>
-          <span style="color: var(--accent-green); font-size: 8px;">● 360°</span>
+          <div style="display: flex; align-items: center; gap: 6px;">
+            <span>Topological Sector Radar</span>
+            <span style="color: var(--accent-green); font-size: 8px;">● 360°</span>
+          </div>
+          <button id="btn-toggle-radar-collapse" class="btn-close" style="width: 18px; height: 18px; font-size: 10px; padding: 0; line-height: 1; border-radius: 4px;" title="Radar panelini daralt / genişlet">─</button>
         </div>
         <canvas id="radar-canvas" width="170" height="110"></canvas>
         <div class="radar-nav-pills">
@@ -1997,13 +2075,35 @@
       bosphorusScene.drawLaserConnections(mod, trafficEngine);
 
       inspectorDrawer.style.display = 'flex';
+      document.body.classList.add('has-inspector');
+      document.querySelector('.workspace')?.classList.add('has-inspector');
       hud.playGridlockAlertTone();
     }
 
-    document.getElementById('btn-close-inspect').addEventListener('click', () => {
+    function closeInspectorDrawer() {
       inspectorDrawer.style.display = 'none';
+      document.body.classList.remove('has-inspector');
+      document.querySelector('.workspace')?.classList.remove('has-inspector');
       bosphorusScene.clearLaserConnections();
+    }
+
+    document.getElementById('btn-close-inspect').addEventListener('click', closeInspectorDrawer);
+
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && inspectorDrawer.style.display === 'flex') {
+        closeInspectorDrawer();
+      }
     });
+
+    const radarContainer = document.getElementById('radar-container');
+    const btnToggleRadar = document.getElementById('btn-toggle-radar-collapse');
+    if (btnToggleRadar && radarContainer) {
+      btnToggleRadar.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const isCollapsed = radarContainer.classList.toggle('is-collapsed');
+        btnToggleRadar.textContent = isCollapsed ? '▲' : '─';
+      });
+    }
 
     async function fetchEnvironmentTelemetry(hasGraphIssues, density) {
       const weatherIcon = document.getElementById('weather-icon');
@@ -2742,13 +2842,14 @@
     btnToggleAudio.addEventListener('click', () => {
       isAudioMuted = !isAudioMuted;
       hud.audioEnabled = !isAudioMuted;
+      const dict = (typeof i18n !== 'undefined' && i18n[currentLang]) ? i18n[currentLang] : { audioOn: 'Audio: On', audioOff: 'Audio: Off' };
       if (!isAudioMuted) {
-        btnToggleAudio.innerHTML = '<span class="btn-icon">🔊</span> <span class="btn-label">Ses: Açık</span>';
+        btnToggleAudio.innerHTML = `<span class="btn-icon">🔊</span> <span class="btn-label">${dict.audioOn}</span>`;
         btnToggleAudio.style.borderColor = 'var(--accent-green)';
         btnToggleAudio.style.color = 'var(--accent-green)';
         hud.playVapurDudugu();
       } else {
-        btnToggleAudio.innerHTML = '<span class="btn-icon">🔇</span> <span class="btn-label">Ses: Kapalı</span>';
+        btnToggleAudio.innerHTML = `<span class="btn-icon">🔇</span> <span class="btn-label">${dict.audioOff}</span>`;
         btnToggleAudio.style.borderColor = 'rgba(0, 240, 255, 0.35)';
         btnToggleAudio.style.color = 'var(--text-main)';
       }
@@ -3298,8 +3399,8 @@
         tourBtn: '🎥 360° Tour',
         tourBtnActive: '🎬 Tour: Active',
         vapurBtn: '🚢 Ferry',
-        audioOff: '🔇 Audio: Off',
-        audioOn: '🔊 Audio: On',
+        audioOff: 'Audio: Off',
+        audioOn: 'Audio: On',
         langBadge: 'EN',
         mobileTitle: '⚡ Quick Control Deck',
         mobileRepo: 'GitHub Repository:',
@@ -3340,8 +3441,8 @@
         tourBtn: '🎥 360° Tur',
         tourBtnActive: '🎬 Tur: Açık',
         vapurBtn: '🚢 Vapur',
-        audioOff: '🔇 Ses: Kapalı',
-        audioOn: '🔊 Ses: Açık',
+        audioOff: 'Ses: Kapalı',
+        audioOn: 'Ses: Açık',
         langBadge: 'TR',
         mobileTitle: '⚡ Hızlı Kontrol Menüsü',
         mobileRepo: 'GitHub Deposu:',
