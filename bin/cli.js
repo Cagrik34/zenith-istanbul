@@ -18,6 +18,8 @@ import { spawn, exec } from 'child_process';
 import { CodebaseParser } from '../src/core/ast-parser.js';
 import { TrafficEngine } from '../src/core/traffic-engine.js';
 import { AgentDispatcher } from '../src/agent/agent-dispatcher.js';
+import { DiffEngine } from '../src/agent/diff-engine.js';
+import { SwarmCoordinator } from '../src/agent/swarm-coordinator.js';
 import { HistoryStore } from '../src/core/history-store.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -450,6 +452,8 @@ function runInteractiveServer() {
     };
   }
 
+  const swarm = new SwarmCoordinator(targetDir);
+
   const server = http.createServer(async (req, res) => {
     const originHeader = req.headers['origin'];
     if (originHeader && isAllowedLocalOrigin(req)) {
@@ -511,6 +515,74 @@ function runInteractiveServer() {
         const history = historyStore.getHistory(30);
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ success: true, history }));
+      } catch (err) {
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ success: false, error: err.message }));
+      }
+      return;
+    }
+
+    if (req.method === 'GET' && req.url === '/api/swarm/status') {
+      try {
+        const snapshot = swarm.getSnapshot();
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ success: true, ...snapshot }));
+      } catch (err) {
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ success: false, error: err.message }));
+      }
+      return;
+    }
+
+    if (req.method === 'POST' && req.url === '/api/swarm/dispatch') {
+      if (!isAllowedLocalOrigin(req)) {
+        res.writeHead(403, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ success: false, error: 'Forbidden' }));
+        return;
+      }
+      let body = '';
+      req.on('data', chunk => { body += chunk; });
+      req.on('end', async () => {
+        try {
+          const payload = JSON.parse(body || '{}');
+          const dispatchRes = await swarm.dispatchIncident(payload);
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ success: true, ...dispatchRes }));
+        } catch (err) {
+          res.writeHead(500, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ success: false, error: err.message }));
+        }
+      });
+      return;
+    }
+
+    if (req.method === 'POST' && req.url === '/api/swarm/task') {
+      if (!isAllowedLocalOrigin(req)) {
+        res.writeHead(403, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ success: false, error: 'Forbidden' }));
+        return;
+      }
+      let body = '';
+      req.on('data', chunk => { body += chunk; });
+      req.on('end', () => {
+        try {
+          const payload = JSON.parse(body || '{}');
+          const task = swarm.createTask(payload.title, payload.description, payload.assignee, payload.priority);
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ success: true, task }));
+        } catch (err) {
+          res.writeHead(500, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ success: false, error: err.message }));
+        }
+      });
+      return;
+    }
+
+    if (req.method === 'POST' && req.url === '/api/swarm/route') {
+      try {
+        const routed = swarm.drainOutbox();
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ success: true, routed }));
       } catch (err) {
         res.writeHead(500, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ success: false, error: err.message }));
@@ -588,35 +660,6 @@ function runInteractiveServer() {
           const srcId = sourceId || chain[0] || 'src/services/userService.ts';
           const tgtId = targetId || chain[1] || 'src/ui/AuthModal.tsx';
 
-          let cliAvailable = false;
-          try {
-            await new Promise((resolve, reject) => {
-              exec('ollama --version', { timeout: 1500 }, (err) => {
-                if (!err) resolve(true);
-                else reject(err);
-              });
-            });
-            cliAvailable = true;
-          } catch (e) {
-            cliAvailable = false;
-          }
-
-          if (cliAvailable) {
-            try {
-              const prompt = `Refactor the circular dependency between ${srcId} and ${tgtId}. Decouple into a contract interface.`;
-              const child = spawn('ollama', ['run', 'qwen2.5-coder:7b', prompt]);
-              await new Promise((resolve, reject) => {
-                let text = '';
-                child.stdout.on('data', d => { text += d.toString(); });
-                child.on('close', code => (code === 0 && text.trim()) ? resolve(text) : reject(new Error('CLI exit ' + code)));
-                setTimeout(() => {
-                  try { child.kill(); } catch (k) {}
-                  reject(new Error('CLI timeout'));
-                }, 3500);
-              });
-            } catch (cliErr) {}
-          }
-
           const dispatcher = new AgentDispatcher();
           const parser = new CodebaseParser();
 
@@ -630,13 +673,91 @@ function runInteractiveServer() {
 
           const sourceMod = parser.parseModule(srcId, srcContent);
           const targetMod = parser.parseModule(tgtId, tgtContent);
-          const codemod = dispatcher.extractLexicalContracts(sourceMod, targetMod, [srcId, tgtId]);
+
+          // Multi-provider detection: checks local CLI agents
+          let detectedProvider = null;
+          const providers = [
+            { id: 'claude', testCmd: 'claude --version', cmd: 'claude', args: ['-p'], engine: 'CLAUDE_CODE_IPC' },
+            { id: 'codex', testCmd: 'codex --version', cmd: 'codex', args: ['exec'], engine: 'CODEX_CLI_IPC' },
+            { id: 'ollama', testCmd: 'ollama --version', cmd: 'ollama', args: ['run', 'qwen2.5-coder:7b'], engine: 'OLLAMA_HOST_IPC' },
+            { id: 'agy', testCmd: 'agy --version', cmd: 'agy', args: [], engine: 'ANTIGRAVITY_IPC' }
+          ];
+
+          for (const prov of providers) {
+            try {
+              await new Promise((resolve, reject) => {
+                exec(prov.testCmd, { timeout: 1200 }, (err) => {
+                  if (!err) resolve(true);
+                  else reject(err);
+                });
+              });
+              detectedProvider = prov;
+              break;
+            } catch (e) {}
+          }
+
+          let executionResult = null;
+          if (detectedProvider) {
+            try {
+              const prompt = `Refactor the circular dependency between ${srcId} and ${tgtId}.\n\nSource (${srcId}):\n${srcContent}\n\nTarget (${tgtId}):\n${tgtContent}\n\nOutput only the decoupled contract interface.`;
+              const child = spawn(detectedProvider.cmd, [...detectedProvider.args, prompt]);
+              let outputText = '';
+              await new Promise((resolve, reject) => {
+                child.stdout.on('data', d => { outputText += d.toString(); });
+                child.on('close', code => (code === 0 && outputText.trim()) ? resolve(outputText) : reject(new Error('CLI exit ' + code)));
+                setTimeout(() => {
+                  try { child.kill(); } catch (k) {}
+                  reject(new Error('CLI timeout'));
+                }, 6000);
+              });
+
+              if (outputText && outputText.includes('interface')) {
+                const cleanTargetName = targetMod.name.replace(/\.[^/.]+$/, '');
+                const contractPath = `src/contracts/${cleanTargetName}.contract.ts`;
+                const contractContent = outputText.trim();
+                const sourceDiff = DiffEngine.formatUnifiedDiff(srcId, srcContent, srcContent, false);
+                const contractDiff = DiffEngine.formatUnifiedDiff(contractPath, '', contractContent, true);
+                
+                executionResult = {
+                  engine: detectedProvider.engine,
+                  diff: `${sourceDiff.unifiedDiff}\n${contractDiff.unifiedDiff}`,
+                  sideBySideMatrix: DiffEngine.generateSideBySideMatrix(srcContent, srcContent),
+                  stats: {
+                    additions: contractDiff.stats.additions,
+                    deletions: 0,
+                    changes: contractDiff.stats.additions
+                  },
+                  files: [
+                    { path: contractPath, content: contractContent }
+                  ]
+                };
+              }
+            } catch (cliErr) {}
+          }
+
+          if (!executionResult) {
+            const codemod = dispatcher.extractLexicalContracts(sourceMod, targetMod, [srcId, tgtId]);
+            executionResult = {
+              engine: 'BALANCED_BRACE_CONTRACT_EXTRACTOR',
+              ...codemod
+            };
+          }
+
+          try {
+            const swarmTask = swarm.createTask(
+              `Decouple Circular Jam: ${srcId} <-> ${tgtId}`,
+              `Dispatched to ${detectedProvider ? detectedProvider.id : 'lexical-agent'}. Output engine: ${executionResult.engine}`,
+              'agent.bridge_engineer',
+              'critical'
+            );
+            swarm.updateTaskStatus(swarmTask.id, 'done', `Diff synthesized with ${executionResult.stats ? executionResult.stats.changes : 0} changes`);
+            swarm.updateAgentStatus('agent.bridge_engineer', 'done');
+          } catch (se) {}
 
           res.writeHead(200, { 'Content-Type': 'application/json' });
           res.end(JSON.stringify({
             success: true,
-            engine: cliAvailable ? 'OLLAMA_HOST_IPC' : 'BALANCED_BRACE_CONTRACT_EXTRACTOR',
-            ...codemod
+            ...executionResult
           }));
         } catch (err) {
           res.writeHead(500, { 'Content-Type': 'application/json' });

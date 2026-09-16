@@ -664,15 +664,15 @@
       color: #ffffff;
     }
 
-    /* MODAL FOR DIFF VIEWER */
+    /* MODAL FOR DIFF VIEWER (SIDE-BY-SIDE & UNIFIED) */
     .diff-modal-backdrop {
       position: fixed;
       top: 0;
       left: 0;
       width: 100vw;
       height: 100vh;
-      background: rgba(4, 7, 16, 0.85);
-      backdrop-filter: blur(10px);
+      background: rgba(4, 7, 16, 0.88);
+      backdrop-filter: blur(12px);
       z-index: 100;
       display: none;
       align-items: center;
@@ -680,9 +680,9 @@
     }
 
     .diff-modal {
-      width: 750px;
-      max-width: 90vw;
-      max-height: 85vh;
+      width: 1120px;
+      max-width: 95vw;
+      max-height: 88vh;
       background: var(--panel-bg);
       border: 1px solid var(--accent-cyan);
       border-radius: 14px;
@@ -690,24 +690,86 @@
       display: flex;
       flex-direction: column;
       gap: 14px;
-      box-shadow: 0 0 40px rgba(0, 240, 255, 0.3);
+      box-shadow: 0 0 50px rgba(0, 240, 255, 0.25);
     }
 
     .diff-viewer {
       background: #040711;
       border: 1px solid rgba(255, 255, 255, 0.1);
       border-radius: 8px;
-      padding: 14px;
+      padding: 0;
       font-family: 'JetBrains Mono', monospace;
       font-size: 11px;
-      line-height: 1.5;
-      overflow-y: auto;
-      max-height: 50vh;
+      line-height: 1.6;
+      overflow: auto;
+      max-height: 60vh;
+    }
+
+    .diff-unified-view {
+      padding: 14px;
       white-space: pre-wrap;
     }
 
-    .diff-del { color: #ff1744; background: rgba(255, 23, 68, 0.1); display: block; }
-    .diff-add { color: #00e676; background: rgba(0, 230, 118, 0.1); display: block; }
+    .diff-del { color: #ff5252; background: rgba(255, 23, 68, 0.15); display: block; padding: 1px 6px; border-left: 3px solid #ff1744; }
+    .diff-add { color: #00e676; background: rgba(0, 230, 118, 0.15); display: block; padding: 1px 6px; border-left: 3px solid #00e676; }
+    .diff-hunk-header { color: #00f0ff; background: rgba(0, 240, 255, 0.1); display: block; padding: 2px 6px; font-weight: 700; }
+
+    /* Side-by-Side Split Table */
+    .diff-split-table {
+      width: 100%;
+      border-collapse: collapse;
+      table-layout: fixed;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+    }
+
+    .diff-split-table th {
+      background: #080d1a;
+      padding: 6px 10px;
+      text-align: left;
+      font-size: 10px;
+      letter-spacing: 0.5px;
+      color: var(--text-muted);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      position: sticky;
+      top: 0;
+      z-index: 2;
+    }
+
+    .diff-split-table td {
+      padding: 2px 8px;
+      vertical-align: top;
+      white-space: pre-wrap;
+      word-break: break-word;
+      line-height: 1.5;
+    }
+
+    .diff-split-row {
+      border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+    }
+
+    .diff-cell-num {
+      width: 38px;
+      min-width: 38px;
+      text-align: right;
+      color: rgba(255, 255, 255, 0.25);
+      user-select: none;
+      padding-right: 8px !important;
+      border-right: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    .diff-cell-left {
+      width: 50%;
+      border-right: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .diff-cell-right {
+      width: 50%;
+    }
+
+    .diff-del-row { background: rgba(255, 23, 68, 0.12); color: #ff8a80; }
+    .diff-add-row { background: rgba(0, 230, 118, 0.12); color: #b9f6ca; }
+    .diff-empty-cell { background: rgba(0, 0, 0, 0.3); opacity: 0.4; }
 
     #folder-input { display: none; }
 
@@ -1650,6 +1712,10 @@
           <span class="btn-icon tour-icon">🎥</span> <span class="btn-label">360° Tur</span>
         </button>
 
+        <button id="btn-open-swarm-deck" class="btn-control secondary-action" title="AKOM Otonom Ajan Koordinasyon Masası">
+          <span class="btn-icon">⚡</span> <span class="btn-label">AKOM Swarm</span>
+        </button>
+
         <button id="btn-vapur-dudugu" class="btn-control secondary-action" title="Karaköy-Kadıköy Vapur Düdüğü & Martı Sesleri">
           <span class="btn-icon">🚢</span> <span class="btn-label">Vapur</span>
         </button>
@@ -1697,6 +1763,7 @@
         </div>
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 10px;">
           <button id="btn-rescan-mobile" class="btn-control" style="text-align: left;">🔄 Rescan</button>
+          <button id="btn-swarm-mobile" class="btn-control" style="text-align: left; border-color: var(--accent-cyan); color: var(--accent-cyan);">⚡ AKOM Swarm</button>
           <button id="btn-pr-bot-mobile" class="btn-control" style="text-align: left;">💬 PR Bot</button>
           <button id="btn-tour-mobile" class="btn-control" style="text-align: left;">🎥 360° Tur</button>
           <button id="btn-vapur-mobile" class="btn-control" style="text-align: left;">🚢 Vapur</button>
@@ -1902,15 +1969,85 @@
   
   <div class="diff-modal-backdrop interactive" id="diff-modal">
     <div class="diff-modal">
-      <div style="display: flex; justify-content: space-between; align-items: center;">
-        <h2 style="font-size: 16px; color: var(--accent-cyan);">Unified Remediation Patch (Git Diff)</h2>
-        <button class="btn-close" id="btn-close-diff-modal">✕</button>
+      <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 12px; gap: 12px; flex-wrap: wrap;">
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <h2 style="font-size: 15px; color: var(--accent-cyan); margin: 0; font-weight: 700;">Remediation Patch Inspector (Myers Diff)</h2>
+          <span id="diff-stats-badge" style="display: inline-flex; gap: 6px; font-size: 11px; font-family: monospace;"></span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <div style="display: flex; background: rgba(0,0,0,0.4); border-radius: 6px; padding: 2px; border: 1px solid rgba(255,255,255,0.1);">
+            <button id="btn-diff-mode-split" style="background: var(--accent-cyan); color: #040711; border: none; padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: 700; cursor: pointer; transition: all 0.2s;">⊞ Split View</button>
+            <button id="btn-diff-mode-unified" style="background: transparent; color: var(--text-muted); border: none; padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: 700; cursor: pointer; transition: all 0.2s;">☰ Unified</button>
+          </div>
+          <button class="btn-close" id="btn-close-diff-modal">✕</button>
+        </div>
       </div>
       <div class="diff-viewer" id="diff-viewer-content"></div>
-      <div style="display: flex; justify-content: flex-end; gap: 10px; flex-wrap: wrap;">
-        <button id="btn-copy-diff" class="btn-control">📋 Copy Patch</button>
-        <button id="btn-download-patch" class="btn-control btn-primary">💾 Export .patch File</button>
-        <button id="btn-apply-patch-live" class="btn-control" style="background: linear-gradient(135deg, #00e676, #00f0ff); color: #060913; font-weight: 700; border: none; box-shadow: 0 0 16px rgba(0, 230, 118, 0.4);">🛠️ Apply Remediation Patch to Disk</button>
+      <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 12px; flex-wrap: wrap; gap: 10px;">
+        <div id="diff-engine-tag" style="font-size: 11px; font-family: monospace; color: var(--text-muted); display: flex; align-items: center; gap: 6px;">
+          <span>Engine:</span> <strong id="diff-engine-name" style="color: var(--accent-cyan);">DETERMINISTIC_MYERS_LCS</strong>
+        </div>
+        <div style="display: flex; justify-content: flex-end; gap: 10px; flex-wrap: wrap;">
+          <button id="btn-copy-diff" class="btn-control">📋 Copy Patch</button>
+          <button id="btn-download-patch" class="btn-control btn-primary">💾 Export .patch File</button>
+          <button id="btn-apply-patch-live" class="btn-control" style="background: linear-gradient(135deg, #00e676, #00f0ff); color: #060913; font-weight: 700; border: none; box-shadow: 0 0 16px rgba(0, 230, 118, 0.4);">🛠️ Apply Remediation Patch to Disk</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- AKOM Swarm Command Deck Modal -->
+  <div class="diff-modal-backdrop interactive" id="swarm-modal" style="display: none;">
+    <div class="diff-modal" style="width: 1080px; max-width: 95vw; height: 85vh; max-height: 85vh; display: flex; flex-direction: column;">
+      <!-- Header -->
+      <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 12px; flex-wrap: wrap; gap: 10px;">
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <div style="width: 34px; height: 34px; border-radius: 8px; background: linear-gradient(135deg, #00f0ff, #7928ca); display: flex; align-items: center; justify-content: center; font-size: 18px; box-shadow: 0 0 16px rgba(0, 240, 255, 0.4);">⚡</div>
+          <div>
+            <h2 style="font-size: 15px; color: #fff; margin: 0; font-weight: 700; letter-spacing: 0.5px;">AKOM Autonomous SRE Swarm Ops Deck</h2>
+            <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">5 Specialized Autonomous Agents • FIPA-Lite Inbox Routing • Shared Blackboard • Task Ledger</div>
+          </div>
+        </div>
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <button id="btn-swarm-refresh" class="btn-control" style="font-size: 11px; padding: 5px 12px;">🔄 Refresh State</button>
+          <button class="btn-close" id="btn-close-swarm-modal">✕</button>
+        </div>
+      </div>
+
+      <!-- Navigation Tabs -->
+      <div style="display: flex; gap: 8px; border-bottom: 1px solid rgba(255,255,255,0.06); padding: 8px 0; overflow-x: auto;">
+        <button id="swarm-tab-roster" class="swarm-tab-btn" style="background: var(--accent-cyan); color: #040711; border: none; padding: 6px 14px; border-radius: 6px; font-size: 11px; font-weight: 700; cursor: pointer;">👥 Agent Roster (5)</button>
+        <button id="swarm-tab-tasks" class="swarm-tab-btn" style="background: transparent; color: var(--text-muted); border: 1px solid rgba(255,255,255,0.1); padding: 6px 14px; border-radius: 6px; font-size: 11px; font-weight: 700; cursor: pointer;">📋 Task Ledger</button>
+        <button id="swarm-tab-board" class="swarm-tab-btn" style="background: transparent; color: var(--text-muted); border: 1px solid rgba(255,255,255,0.1); padding: 6px 14px; border-radius: 6px; font-size: 11px; font-weight: 700; cursor: pointer;">📝 Shared Blackboard</button>
+        <button id="swarm-tab-feed" class="swarm-tab-btn" style="background: transparent; color: var(--text-muted); border: 1px solid rgba(255,255,255,0.1); padding: 6px 14px; border-radius: 6px; font-size: 11px; font-weight: 700; cursor: pointer;">📡 Inter-Agent Activity</button>
+      </div>
+
+      <!-- Tab Contents -->
+      <div id="swarm-tab-content-roster" class="swarm-tab-pane" style="flex: 1; overflow-y: auto; padding: 14px 4px;">
+        <div id="swarm-roster-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 14px;"></div>
+      </div>
+
+      <div id="swarm-tab-content-tasks" class="swarm-tab-pane" style="display: none; flex: 1; overflow-y: auto; padding: 14px 4px;">
+        <div id="swarm-tasks-list" style="display: flex; flex-direction: column; gap: 10px;"></div>
+      </div>
+
+      <div id="swarm-tab-content-board" class="swarm-tab-pane" style="display: none; flex: 1; overflow-y: auto; padding: 14px 4px;">
+        <pre id="swarm-board-content" style="background: #040711; border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 16px; font-family: 'JetBrains Mono', monospace; font-size: 11px; line-height: 1.6; color: #e2e8f0; white-space: pre-wrap; margin: 0;"></pre>
+      </div>
+
+      <div id="swarm-tab-content-feed" class="swarm-tab-pane" style="display: none; flex: 1; overflow-y: auto; padding: 14px 4px;">
+        <div id="swarm-feed-list" style="display: flex; flex-direction: column; gap: 8px; font-family: 'JetBrains Mono', monospace; font-size: 11px;"></div>
+      </div>
+
+      <!-- Footer -->
+      <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 12px; flex-wrap: wrap; gap: 10px;">
+        <div style="font-size: 11px; color: var(--text-muted); font-family: monospace;">
+          <span>State:</span> <strong style="color: #00e676;">● SWARM_NOMINAL</strong> • Mailbox: <span id="swarm-mailbox-stat" style="color: var(--accent-cyan);">Ready</span>
+        </div>
+        <div style="display: flex; gap: 10px;">
+          <button id="btn-swarm-pump" class="btn-control">📬 Pump Mailboxes</button>
+          <button id="btn-swarm-simulate" class="btn-control btn-primary">⚡ Dispatch Crisis Drill</button>
+        </div>
       </div>
     </div>
   </div>
@@ -2796,15 +2933,108 @@
 
     const diffModal = document.getElementById('diff-modal');
     const diffContent = document.getElementById('diff-viewer-content');
+    let currentDiffMode = 'split'; // 'split' | 'unified'
+
+    function renderDiffViewer() {
+      if (!diffContent) return;
+
+      const engineEl = document.getElementById('diff-engine-name');
+      if (engineEl) {
+        engineEl.textContent = (lastRefactorPayload && lastRefactorPayload.engine) 
+          ? lastRefactorPayload.engine 
+          : 'DETERMINISTIC_MYERS_LCS';
+      }
+
+      const statsBadge = document.getElementById('diff-stats-badge');
+      if (statsBadge && lastRefactorPayload && lastRefactorPayload.stats) {
+        const { additions = 0, deletions = 0, changes = 0 } = lastRefactorPayload.stats;
+        statsBadge.innerHTML = `
+          <span style="color:#00e676; background:rgba(0,230,118,0.12); padding:2px 8px; border-radius:4px; font-weight:700; border: 1px solid rgba(0,230,118,0.25);">+${additions}</span>
+          <span style="color:#ff5252; background:rgba(255,23,68,0.12); padding:2px 8px; border-radius:4px; font-weight:700; border: 1px solid rgba(255,23,68,0.25);">-${deletions}</span>
+          <span style="color:var(--text-muted); background:rgba(255,255,255,0.06); padding:2px 8px; border-radius:4px; border: 1px solid rgba(255,255,255,0.1);">${changes} changes</span>
+        `;
+      } else if (statsBadge) {
+        statsBadge.innerHTML = '';
+      }
+
+      if (currentDiffMode === 'split' && lastRefactorPayload && Array.isArray(lastRefactorPayload.sideBySideMatrix) && lastRefactorPayload.sideBySideMatrix.length > 0) {
+        let rowsHtml = '';
+        for (const row of lastRefactorPayload.sideBySideMatrix) {
+          const leftCell = row.left;
+          const rightCell = row.right;
+
+          let leftClass = 'diff-cell-left';
+          let leftNum = leftCell ? leftCell.lineNumber : '';
+          let leftText = leftCell ? escapeHtml(leftCell.text) : '';
+          if (leftCell && leftCell.type === 'deletion') leftClass += ' diff-del-row';
+          if (!leftCell) leftClass += ' diff-empty-cell';
+
+          let rightClass = 'diff-cell-right';
+          let rightNum = rightCell ? rightCell.lineNumber : '';
+          let rightText = rightCell ? escapeHtml(rightCell.text) : '';
+          if (rightCell && rightCell.type === 'addition') rightClass += ' diff-add-row';
+          if (!rightCell) rightClass += ' diff-empty-cell';
+
+          rowsHtml += `
+            <tr class="diff-split-row">
+              <td class="diff-cell-num">${leftNum}</td>
+              <td class="${leftClass}">${leftText || '&nbsp;'}</td>
+              <td class="diff-cell-num">${rightNum}</td>
+              <td class="${rightClass}">${rightText || '&nbsp;'}</td>
+            </tr>
+          `;
+        }
+
+        diffContent.innerHTML = `
+          <table class="diff-split-table">
+            <thead>
+              <tr>
+                <th style="width:38px;">#</th>
+                <th style="width:calc(50% - 38px);">Original (Ingress Peer)</th>
+                <th style="width:38px;">#</th>
+                <th style="width:calc(50% - 38px);">Refactored (Decoupled Layer)</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${rowsHtml}
+            </tbody>
+          </table>
+        `;
+      } else {
+        const formattedDiff = (lastRefactorDiff || '').split('\n').map(line => {
+          if (line.startsWith('@@')) return `<span class="diff-hunk-header">${escapeHtml(line)}</span>`;
+          if (line.startsWith('+') && !line.startsWith('+++')) return `<span class="diff-add">${escapeHtml(line)}</span>`;
+          if (line.startsWith('-') && !line.startsWith('---')) return `<span class="diff-del">${escapeHtml(line)}</span>`;
+          return `<span>${escapeHtml(line)}</span>\n`;
+        }).join('');
+
+        diffContent.innerHTML = `<div class="diff-unified-view">${formattedDiff || '<div style="color:var(--text-muted); padding:14px;">No changes to inspect.</div>'}</div>`;
+      }
+    }
+
+    const btnModeSplit = document.getElementById('btn-diff-mode-split');
+    const btnModeUnified = document.getElementById('btn-diff-mode-unified');
+    if (btnModeSplit && btnModeUnified) {
+      btnModeSplit.addEventListener('click', () => {
+        currentDiffMode = 'split';
+        btnModeSplit.style.background = 'var(--accent-cyan)';
+        btnModeSplit.style.color = '#040711';
+        btnModeUnified.style.background = 'transparent';
+        btnModeUnified.style.color = 'var(--text-muted)';
+        renderDiffViewer();
+      });
+      btnModeUnified.addEventListener('click', () => {
+        currentDiffMode = 'unified';
+        btnModeUnified.style.background = 'var(--accent-cyan)';
+        btnModeUnified.style.color = '#040711';
+        btnModeSplit.style.background = 'transparent';
+        btnModeSplit.style.color = 'var(--text-muted)';
+        renderDiffViewer();
+      });
+    }
 
     document.getElementById('btn-view-diff').addEventListener('click', () => {
-      const formattedDiff = lastRefactorDiff.split('\n').map(line => {
-        if (line.startsWith('+') && !line.startsWith('+++')) return `<span class="diff-add">${escapeHtml(line)}</span>`;
-        if (line.startsWith('-') && !line.startsWith('---')) return `<span class="diff-del">${escapeHtml(line)}</span>`;
-        return `<span>${escapeHtml(line)}</span>`;
-      }).join('');
-
-      diffContent.innerHTML = formattedDiff;
+      renderDiffViewer();
       diffModal.style.display = 'flex';
     });
 
@@ -2882,6 +3112,208 @@
       alert(diskUpdated 
         ? '✅ Yama yerel diskinize ve projenize başarıyla uygulandı!\nKöprüdeki kilit kalktı ve trafik yeşile döndü.' 
         : '✅ Yama başarıyla uygulandı ve AST motoru senkronize edildi!\nKöprü trafiği akıyor.');
+    });
+
+    // ══════════════════════════════════════════════════════════════════════════════
+    // AKOM AUTONOMOUS SRE SWARM CONTROLLER
+    // ══════════════════════════════════════════════════════════════════════════════
+    const swarmModal = document.getElementById('swarm-modal');
+    const btnOpenSwarm = document.getElementById('btn-open-swarm-deck');
+    const btnCloseSwarm = document.getElementById('btn-close-swarm-modal');
+    const btnSwarmMob = document.getElementById('btn-swarm-mobile');
+    const btnSwarmRefresh = document.getElementById('btn-swarm-refresh');
+    const btnSwarmPump = document.getElementById('btn-swarm-pump');
+    const btnSwarmSimulate = document.getElementById('btn-swarm-simulate');
+
+    let currentSwarmTab = 'roster';
+
+    function switchSwarmTab(tabId) {
+      currentSwarmTab = tabId;
+      const tabs = ['roster', 'tasks', 'board', 'feed'];
+      for (const t of tabs) {
+        const btn = document.getElementById(`swarm-tab-${t}`);
+        const pane = document.getElementById(`swarm-tab-content-${t}`);
+        if (btn) {
+          if (t === tabId) {
+            btn.style.background = 'var(--accent-cyan)';
+            btn.style.color = '#040711';
+            btn.style.borderColor = 'var(--accent-cyan)';
+          } else {
+            btn.style.background = 'transparent';
+            btn.style.color = 'var(--text-muted)';
+            btn.style.borderColor = 'rgba(255,255,255,0.1)';
+          }
+        }
+        if (pane) {
+          pane.style.display = (t === tabId) ? (t === 'roster' ? 'grid' : 'flex') : 'none';
+        }
+      }
+    }
+
+    document.getElementById('swarm-tab-roster')?.addEventListener('click', () => switchSwarmTab('roster'));
+    document.getElementById('swarm-tab-tasks')?.addEventListener('click', () => switchSwarmTab('tasks'));
+    document.getElementById('swarm-tab-board')?.addEventListener('click', () => switchSwarmTab('board'));
+    document.getElementById('swarm-tab-feed')?.addEventListener('click', () => switchSwarmTab('feed'));
+
+    async function loadSwarmStatus() {
+      let data = null;
+      try {
+        const res = await fetch('/api/swarm/status');
+        if (res.ok) data = await res.json();
+      } catch (e) {}
+
+      // Fallback in-memory simulation for static GitHub Pages demo
+      if (!data || !data.success) {
+        data = {
+          registry: {
+            commanderId: 'agent.commander',
+            agents: {
+              'agent.commander': { id: 'agent.commander', name: 'AKOM Başkomutanı', role: 'Chief Orchestrator', specialty: 'Incident triage & supervisor', status: 'idle', color: '#00f0ff' },
+              'agent.bridge_engineer': { id: 'agent.bridge_engineer', name: 'Boğaz Köprüsü Mühendisi', role: 'Tarjan SCC Decoupler', specialty: 'Resolving circular deadlocks', status: 'idle', color: '#ff9100' },
+              'agent.security_sentinel': { id: 'agent.security_sentinel', name: 'Galata Güvenlik Gözcüsü', role: 'Boundary & CWE Auditor', specialty: 'MITRE CWE vulnerability patching', status: 'idle', color: '#ff1744' },
+              'agent.refactorer': { id: 'agent.refactorer', name: 'Tarihi Yarımada Mimarı', role: 'Complexity Refactorer', specialty: 'Decomposing monolithic modules', status: 'idle', color: '#b388ff' },
+              'agent.qa_inspector': { id: 'agent.qa_inspector', name: 'Kadıköy İskele Denetçisi', role: 'Test & CI Validator', specialty: 'Gatekeeper verification', status: 'idle', color: '#00e676' }
+            }
+          },
+          tasks: [
+            { id: 'task-101', title: 'Monitor Bosphorus Traffic Couplings', status: 'doing', priority: 'medium', assignee: 'agent.bridge_engineer' },
+            { id: 'task-102', title: 'Audit CWE-668 / CWE-200 Security Invariants', status: 'done', priority: 'critical', assignee: 'agent.security_sentinel', result: 'Zero leaks detected' }
+          ],
+          board: '# AKOM Shared Architectural Blackboard\n- State: All architectural boundaries operating within nominal invariants.\n- Swarm: Ready for autonomous dispatch.',
+          recentLogs: [
+            { ts: Date.now() - 60000, kind: 'message_routed', from: 'agent.commander', to: 'agent.bridge_engineer', act: 'query', subject: 'Topological state check' }
+          ]
+        };
+      }
+
+      // Render Roster
+      const rosterGrid = document.getElementById('swarm-roster-grid');
+      if (rosterGrid && data.registry?.agents) {
+        rosterGrid.innerHTML = Object.values(data.registry.agents).map(agent => {
+          const statusColors = { idle: '#94a3b8', working: '#00f0ff', blocked: '#ff1744', done: '#00e676' };
+          const stColor = statusColors[agent.status] || '#94a3b8';
+          return `
+            <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-left: 3px solid ${agent.color}; border-radius: 8px; padding: 12px; display: flex; flex-direction: column; gap: 6px;">
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <strong style="color: #fff; font-size: 13px;">${escapeHtml(agent.name)}</strong>
+                <span style="font-size: 10px; font-family: monospace; color: ${stColor}; background: rgba(255,255,255,0.05); padding: 2px 6px; border-radius: 4px; border: 1px solid ${stColor}40;">● ${agent.status.toUpperCase()}</span>
+              </div>
+              <div style="font-size: 11px; color: ${agent.color}; font-weight: 600;">${escapeHtml(agent.role)}</div>
+              <div style="font-size: 11px; color: var(--text-muted); line-height: 1.4;">${escapeHtml(agent.specialty)}</div>
+              <div style="font-size: 10px; color: rgba(255,255,255,0.3); font-family: monospace; margin-top: 4px;">ID: ${escapeHtml(agent.id)}</div>
+            </div>
+          `;
+        }).join('');
+      }
+
+      // Render Tasks
+      const tasksList = document.getElementById('swarm-tasks-list');
+      if (tasksList) {
+        if (!data.tasks || data.tasks.length === 0) {
+          tasksList.innerHTML = `<div style="color: var(--text-muted); padding: 14px; text-align: center;">No active tasks in ledger.</div>`;
+        } else {
+          tasksList.innerHTML = data.tasks.map(t => {
+            const stBadgeColors = { todo: '#94a3b8', doing: '#00f0ff', blocked: '#ff1744', done: '#00e676' };
+            const prioColors = { low: '#94a3b8', medium: '#ffb74d', high: '#ff9100', critical: '#ff1744' };
+            return `
+              <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 12px; display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap;">
+                <div>
+                  <div style="display: flex; align-items: center; gap: 8px;">
+                    <span style="font-size: 10px; font-weight: 700; color: ${prioColors[t.priority] || '#ffb74d'}; text-transform: uppercase;">[${t.priority}]</span>
+                    <strong style="color: #fff; font-size: 12px;">${escapeHtml(t.title)}</strong>
+                  </div>
+                  <div style="font-size: 11px; color: var(--text-muted); margin-top: 3px;">Assignee: <code style="color: var(--accent-cyan);">${escapeHtml(t.assignee)}</code> ${t.description ? `• ${escapeHtml(t.description)}` : ''}</div>
+                  ${t.result ? `<div style="font-size: 11px; color: #00e676; margin-top: 2px;">✔ Result: ${escapeHtml(t.result)}</div>` : ''}
+                </div>
+                <span style="font-size: 11px; font-family: monospace; font-weight: 700; color: ${stBadgeColors[t.status] || '#94a3b8'}; background: rgba(0,0,0,0.3); padding: 3px 8px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.1);">
+                  ${t.status.toUpperCase()}
+                </span>
+              </div>
+            `;
+          }).join('');
+        }
+      }
+
+      // Render Board
+      const boardContent = document.getElementById('swarm-board-content');
+      if (boardContent) {
+        boardContent.textContent = data.board || '# Empty Blackboard';
+      }
+
+      // Render Feed
+      const feedList = document.getElementById('swarm-feed-list');
+      if (feedList) {
+        if (!data.recentLogs || data.recentLogs.length === 0) {
+          feedList.innerHTML = `<div style="color: var(--text-muted); padding: 14px; text-align: center;">No activity recorded in swarm log.</div>`;
+        } else {
+          feedList.innerHTML = data.recentLogs.slice().reverse().map(l => {
+            const timeStr = l.ts ? new Date(l.ts).toLocaleTimeString() : '';
+            return `
+              <div style="background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.05); border-radius: 6px; padding: 8px 12px; display: flex; gap: 10px; align-items: baseline;">
+                <span style="color: rgba(255,255,255,0.3); font-size: 10px;">[${timeStr}]</span>
+                <span style="color: var(--accent-cyan); font-weight: 700;">${escapeHtml(l.kind || 'EVENT')}</span>
+                <span style="color: #e2e8f0; flex: 1;">${escapeHtml(l.subject || l.title || l.reason || '')}</span>
+                ${l.from ? `<span style="color: var(--text-muted); font-size: 10px;">${escapeHtml(l.from)} ➔ ${escapeHtml(l.to || '')}</span>` : ''}
+              </div>
+            `;
+          }).join('');
+        }
+      }
+    }
+
+    btnOpenSwarm?.addEventListener('click', () => {
+      swarmModal.style.display = 'flex';
+      switchSwarmTab('roster');
+      loadSwarmStatus();
+    });
+
+    btnSwarmMob?.addEventListener('click', () => {
+      swarmModal.style.display = 'flex';
+      switchSwarmTab('roster');
+      loadSwarmStatus();
+      if (mobileDrawer) mobileDrawer.style.display = 'none';
+    });
+
+    btnCloseSwarm?.addEventListener('click', () => {
+      swarmModal.style.display = 'none';
+    });
+
+    btnSwarmRefresh?.addEventListener('click', () => {
+      loadSwarmStatus();
+    });
+
+    btnSwarmPump?.addEventListener('click', async () => {
+      try {
+        const res = await fetch('/api/swarm/route', { method: 'POST' });
+        if (res.ok) {
+          const d = await res.json();
+          alert(`📬 Posta kutuları tarandı. Yönlendirilen mesaj sayısı: ${d.routed}`);
+          loadSwarmStatus();
+        }
+      } catch (e) {
+        alert('Yerel sunucuya bağlanılamadı.');
+      }
+    });
+
+    btnSwarmSimulate?.addEventListener('click', async () => {
+      try {
+        const res = await fetch('/api/swarm/dispatch', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            type: 'cycle',
+            chain: ['src/services/auth.ts', 'src/services/userService.ts'],
+            title: 'Bosphorus Circular Jam Drill',
+            details: 'Simulation drill: Test Tarjan SCC cycle resolution.'
+          })
+        });
+        if (res.ok) {
+          alert('⚡ Tatbikat başlatıldı: Görev Boğaz Köprüsü Mühendisi ajanına sevk edildi!');
+          loadSwarmStatus();
+        }
+      } catch (e) {
+        alert('Yerel sunucuya bağlanılamadı.');
+      }
     });
 
     let isAudioMuted = true;

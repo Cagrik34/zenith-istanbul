@@ -3,6 +3,7 @@
  * Performs lexical / regex-based interface extraction to decouple cyclic dependencies into isolated contract layers.
  * Zero external dependencies: Analyzes actual graph nodes, extracts live interfaces, and emits true unified git diffs.
  */
+import { DiffEngine } from './diff-engine.js';
 
 export class AgentDispatcher {
   constructor(onLogStream, onIncidentResolved) {
@@ -163,19 +164,24 @@ ${contractBody}
       transformedSource = `${relativeContractImport}\n${transformedSource}`;
     }
 
-    const diff = this.produceUnifiedDiff(
-      sourceMod ? sourceMod.path : `src/${cleanSourceName}.ts`,
-      rawSource,
-      transformedSource,
-      contractPath,
-      contractContent
-    );
+    const sourceFilePath = sourceMod ? sourceMod.path : `src/${cleanSourceName}.ts`;
+    const sourceDiff = DiffEngine.formatUnifiedDiff(sourceFilePath, rawSource, transformedSource, false);
+    const contractDiff = DiffEngine.formatUnifiedDiff(contractPath, '', contractContent, true);
+
+    const fullUnifiedDiff = `${sourceDiff.unifiedDiff}\n${contractDiff.unifiedDiff}`;
+    const sideBySideMatrix = DiffEngine.generateSideBySideMatrix(rawSource, transformedSource);
 
     return {
       engine: 'LEXICAL_CONTRACT_EXTRACTOR',
-      diff,
+      diff: fullUnifiedDiff,
+      sideBySideMatrix,
+      stats: {
+        additions: sourceDiff.stats.additions + contractDiff.stats.additions,
+        deletions: sourceDiff.stats.deletions + contractDiff.stats.deletions,
+        changes: sourceDiff.stats.changes + contractDiff.stats.changes
+      },
       files: [
-        { path: sourceMod ? sourceMod.path : `src/${cleanSourceName}.ts`, content: transformedSource },
+        { path: sourceFilePath, content: transformedSource },
         { path: contractPath, content: contractContent }
       ]
     };
@@ -306,48 +312,15 @@ ${contractBody}
   }
 
   /**
-   * Generates formal Unified Git Diff without mock strings
+   * Generates formal Unified Git Diff using Myers Diff (LCS) algorithm
    */
   produceUnifiedDiff(sourcePath, oldSource, newSource, newFilePath, newFileContent) {
-    const formatHunk = (oldLines, newLines) => {
-      let hunk = '';
-      const maxLen = Math.max(oldLines.length, newLines.length);
-      for (let i = 0; i < maxLen; i++) {
-        const oldL = oldLines[i];
-        const newL = newLines[i];
-        if (oldL !== newL) {
-          if (oldL !== undefined) hunk += `-${oldL}\n`;
-          if (newL !== undefined) hunk += `+${newL}\n`;
-        } else {
-          hunk += ` ${oldL || ''}\n`;
-        }
-      }
-      return hunk;
-    };
-
-    const oldSourceLines = oldSource.split('\n').slice(0, 8);
-    const newSourceLines = newSource.split('\n').slice(0, 8);
-
-    let diffText = `diff --git a/${sourcePath} b/${sourcePath}\n`;
-    diffText += `index a1b2c3d..e4f5a6b 100644\n`;
-    diffText += `--- a/${sourcePath}\n`;
-    diffText += `+++ b/${sourcePath}\n`;
-    diffText += `@@ -1,${oldSourceLines.length} +1,${newSourceLines.length} @@\n`;
-    diffText += formatHunk(oldSourceLines, newSourceLines);
-    diffText += `\n`;
-
-    const newContentLines = newFileContent.split('\n');
-    diffText += `diff --git a/${newFilePath} b/${newFilePath}\n`;
-    diffText += `new file mode 100644\n`;
-    diffText += `index 0000000..f9e8d7c\n`;
-    diffText += `--- /dev/null\n`;
-    diffText += `+++ b/${newFilePath}\n`;
-    diffText += `@@ -0,0 +1,${newContentLines.length} @@\n`;
-    for (const l of newContentLines) {
-      diffText += `+${l}\n`;
+    const diff1 = DiffEngine.formatUnifiedDiff(sourcePath, oldSource, newSource, false);
+    if (newFilePath && newFileContent) {
+      const diff2 = DiffEngine.formatUnifiedDiff(newFilePath, '', newFileContent, true);
+      return `${diff1.unifiedDiff}\n${diff2.unifiedDiff}`;
     }
-
-    return diffText;
+    return diff1.unifiedDiff;
   }
 
   /**
