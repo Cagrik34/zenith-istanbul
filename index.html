@@ -2025,6 +2025,7 @@
         <button id="swarm-tab-tasks" class="swarm-tab-btn" style="background: transparent; color: var(--text-muted); border: 1px solid rgba(255,255,255,0.1); padding: 6px 14px; border-radius: 6px; font-size: 11px; font-weight: 700; cursor: pointer;">📋 Task Ledger</button>
         <button id="swarm-tab-board" class="swarm-tab-btn" style="background: transparent; color: var(--text-muted); border: 1px solid rgba(255,255,255,0.1); padding: 6px 14px; border-radius: 6px; font-size: 11px; font-weight: 700; cursor: pointer;">📝 Shared Blackboard</button>
         <button id="swarm-tab-feed" class="swarm-tab-btn" style="background: transparent; color: var(--text-muted); border: 1px solid rgba(255,255,255,0.1); padding: 6px 14px; border-radius: 6px; font-size: 11px; font-weight: 700; cursor: pointer;">📡 Inter-Agent Activity</button>
+        <button id="swarm-tab-graph" class="swarm-tab-btn" style="background: transparent; color: var(--text-muted); border: 1px solid rgba(255,255,255,0.1); padding: 6px 14px; border-radius: 6px; font-size: 11px; font-weight: 700; cursor: pointer;">🧠 Memory Graph</button>
       </div>
 
       <!-- Tab Contents -->
@@ -2042,6 +2043,23 @@
 
       <div id="swarm-tab-content-feed" class="swarm-tab-pane" style="display: none; flex: 1; overflow-y: auto; padding: 14px 4px;">
         <div id="swarm-feed-list" style="display: flex; flex-direction: column; gap: 8px; font-family: 'JetBrains Mono', monospace; font-size: 11px;"></div>
+      </div>
+
+      <div id="swarm-tab-content-graph" class="swarm-tab-pane" style="display: none; flex: 1; flex-direction: column; gap: 8px; overflow: hidden; padding: 6px 0;">
+        <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06); padding: 6px 12px; border-radius: 6px; font-size: 11px;">
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; color: #fff;">
+              <input type="checkbox" id="graph-toggle-topics" checked style="accent-color: var(--accent-cyan);">
+              <span>Ortak Konuları Göster (Shared Knowledge Topics)</span>
+            </label>
+            <span id="graph-stat-badge" style="color: var(--text-muted); font-family: monospace;">5 ajan • 0 mesaj kenarı</span>
+          </div>
+          <button id="btn-reset-graph" class="btn-control" style="font-size: 10px; padding: 3px 8px;">🔄 Düzeni Sıfırla (Reset Physics)</button>
+        </div>
+        <div style="flex: 1; position: relative; min-height: 380px; border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; overflow: hidden; background: #02040a;">
+          <svg id="swarm-memory-svg" width="100%" height="100%" style="width: 100%; height: 100%; user-select: none; cursor: grab;"></svg>
+          <div id="graph-tooltip" style="display: none; position: absolute; background: rgba(4,7,17,0.95); border: 1px solid var(--accent-cyan); border-radius: 6px; padding: 8px 12px; font-size: 11px; color: #fff; pointer-events: none; z-index: 20; box-shadow: 0 4px 16px rgba(0,0,0,0.8); max-width: 260px;"></div>
+        </div>
       </div>
 
       <!-- Footer -->
@@ -3134,7 +3152,7 @@
 
     function switchSwarmTab(tabId) {
       currentSwarmTab = tabId;
-      const tabs = ['roster', 'tasks', 'board', 'feed'];
+      const tabs = ['roster', 'tasks', 'board', 'feed', 'graph'];
       for (const t of tabs) {
         const btn = document.getElementById(`swarm-tab-${t}`);
         const pane = document.getElementById(`swarm-tab-content-${t}`);
@@ -3159,6 +3177,10 @@
     document.getElementById('swarm-tab-tasks')?.addEventListener('click', () => switchSwarmTab('tasks'));
     document.getElementById('swarm-tab-board')?.addEventListener('click', () => switchSwarmTab('board'));
     document.getElementById('swarm-tab-feed')?.addEventListener('click', () => switchSwarmTab('feed'));
+    document.getElementById('swarm-tab-graph')?.addEventListener('click', () => {
+      switchSwarmTab('graph');
+      renderMemoryGraph();
+    });
 
     async function loadSwarmStatus() {
       let data = null;
@@ -3288,6 +3310,10 @@
         const taskCount = data.tasks?.length || 0;
         mailboxStat.textContent = `${logCount} olay loglandı • ${taskCount} görev • Kalp Atışı: Aktif (3s)`;
       }
+
+      if (currentSwarmTab === 'graph') {
+        renderMemoryGraph();
+      }
     }
 
     let swarmPollTimer = null;
@@ -3298,12 +3324,271 @@
       swarmPollTimer = setInterval(loadSwarmStatus, 2000);
     }
 
-    function stopSwarmPolling() {
-      if (swarmPollTimer) {
-        clearInterval(swarmPollTimer);
-        swarmPollTimer = null;
+    let graphPinned = {};
+    let cachedGraphData = null;
+
+    async function renderMemoryGraph() {
+      const svg = document.getElementById('swarm-memory-svg');
+      const tooltip = document.getElementById('graph-tooltip');
+      const statBadge = document.getElementById('graph-stat-badge');
+      const toggleTopics = document.getElementById('graph-toggle-topics');
+      if (!svg) return;
+
+      const showTopics = toggleTopics ? toggleTopics.checked : true;
+      const rect = svg.getBoundingClientRect();
+      const width = Math.max(400, rect.width || 800);
+      const height = Math.max(340, rect.height || 420);
+
+      let graph = null;
+      try {
+        const res = await fetch(`/api/swarm/graph?topics=${showTopics}`);
+        if (res.ok) {
+          const d = await res.json();
+          if (d.success && d.graph) graph = d.graph;
+        }
+      } catch (e) {}
+
+      if (!graph) {
+        graph = {
+          nodes: [
+            { id: 'agent.commander', label: 'AKOM Başkomutanı', color: '#00f0ff', kind: 'agent', status: 'idle', isCommander: true },
+            { id: 'agent.bridge_engineer', label: 'Boğaz Köprüsü Mühendisi', color: '#ff9100', kind: 'agent', status: 'working' },
+            { id: 'agent.security_sentinel', label: 'Galata Güvenlik Gözcüsü', color: '#ff1744', kind: 'agent', status: 'idle' },
+            { id: 'agent.refactorer', label: 'Tarihi Yarımada Mimarı', color: '#b388ff', kind: 'agent', status: 'idle' },
+            { id: 'agent.qa_inspector', label: 'Kadıköy İskele Denetçisi', color: '#00e676', kind: 'agent', status: 'idle' },
+            { id: 'topic:tarjan scc', label: 'Tarjan SCC Decoupling', color: '#b388ff', kind: 'topic', weight: 2 },
+            { id: 'topic:bosphorus bridge', label: 'Bosphorus Bridge Coupling', color: '#b388ff', kind: 'topic', weight: 2 }
+          ],
+          edges: [
+            { source: 'agent.commander', target: 'agent.bridge_engineer', kind: 'message', weight: 3, dir: 'both', lastAct: 'done' },
+            { source: 'agent.commander', target: 'agent.security_sentinel', kind: 'message', weight: 1, dir: 'both', lastAct: 'inform' },
+            { source: 'agent.bridge_engineer', target: 'topic:tarjan scc', kind: 'topic', weight: 1 },
+            { source: 'agent.commander', target: 'topic:tarjan scc', kind: 'topic', weight: 1 },
+            { source: 'agent.bridge_engineer', target: 'topic:bosphorus bridge', kind: 'topic', weight: 1 },
+            { source: 'agent.commander', target: 'topic:bosphorus bridge', kind: 'topic', weight: 1 }
+          ],
+          positions: {
+            'agent.commander': { x: width * 0.5, y: height * 0.45 },
+            'agent.bridge_engineer': { x: width * 0.25, y: height * 0.3 },
+            'agent.security_sentinel': { x: width * 0.75, y: height * 0.3 },
+            'agent.refactorer': { x: width * 0.28, y: height * 0.75 },
+            'agent.qa_inspector': { x: width * 0.72, y: height * 0.75 },
+            'topic:tarjan scc': { x: width * 0.38, y: height * 0.25 },
+            'topic:bosphorus bridge': { x: width * 0.38, y: height * 0.55 }
+          }
+        };
+      }
+
+      cachedGraphData = graph;
+
+      if (graph.positions) {
+        for (const [id, pin] of Object.entries(graphPinned)) {
+          if (graph.positions[id]) {
+            graph.positions[id] = { ...pin };
+          }
+        }
+      } else {
+        graph.positions = {};
+      }
+
+      const agentCount = graph.nodes.filter(n => n.kind === 'agent').length;
+      const messageCount = graph.edges.filter(e => e.kind === 'message').length;
+      const topicCount = graph.nodes.filter(n => n.kind === 'topic').length;
+      if (statBadge) {
+        statBadge.textContent = `${agentCount} ajan • ${messageCount} mesaj hattı • ${topicCount} paylaşılan konu`;
+      }
+
+      svg.innerHTML = `
+        <defs>
+          <filter id="glow-cyan" x="-20%" y="-20%" width="140%" height="140%">
+            <feGaussianBlur stdDeviation="3" result="blur" />
+            <feComposite in="SourceGraphic" in2="blur" operator="over" />
+          </filter>
+          <marker id="arrow-cyan" viewBox="0 -5 10 10" refX="26" refY="0" markerWidth="6" markerHeight="6" orient="auto">
+            <path d="M0,-5L10,0L0,5" fill="#00f0ff" opacity="0.8" />
+          </marker>
+        </defs>
+        <g id="svg-edges-layer"></g>
+        <g id="svg-nodes-layer"></g>
+      `;
+
+      const edgesLayer = svg.querySelector('#svg-edges-layer');
+      const nodesLayer = svg.querySelector('#svg-nodes-layer');
+
+      for (const e of graph.edges) {
+        const p1 = graph.positions[e.source];
+        const p2 = graph.positions[e.target];
+        if (!p1 || !p2) continue;
+
+        const isTopic = e.kind === 'topic';
+        const strokeColor = isTopic ? 'rgba(179,136,255,0.35)' : 'rgba(0,240,255,0.45)';
+        const strokeWidth = isTopic ? 1.2 : Math.min(4, 1.5 + (e.weight || 1) * 0.5);
+        const dashArray = isTopic ? '4,4' : 'none';
+
+        const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        line.setAttribute('x1', p1.x);
+        line.setAttribute('y1', p1.y);
+        line.setAttribute('x2', p2.x);
+        line.setAttribute('y2', p2.y);
+        line.setAttribute('stroke', strokeColor);
+        line.setAttribute('stroke-width', strokeWidth);
+        line.setAttribute('stroke-dasharray', dashArray);
+        if (!isTopic && e.dir === 'fwd') {
+          line.setAttribute('marker-end', 'url(#arrow-cyan)');
+        }
+        edgesLayer.appendChild(line);
+
+        if (!isTopic && e.weight > 1) {
+          const midX = (p1.x + p2.x) / 2;
+          const midY = (p1.y + p2.y) / 2;
+          const badge = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+          badge.setAttribute('x', midX);
+          badge.setAttribute('y', midY - 4);
+          badge.setAttribute('fill', '#00e676');
+          badge.setAttribute('font-size', '10px');
+          badge.setAttribute('font-family', 'monospace');
+          badge.setAttribute('font-weight', 'bold');
+          badge.setAttribute('text-anchor', 'middle');
+          badge.textContent = `${e.weight} msg [${e.lastAct || 'FIPA'}]`;
+          edgesLayer.appendChild(badge);
+        }
+      }
+
+      for (const n of graph.nodes) {
+        const p = graph.positions[n.id];
+        if (!p) continue;
+
+        const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+        g.setAttribute('transform', `translate(${p.x}, ${p.y})`);
+        g.setAttribute('cursor', 'pointer');
+        g.dataset.id = n.id;
+
+        if (n.kind === 'agent') {
+          const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+          circle.setAttribute('r', n.isCommander ? '24' : '20');
+          circle.setAttribute('fill', '#040711');
+          circle.setAttribute('stroke', n.color || '#00f0ff');
+          circle.setAttribute('stroke-width', n.isCommander ? '3' : '2');
+          if (n.status === 'working') {
+            circle.setAttribute('filter', 'url(#glow-cyan)');
+          }
+
+          const icon = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+          icon.setAttribute('text-anchor', 'middle');
+          icon.setAttribute('dominant-baseline', 'central');
+          icon.setAttribute('fill', '#fff');
+          icon.setAttribute('font-size', n.isCommander ? '16px' : '13px');
+          icon.textContent = n.isCommander ? '⚡' : '🤖';
+
+          const label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+          label.setAttribute('y', '32');
+          label.setAttribute('text-anchor', 'middle');
+          label.setAttribute('fill', '#e2e8f0');
+          label.setAttribute('font-size', '10px');
+          label.setAttribute('font-weight', '600');
+          label.setAttribute('font-family', 'sans-serif');
+          label.textContent = n.label;
+
+          g.appendChild(circle);
+          g.appendChild(icon);
+          g.appendChild(label);
+
+        } else if (n.kind === 'topic') {
+          const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+          const widthText = Math.max(60, n.label.length * 6.8 + 16);
+          rect.setAttribute('x', -widthText / 2);
+          rect.setAttribute('y', -12);
+          rect.setAttribute('width', widthText);
+          rect.setAttribute('height', '24');
+          rect.setAttribute('rx', '12');
+          rect.setAttribute('fill', 'rgba(179,136,255,0.15)');
+          rect.setAttribute('stroke', '#b388ff');
+          rect.setAttribute('stroke-width', '1.2');
+
+          const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+          text.setAttribute('text-anchor', 'middle');
+          text.setAttribute('dominant-baseline', 'central');
+          text.setAttribute('fill', '#d8b4fe');
+          text.setAttribute('font-size', '9.5px');
+          text.setAttribute('font-family', 'sans-serif');
+          text.textContent = `🧠 ${n.label}`;
+
+          g.appendChild(rect);
+          g.appendChild(text);
+
+        } else {
+          const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+          circle.setAttribute('r', '14');
+          circle.setAttribute('fill', '#1e293b');
+          circle.setAttribute('stroke', n.color || '#94a3b8');
+          circle.setAttribute('stroke-width', '1.5');
+          circle.setAttribute('stroke-dasharray', '3,3');
+
+          const label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+          label.setAttribute('y', '24');
+          label.setAttribute('text-anchor', 'middle');
+          label.setAttribute('fill', '#94a3b8');
+          label.setAttribute('font-size', '9px');
+          label.textContent = n.label;
+
+          g.appendChild(circle);
+          g.appendChild(label);
+        }
+
+        g.addEventListener('mouseenter', () => {
+          if (!tooltip) return;
+          tooltip.style.display = 'block';
+          tooltip.innerHTML = `
+            <div style="font-weight: 700; color: ${n.color || '#00f0ff'}; margin-bottom: 2px;">${escapeHtml(n.label)}</div>
+            <div style="font-size: 10px; color: var(--text-muted);">${n.kind === 'agent' ? `Rol: ${escapeHtml(n.role || 'Specialist')} • Durum: ${n.status || 'idle'}` : `Paylaşılan Bilgi • ${n.weight || 2} ajan tarafından biliniyor`}</div>
+            <div style="font-size: 9px; font-family: monospace; color: rgba(255,255,255,0.4); margin-top: 4px;">ID: ${escapeHtml(n.id)}</div>
+          `;
+          const svgBox = svg.getBoundingClientRect();
+          tooltip.style.left = `${Math.min(svgBox.width - 240, p.x + 20)}px`;
+          tooltip.style.top = `${Math.min(svgBox.height - 80, p.y - 10)}px`;
+        });
+
+        g.addEventListener('mouseleave', () => {
+          if (tooltip) tooltip.style.display = 'none';
+        });
+
+        let isDragging = false;
+        g.addEventListener('mousedown', (ev) => {
+          isDragging = true;
+          ev.stopPropagation();
+        });
+
+        svg.addEventListener('mousemove', (ev) => {
+          if (!isDragging) return;
+          const svgRect = svg.getBoundingClientRect();
+          const curX = Math.max(30, Math.min(svgRect.width - 30, ev.clientX - svgRect.left));
+          const curY = Math.max(30, Math.min(svgRect.height - 30, ev.clientY - svgRect.top));
+          graphPinned[n.id] = { x: curX, y: curY };
+          if (graph.positions[n.id]) {
+            graph.positions[n.id] = { x: curX, y: curY };
+          }
+          g.setAttribute('transform', `translate(${curX}, ${curY})`);
+        });
+
+        window.addEventListener('mouseup', () => {
+          if (isDragging) {
+            isDragging = false;
+            renderMemoryGraph();
+          }
+        });
+
+        nodesLayer.appendChild(g);
       }
     }
+
+    document.getElementById('graph-toggle-topics')?.addEventListener('change', () => {
+      renderMemoryGraph();
+    });
+
+    document.getElementById('btn-reset-graph')?.addEventListener('click', () => {
+      graphPinned = {};
+      renderMemoryGraph();
+    });
 
     btnOpenSwarm?.addEventListener('click', () => {
       swarmModal.style.display = 'flex';

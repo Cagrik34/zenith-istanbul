@@ -13,6 +13,8 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
+import { buildGraph, forceLayout } from './memory-graph.js';
+import { loadModelCatalog, validateModelId } from './model-catalog.js';
 
 /**
  * @typedef {'request' | 'inform' | 'propose' | 'query' | 'agree' | 'refuse' | 'done'} SwarmMessageAct
@@ -231,9 +233,9 @@ export class SwarmCoordinator {
     }
   }
 
-  createTask(title, description, assignee = 'agent.commander', priority = 'medium', dependsOn = []) {
+  createTask(title, description, assignee = 'agent.commander', priority = 'medium', dependsOn = [], customId = null) {
     const tasks = this.getTasks();
-    const id = `task_${Date.now()}_${crypto.randomBytes(3).toString('hex')}`;
+    const id = customId || `AKOM-${100 + tasks.length + 1}`;
     const newTask = {
       id,
       title,
@@ -241,7 +243,7 @@ export class SwarmCoordinator {
       assignee,
       status: 'todo',
       priority,
-      dependsOn,
+      dependsOn: Array.isArray(dependsOn) ? dependsOn : [],
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     };
@@ -673,6 +675,55 @@ export class SwarmCoordinator {
       requires_reply: true,
       needs_human: false
     });
+  }
+
+  /**
+   * Generates interactive memory and communication graph snapshot.
+   * Computes deterministic spring-force positions for UI visualization.
+   * @param {object} [opts]
+   * @returns {object}
+   */
+  getMemoryGraph(opts = {}) {
+    const registry = this.getRegistry();
+    const agents = Object.values(registry.agents || {});
+    const log = this.getRecentLogs(200);
+
+    const memories = {};
+    const agentsDir = path.join(this.swarmRoot, 'agents');
+    if (fs.existsSync(agentsDir)) {
+      for (const a of agents) {
+        const memPath = path.join(agentsDir, a.id, 'memory.md');
+        if (fs.existsSync(memPath)) {
+          try {
+            memories[a.id] = fs.readFileSync(memPath, 'utf8');
+          } catch (e) {}
+        }
+      }
+    }
+
+    const graphData = buildGraph(agents, log, {
+      showTopics: opts.showTopics !== false,
+      memories,
+      maxTopics: opts.maxTopics || 20
+    });
+
+    const positionsMap = forceLayout(graphData.nodes, graphData.edges, {
+      width: opts.width || 800,
+      height: opts.height || 500,
+      padding: opts.padding || 40,
+      iterations: opts.iterations || 260,
+      pinned: opts.pinned || {}
+    });
+
+    const positions = {};
+    for (const [id, pos] of positionsMap.entries()) {
+      positions[id] = { x: Math.round(pos.x * 10) / 10, y: Math.round(pos.y * 10) / 10 };
+    }
+
+    return {
+      ...graphData,
+      positions
+    };
   }
 
   /**

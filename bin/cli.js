@@ -21,6 +21,7 @@ import { AgentDispatcher } from '../src/agent/agent-dispatcher.js';
 import { DiffEngine } from '../src/agent/diff-engine.js';
 import { SwarmCoordinator } from '../src/agent/swarm-coordinator.js';
 import { HistoryStore } from '../src/core/history-store.js';
+import { loadModelCatalog, validateModelId } from '../src/agent/model-catalog.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -584,6 +585,33 @@ function runInteractiveServer() {
         const routed = swarm.drainOutbox();
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ success: true, routed }));
+      } catch (err) {
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ success: false, error: err.message }));
+      }
+      return;
+    }
+
+    if (req.method === 'GET' && pathname.startsWith('/api/swarm/graph')) {
+      try {
+        const urlObj = new URL(req.url, `http://${req.headers.host || 'localhost'}`);
+        const showTopics = urlObj.searchParams.get('topics') !== 'false';
+        const graph = swarm.getMemoryGraph({ width: 800, height: 480, showTopics });
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ success: true, graph }));
+      } catch (err) {
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ success: false, error: err.message }));
+      }
+      return;
+    }
+
+    if (req.method === 'GET' && pathname === '/api/models') {
+      try {
+        const cachePath = path.join(targetDir, '.zenith', 'cache', 'model-catalog.json');
+        const catalogRes = await loadModelCatalog(cachePath);
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ success: true, ...catalogRes }));
       } catch (err) {
         res.writeHead(500, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ success: false, error: err.message }));
