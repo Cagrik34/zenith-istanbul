@@ -457,6 +457,8 @@ function runInteractiveServer() {
   swarm.startHeartbeat(3000);
 
   const server = http.createServer(async (req, res) => {
+    const parsedUrl = new URL(req.url, `http://${req.headers.host || 'localhost'}`);
+    const pathname = parsedUrl.pathname;
     const originHeader = req.headers['origin'];
     if (originHeader && isAllowedLocalOrigin(req)) {
       res.setHeader('Access-Control-Allow-Origin', originHeader);
@@ -864,4 +866,16 @@ function runInteractiveServer() {
     const startCmd = process.platform === 'darwin' ? 'open' : process.platform === 'win32' ? 'start' : 'xdg-open';
     exec(`${startCmd} ${url}`);
   });
+
+  const gracefulShutdown = () => {
+    console.log('\n\x1b[33m🛑 Zenith Istanbul shutting down...\x1b[0m');
+    swarm.stopHeartbeat();
+    server.close(() => {
+      process.exit(0);
+    });
+    setTimeout(() => process.exit(0), 500).unref();
+  };
+
+  process.on('SIGINT', gracefulShutdown);
+  process.on('SIGTERM', gracefulShutdown);
 }
