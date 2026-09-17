@@ -278,16 +278,19 @@ function isPortInUse(port) {
 }
 
 /**
- * Cross-platform browser opener.
+ * Cross-platform browser opener with CI/headless detection and error safety.
  */
 function openBrowser(url) {
+  if (process.env.CI || !process.stdout?.isTTY) return;
   try {
     if (process.platform === 'win32') {
       exec(`start "" "${url}"`, { windowsHide: true });
     } else if (process.platform === 'darwin') {
-      spawn('open', [url], { stdio: 'ignore' });
+      const child = spawn('open', [url], { stdio: 'ignore' });
+      child.on('error', () => {});
     } else {
-      spawn('xdg-open', [url], { stdio: 'ignore' });
+      const child = spawn('xdg-open', [url], { stdio: 'ignore' });
+      child.on('error', () => {});
     }
   } catch (e) {}
 }
@@ -417,40 +420,49 @@ async function runInteractiveServer() {
   const inUse = await isPortInUse(PORT);
 
   if (inUse) {
-    console.log(`\n\x1b[33m⚠️  Port ${PORT} zaten kullanımda (çalışan bir süreç tespit edildi).\x1b[0m`);
-    console.log(`\x1b[90m👉 Nasıl devam etmek istersiniz?\x1b[0m`);
-    console.log(`   \x1b[32m[K / H]\x1b[0m Eski süreci sonlandır (kill et) ve ${PORT} portunda tertemiz başlat \x1b[36m(Önerilen)\x1b[0m`);
-    console.log(`   \x1b[33m[E]\x1b[0m     Mevcut çalışan web sayfasını tarayıcıda aç`);
-    console.log(`   \x1b[35m[Y]\x1b[0m     Eski süreci koru, yeni bir portta başlat`);
-
-    const answer = await promptUser(`\x1b[37mSeçiminiz [K / E / Y] (Varsayılan: K):\x1b[0m `);
-
-    if (answer === 'e' || answer === 'evet' || (answer.startsWith('y') && answer.length > 2)) {
-      const url = `http://localhost:${PORT}`;
-      console.log(`\n\x1b[32m✔ Mevcut sunucu web arayüzü tarayıcıda açılıyor:\x1b[0m \x1b[36m${url}\x1b[0m\n`);
-      openBrowser(url);
-      process.exit(0);
-    } else if (answer === 'y' || answer === 'yeni') {
-      console.log(`\n\x1b[36m🔄 Eski sürece dokunulmadı. Yeni sunucu için boş port aranıyor...\x1b[0m`);
+    if (process.env.CI || !process.stdin?.isTTY) {
+      console.log(`\n\x1b[36m🔄 [CI / Non-interactive] Port ${PORT} occupied. Finding next available port...\x1b[0m`);
       try {
         activePort = await findAvailablePort(PORT + 1);
       } catch (err) {
-        console.warn(`\x1b[33m[ZenithIstanbul]\x1b[0m Port arama uyarısı: ${err.message}. Port ${PORT + 1} deneniyor.`);
         activePort = PORT + 1;
       }
     } else {
-      // Default: 'k', 'h', empty string (Enter pressed) -> Kill old process & restart on PORT!
-      console.log(`\n\x1b[33m🛑 Port ${PORT}'deki eski süreç sonlandırılıyor...\x1b[0m`);
-      const killRes = await killProcessOnPort(PORT);
-      if (killRes.success) {
-        console.log(`\x1b[32m✔ Port ${PORT} başarıyla serbest bırakıldı (Sonlandırılan PID: ${killRes.pids.join(', ')}).\x1b[0m\n`);
-        activePort = PORT;
-      } else {
-        console.warn(`\x1b[33mℹ Süreç doğrudan sonlandırılamadı, alternatif boş port aranıyor...\x1b[0m`);
+      console.log(`\n\x1b[33m⚠️  Port ${PORT} zaten kullanımda (çalışan bir süreç tespit edildi).\x1b[0m`);
+      console.log(`\x1b[90m👉 Nasıl devam etmek istersiniz?\x1b[0m`);
+      console.log(`   \x1b[32m[K / H]\x1b[0m Eski süreci sonlandır (kill et) ve ${PORT} portunda tertemiz başlat \x1b[36m(Önerilen)\x1b[0m`);
+      console.log(`   \x1b[33m[E]\x1b[0m     Mevcut çalışan web sayfasını tarayıcıda aç`);
+      console.log(`   \x1b[35m[Y]\x1b[0m     Eski süreci koru, yeni bir portta başlat`);
+
+      const answer = await promptUser(`\x1b[37mSeçiminiz [K / E / Y] (Varsayılan: K):\x1b[0m `);
+
+      if (answer === 'e' || answer === 'evet' || (answer.startsWith('y') && answer.length > 2)) {
+        const url = `http://localhost:${PORT}`;
+        console.log(`\n\x1b[32m✔ Mevcut sunucu web arayüzü tarayıcıda açılıyor:\x1b[0m \x1b[36m${url}\x1b[0m\n`);
+        openBrowser(url);
+        process.exit(0);
+      } else if (answer === 'y' || answer === 'yeni') {
+        console.log(`\n\x1b[36m🔄 Eski sürece dokunulmadı. Yeni sunucu için boş port aranıyor...\x1b[0m`);
         try {
           activePort = await findAvailablePort(PORT + 1);
-        } catch (e) {
+        } catch (err) {
+          console.warn(`\x1b[33m[ZenithIstanbul]\x1b[0m Port arama uyarısı: ${err.message}. Port ${PORT + 1} deneniyor.`);
           activePort = PORT + 1;
+        }
+      } else {
+        // Default: 'k', 'h', empty string (Enter pressed) -> Kill old process & restart on PORT!
+        console.log(`\n\x1b[33m🛑 Port ${PORT}'deki eski süreç sonlandırılıyor...\x1b[0m`);
+        const killRes = await killProcessOnPort(PORT);
+        if (killRes.success) {
+          console.log(`\x1b[32m✔ Port ${PORT} başarıyla serbest bırakıldı (Sonlandırılan PID: ${killRes.pids.join(', ')}).\x1b[0m\n`);
+          activePort = PORT;
+        } else {
+          console.warn(`\x1b[33mℹ Süreç doğrudan sonlandırılamadı, alternatif boş port aranıyor...\x1b[0m`);
+          try {
+            activePort = await findAvailablePort(PORT + 1);
+          } catch (e) {
+            activePort = PORT + 1;
+          }
         }
       }
     }

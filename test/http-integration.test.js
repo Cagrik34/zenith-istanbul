@@ -150,11 +150,15 @@ test('HTTP Security Middleware & Primitives', async (t) => {
 
     const maliciousPaths = [
       '../../etc/passwd',
-      '..\\..\\windows\\system32',
       'sub/../../../secret.txt',
-      '/absolute/escape.txt',
-      'C:\\escaped.txt'
+      path.resolve(os.tmpdir(), '../escape.txt')
     ];
+
+    if (process.platform === 'win32') {
+      maliciousPaths.push('..\\..\\windows\\system32', 'C:\\escaped.txt');
+    } else {
+      maliciousPaths.push('/etc/shadow', '/var/log/syslog');
+    }
 
     for (const testPath of maliciousPaths) {
       const absPath = path.resolve(testDir, testPath);
@@ -162,7 +166,7 @@ test('HTTP Security Middleware & Primitives', async (t) => {
       assert.equal(isContained, false, `Path traversal attempt should be detected and blocked: ${testPath}`);
     }
 
-    const safePath = 'src/components/Button.tsx';
+    const safePath = path.join('src', 'components', 'Button.tsx');
     const safeAbs = path.resolve(testDir, safePath);
     assert.equal(safeAbs.startsWith(resolvedTarget + path.sep), true, 'Safe relative path should be contained');
 

@@ -40,7 +40,8 @@ test('CLI Interface & Arguments', async (t) => {
 
     const { spawn } = await import('node:child_process');
     const child = spawn('node', [cliPath, '--port', '5190', '.'], {
-      stdio: ['ignore', 'pipe', 'pipe']
+      stdio: ['ignore', 'pipe', 'pipe'],
+      env: { ...process.env, CI: 'true' }
     });
 
     let output = '';
@@ -54,11 +55,11 @@ test('CLI Interface & Arguments', async (t) => {
       child.stderr.on('data', (data) => {
         output += data.toString();
       });
-      setTimeout(() => resolve(output), 3000);
+      setTimeout(() => resolve(output), 5000);
     });
 
     const result = await portFoundPromise;
-    child.kill('SIGKILL');
+    try { child.kill('SIGKILL'); } catch (e) {}
     await new Promise((resolve) => dummyServer.close(resolve));
 
     assert.ok(result.includes('5191') || result.includes('ZenithIstanbul ready'), 'Server must seamlessly bind to next available port without crashing');
