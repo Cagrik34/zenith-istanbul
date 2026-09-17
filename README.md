@@ -1,50 +1,50 @@
 # Zenith Istanbul
 
-> **High-performance, 3D codebase topology metropole, Tarjan SCC cycle detector, and autonomous agent orchestration cockpit running 100% client-side with zero cloud dependencies.**
+> **Interactive 3D codebase topology visualizer, Tarjan SCC cycle detector, and architectural CI gatekeeper running 100% locally with zero external runtime dependencies.**
 
 [![CI Gatekeeper](https://img.shields.io/github/actions/workflow/status/Cagrik34/zenith-istanbul/zenith-gatekeeper.yml?branch=main&style=flat-square&label=CI%20Gatekeeper)](https://github.com/Cagrik34/zenith-istanbul/actions)
 [![Deploy Showcase](https://img.shields.io/github/actions/workflow/status/Cagrik34/zenith-istanbul/deploy-pages.yml?branch=main&style=flat-square&label=GitHub%20Pages)](https://cagrik34.github.io/zenith-istanbul/)
-[![Live Cockpit](https://img.shields.io/badge/Live%20Showcase-GitHub%20Pages-00f0ff.svg?style=flat-square)](https://cagrik34.github.io/zenith-istanbul/)
+[![Live Demo](https://img.shields.io/badge/Live%20Demo-GitHub%20Pages-00f0ff.svg?style=flat-square)](https://cagrik34.github.io/zenith-istanbul/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg?style=flat-square)](LICENSE)
 [![Node.js](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen.svg?style=flat-square)](https://nodejs.org)
-[![Zero CDN](https://img.shields.io/badge/Air--Gapped-100%25%20Offline-orange.svg?style=flat-square)](public/)
+[![Air-Gapped](https://img.shields.io/badge/Air--Gapped-100%25%20Offline-orange.svg?style=flat-square)](public/)
 
-[Live Showcase](https://cagrik34.github.io/zenith-istanbul/) • [Architecture](#architecture--data-flow) • [Engine Benchmarks](#-engine-benchmarks--verification) • [Core Capabilities](#-core-capabilities--subsystems) • [Getting Started](#-getting-started) • [Türkçe Dokümantasyon](README.tr.md)
+[Live Demo](https://cagrik34.github.io/zenith-istanbul/) • [Architecture](#architecture--data-flow) • [Engine Benchmarks](#-engine-benchmarks--verification) • [Core Capabilities](#-core-capabilities--subsystems) • [Getting Started](#-getting-started) • [Türkçe Dokümantasyon](README.tr.md)
 
 ---
 
 ## Executive Overview
 
-**Zenith Istanbul** is an open-source, high-performance 3D software architecture visualization studio, graph topology engine, and automated CI gatekeeper designed for software engineers, systems architects, and SRE teams managing complex microservices, full-stack monorepos, and distributed codebases.
+**Zenith Istanbul** is an open-source 3D software architecture visualization tool and automated CI gatekeeper. It statically analyzes JavaScript and TypeScript codebases, evaluates dependency topologies, detects circular dependencies using Tarjan's Strongly Connected Components (SCC) algorithm, audits architectural boundary rules against MITRE CWE standards, and renders modules as an interactive 3D urban environment modeled after the Istanbul Bosphorus.
 
-Operating under a strict **Zero-Cloud Client-Side Memory Architecture**, zero proprietary code, file tokens, or telemetry metrics are transmitted to external servers. Abstract Syntax Tree (AST) module parsing, Tarjan Strongly Connected Components (SCC) circular dependency solving, MITRE CWE security boundary analysis, deterministic Fruchterman–Reingold force-directed physics layout, and 60 FPS WebGL rendering execute entirely within local browser memory.
+All analysis runs **locally and offline**: AST parsing, cycle detection, security auditing, force-directed graph calculations, and WebGL rendering execute entirely within the local Node.js runtime and browser memory. No source code, tokens, or telemetry data are transmitted over the network.
 
-Zenith Istanbul procedurally projects modular code dependencies onto an authentic geospatial digital twin of the **Istanbul Bosphorus Metropole**:
-- **European Sector**: Client UI components, React/Vue frontends, and visualization layers situated across Galata, Beşiktaş, and Levent/Maslak.
-- **Historic Peninsula**: Foundational compilers, AST parsers, Tarjan graph solvers, and core entrypoints.
-- **Asian Sector**: High-throughput databases, cache layers, model registries, and autonomous agent swarms across Üsküdar, Kadıköy, and the Ataşehir International Financial Center (İFM).
-- **Bosphorus Strait & Maiden Tower**: Central HTTP security middleware, CSRF firewalls, and API gateways.
-- **Suspension Bridges**: Cross-boundary API ingress routes with real-time particle traffic indicating coupling density.
-- **Nakkaştepe Millet Bahçesi**: Authentic botanical topography, *"Uçan Yol"* cantilever viewing deck, and zero-collision parkland preserving architectural clarity.
+The codebase topology is mapped onto a geospatial metaphor:
+- **European Sector**: Client-side UI components, React/Vue views, and presentation modules (Galata, Beşiktaş, Levent/Maslak).
+- **Historic Peninsula**: Core compilers, AST parsers, and graph analysis engines (Sultanahmet, Eminönü).
+- **Asian Sector**: Backend services, database controllers, model registries, and local multi-agent ledgers (Üsküdar, Kadıköy, Ataşehir).
+- **Bosphorus Strait & Maiden Tower**: Central HTTP security middleware, CSRF firewall, and API gateway.
+- **Suspension Bridges**: Cross-boundary API communication routes linking client and backend modules. Real-time particle flow reflects coupling density.
+- **Nakkaştepe Parkland**: Topographical green space on the Asian hillside with spatial boundary isolation preventing building collisions.
 
 ---
 
 ## ⚡ Engine Benchmarks & Verification
 
-All computation modules, memory boundaries, and off-thread worker pipelines are validated by automated unit, integration, and CI gatekeeper tests (48/48 pass):
+All core modules and boundary conditions are verified by automated unit, integration, and CI gatekeeper tests (48/48 pass):
 
-| Subsystem / Module | Algorithm & Methodology | Verification Status | Execution Latency / Metric |
+| Subsystem / Module | Algorithm & Methodology | Verification Status | Latency / Metric |
 |---|---|:---:|:---:|
-| **AST Static Analysis Engine** | Non-destructive Regex & Module Import Lexer | **100% PASS** | `< 1.2ms` (per module) |
-| **Tarjan SCC Cycle Detector** | Stack-based Iterative DFS Strongly Connected Components ($O(V+E)$) | **100% PASS** | `< 0.25ms` (DAG Verified) |
-| **MITRE CWE Boundary Sentry** | Client/Server Boundary Auditing (CWE-668, CWE-200, CWE-798) | **100% PASS** | `0 Leaks` / Strict Compliance |
-| **3D Bosphorus Metropole Engine** | WebGL Three.js Hardware Canvas & PBR Shaders | **100% PASS** | `60 FPS` Locked |
-| **AKOM Autonomous Swarm** | Filesystem Mailbox Orchestration & Heartbeat Reflex Loop | **100% PASS** | Deterministic / `0 Race Conditions` |
-| **Interactive Memory Graph** | Deterministic Fruchterman–Reingold Force Simulation ($O(I \cdot (V^2+E))$) | **100% PASS** | `< 5.5ms` convergence |
-| **Shared Topic Extraction** | In-Memory Semantic Keyword & N-Gram Synthesizer | **100% PASS** | `< 0.15ms` |
-| **Local Telemetry Store** | Append-Only Architectural Drift Persistence (`.zenith/`) | **100% PASS** | `< 0.8ms` / snapshot |
-| **Headless CI Gatekeeper** | POSIX-Hygiene CLI & Automated Port Conflict Shift | **100% PASS** | Verified |
-| **Zero-Cloud Air-Gap** | Local-First Isolated Offline Execution & Zero CDN | **100% PASS** | `100% Offline Ready` |
+| **AST Static Analysis Engine** | Regex-based module lexer & dependency resolver | **100% PASS** | `< 1.2ms` (per module) |
+| **Tarjan SCC Cycle Detector** | Stack-based iterative DFS ($O(V + E)$) | **100% PASS** | `< 0.25ms` (DAG Verified) |
+| **MITRE CWE Boundary Sentry** | Boundary rule auditor (CWE-668, CWE-200, CWE-798) | **100% PASS** | `0 Violations` |
+| **3D Bosphorus Engine** | Three.js WebGL canvas with custom procedural shaders | **100% PASS** | `60 FPS` stable |
+| **AKOM Multi-Agent Coordinator** | Local filesystem mailbox protocol & heartbeat dispatcher | **100% PASS** | Deterministic dispatch |
+| **Memory Graph Layout** | Deterministic Fruchterman–Reingold force layout ($O(I \cdot (V^2 + E))$) | **100% PASS** | `< 5.5ms` convergence |
+| **Shared Topic Extraction** | In-memory lexical n-gram and keyword aggregator | **100% PASS** | `< 0.15ms` |
+| **Local Telemetry Store** | Append-only JSON ledger on local disk (`.zenith/`) | **100% PASS** | `< 0.8ms` / record |
+| **Headless CI Gatekeeper** | POSIX-compliant CLI with automatic port conflict shift | **100% PASS** | Verified |
+| **Zero-CDN Offline Setup** | Local Three.js r128 bundle & local WOFF2 variable fonts | **100% PASS** | `100% Offline Ready` |
 
 ---
 
@@ -52,88 +52,86 @@ All computation modules, memory boundaries, and off-thread worker pipelines are 
 
 ```mermaid
 flowchart TD
-    subgraph INGEST ["1. Static Ingestion Layer"]
+    subgraph INGEST ["1. Static Ingestion"]
         A[Local Repository / Drag & Drop / GitHub API] --> B[CodebaseParser - AST Static Lexer]
     end
 
-    subgraph ENGINE ["2. Graph-Theoretic & Security Solvers"]
+    subgraph SOLVERS ["2. Graph-Theoretic & Security Solvers"]
         B --> C[Tarjan SCC Solver\nCycle Detection O(V+E)]
         B --> D[Security Sentry\nMITRE CWE Boundary Auditing]
-        B --> E[Geospatial District Mapper\nEurope / Asia / Bosphorus]
-        C --> F[Traffic Coupling Engine\nTraffic Index Density Heuristic]
+        B --> E[District Mapper\nEurope / Historic / Asia / Bosphorus]
+        C --> F[Traffic Coupling Engine\nTraffic Index Density Calculation]
     end
 
     subgraph PRESENTATION ["3. Spatial & Telemetry Delivery"]
-        E --> G[Three.js 3D Metropole\nPBR Glass Skyscrapers & Nakkaştepe]
-        F --> H[Particle Ingress Physics\nBosphorus Suspension Bridge]
+        E --> G[Three.js 3D Viewport\nProcedural Buildings & Nakkaştepe]
+        F --> H[Bridge Particle Ingress\nCross-Boundary Coupling]
         C --> I[DiffEngine Contract Synthesizer\nUnified Git Diffs]
         D --> J[Telemetry HUD & Security Drawer\nReal-Time Sparklines]
     end
 
-    subgraph CI ["4. Headless Gatekeeper & Swarms"]
+    subgraph CI ["4. CI Gatekeeper & Local Agents"]
         F --> K[CLI Headless Gatekeeper\n--fail-on-cycle --fail-on-leak]
-        K --> L[Automated PR Markdown Comment\nGitHub Step Summary]
-        K --> M[AKOM Multi-Agent Swarm\nCommander & Engineer Reflexes]
+        K --> L[Automated PR Markdown Report\nGitHub Step Summary]
+        K --> M[AKOM Local Agent Orchestrator\nMailbox Coordination]
     end
 ```
 
-### Geospatial Sector Mapping Specification
+### Geospatial Mapping Reference
 
-Zenith Istanbul procedurally maps software architecture into recognizable urban topography:
-
-| Spatial Entity | Architectural Layer | Description |
+| Entity | Architectural Role | Description |
 |---|---|---|
-| **European Sector** | Frontend & UI Systems | Client modules, React/Vue components, DOM hooks situated in Galata, Beşiktaş, and Levent/Maslak. |
-| **Historic Peninsula** | Foundational Graph Core | AST parsers, Tarjan SCC solvers, compilers, and entrypoints rooted in Sultanahmet and Eminönü. |
-| **Asian Sector** | Backend, Data & Swarms | PostgreSQL/SQLite stores, history ledgers, model catalogs, and autonomous agent swarms in Üsküdar, Kadıköy, and Ataşehir İFM. |
-| **Bosphorus Strait & Maiden Tower** | HTTP Security & Middleware | Central API gateways, CSRF origin firewalls, CORS guards, and payload size sentries. |
-| **Suspension Bridges** | Cross-Boundary API Ingress | Ingress routes linking client components with server controllers across the Bosphorus. |
-| **Bridge Traffic Jams** | Cyclic Coupling (Tarjan SCC) | High-visibility red particle congestion visualizing circular dependency deadlocks. |
-| **Nakkaştepe Millet Bahçesi** | Botanical Parkland | Elevated Asian hillside with *"Uçan Yol"* cantilever observation deck, biological pond, and zero-collision park boundaries. |
-| **PBR Skyscrapers** | Software Modules | Height scales with lines of code (LOC); width scales with cyclomatic complexity; luminous office grids indicate active logic. |
-| **Offshore Bastions** | Isolated Subgraphs | Unreferenced or zero in-degree dead code modules requiring tree-shaking or refactoring. |
+| **European Sector** | Frontend & UI Layers | Client modules, React/Vue components, and DOM helpers in Galata, Beşiktaş, and Levent/Maslak. |
+| **Historic Peninsula** | Graph Analysis Core | AST parsers, Tarjan SCC solvers, and compilers positioned in Sultanahmet and Eminönü. |
+| **Asian Sector** | Backend & Local Storage | Database models, history stores, model registries, and local multi-agent ledgers in Üsküdar, Kadıköy, and Ataşehir. |
+| **Bosphorus Strait & Maiden Tower** | HTTP Security Middleware | Central API gateway, CSRF origin verification, CORS headers, and payload size sentries. |
+| **Suspension Bridges** | API Ingress Routes | Communication channels connecting frontend callers to backend route handlers. |
+| **Bridge Congestion** | Cyclic Invariants (Tarjan SCC) | Red particle accumulation highlighting circular dependency chains that violate DAG topology. |
+| **Nakkaştepe Parkland** | Preserved Green Area | Elevated terrain on the Asian bridgefoot with wooden viewing platform, biological pond, and strict boundary isolation. |
+| **Skyscrapers** | Software Modules | Height represents lines of code (LOC); base dimensions represent cyclomatic complexity; window patterns reflect internal logic density. |
+| **Offshore Bastions** | Isolated Modules | Unreferenced or zero in-degree modules identified for inspection or dead-code elimination. |
 
 ---
 
 ## 🚀 Core Capabilities & Subsystems
 
-### 1. 3D Bosphorus Codebase Metropole & Authentic Nakkaştepe
-- **Photorealistic Procedural Shading**: Glass curtain-wall facades featuring deep azure/cyan reflection gradients, warm interior illuminated office grids, structural corner pylons, neon wireframe silhouettes, and penthouse crown halos.
-- **Nakkaştepe Millet Bahçesi**: Authentic 8.5m elevated topography on the Asian bridgefoot with a 24-meter cantilever wooden *"Uçan Yol"* viewing balcony, arched biological pond bridge, umbrella pines, and Judas trees (*Erguvan*).
-- **Spatial Collision Protection**: The `isInPark` boundary engine guarantees zero ambient building overlap, preserving pristine natural parks and historical monuments.
+### 1. 3D Codebase Visualization & Nakkaştepe Parkland
+- **Procedural 3D Buildings**: Modules are represented as 3D structures with specular glass gradients, illuminated window grids, and corner edge geometry.
+- **Nakkaştepe Parkland**: Features an elevated hillside on the Asian shore, a cantilever wooden observation balcony (*"Uçan Yol"*), an arched footbridge over a biological pond, and native flora (Judas trees and stone pines).
+- **Collision Boundaries**: An `isInPark` boundary check enforces strict spatial separation, preventing procedural structures from overlapping with parkland coordinates.
 
-### 2. Tarjan SCC Cycle Detection & Contract Extraction
-- Stack-based iterative Tarjan algorithm runs in $O(V + E)$ time with zero external npm dependencies.
-- Identifies complex circular dependency chains (e.g., `A → B → C → A`) causing bundle bloat and memory leaks.
-- Automatically synthesizes decoupled TypeScript contract interfaces (`types/*.contract.ts`) and outputs standard Unified Git Diffs.
+### 2. Tarjan SCC Cycle Detection & Contract Decoupling
+- Evaluates strongly connected components in $O(V + E)$ time using an iterative, stack-based Tarjan algorithm with zero third-party dependencies.
+- Disentangles circular dependency chains (`A → B → C → A`) by synthesizing decoupled TypeScript contract interfaces (`types/*.contract.ts`).
+- Outputs standard Unified Git Diffs ready for review and patch application.
 
 $$\text{Traffic Index} = \min\left(100, \text{round}\left(\frac{|\text{SCC Edges}| \times 3 + |\text{Cross-Boundary Imports}|}{|\text{Total Edges}|} \times 100\right)\right)$$
 
 ### 3. Client-Side Security Boundary Sentry (MITRE CWE)
-- **CWE-668 / CWE-1061**: Detects backend packages (`fs`, `net`, `child_process`, ORMs) inadvertently imported into client-side bundles.
-- **CWE-200 / CWE-798**: Identifies hardcoded API tokens, private keys, AWS credentials, and exposed `.env` variables.
-- Outputs 1-indexed `file:line:col` coordinates for instant automated remediation.
+- **CWE-668 / CWE-1061**: Flags backend Node.js packages (`fs`, `net`, `child_process`, database drivers) imported into client-side bundles.
+- **CWE-200 / CWE-798**: Detects hardcoded credentials, cloud API keys, private keys, and exposed `.env` variables.
+- Provides 1-indexed `file:line:col` source coordinates for targeted remediation.
 
-### 4. AKOM Autonomous Multi-Agent SRE Swarm
-- Orchestrates 5 localized autonomous agents:
-  - 🛡️ **Başkomutan (agent.commander)**: System oversight, incident triage, and task dispatch.
-  - 🌉 **Boğaz Köprüsü Mühendisi (agent.bridge_engineer)**: Tarjan cycle resolution and contract extraction.
-  - 🔒 **Güvenlik Nöbetçisi (agent.security_sentinel)**: MITRE CWE auditing and credential redaction.
-  - ⚡ **Kod İyileştirme Uzmanı (agent.refactorer)**: AST optimization and complexity reduction.
-  - 🧪 **Kalite Güvence Müfettişi (agent.qa_inspector)**: Verification, test execution, and CI health checks.
-- Features resilient JSON string recovery (`repairLiteralLineBreaksInJsonStrings`), atomic filesystem mailbox protocols, broadcast fan-out filtering, and 5-tier cryptographic secret redaction.
+### 4. Local Multi-Agent Coordination (AKOM)
+- Coordinates 5 localized agents using an atomic filesystem mailbox protocol:
+  - `agent.commander`: Task routing, status tracking, and dispatching.
+  - `agent.bridge_engineer`: Tarjan cycle resolution and contract extraction.
+  - `agent.security_sentinel`: MITRE CWE audits and credential sanitization.
+  - `agent.refactorer`: AST transformations and complexity reduction.
+  - `agent.qa_inspector`: Automated test execution and verification.
+- Includes JSON syntax recovery for malformed multi-line strings, hop limit caps to prevent infinite dispatch loops, and five-tier secret redaction.
 
 ### 5. Interactive Memory & Knowledge Graph
 - Computes node equilibrium coordinates using a deterministic Fruchterman–Reingold spring-force layout algorithm ($O(I \cdot (V^2 + E))$).
-- Surfaces shared architectural topics across agent long-term memory streams without sending unredacted code to external embedding APIs.
+- Analyzes shared architectural concepts across local agent memory files without external network calls.
 - Full specification: [docs/MEMORY_GRAPH_SPEC.md](docs/MEMORY_GRAPH_SPEC.md).
 
-### 6. Headless CI Gatekeeper & Single-File HTML Reports
-- Enforces strict architectural gates directly in GitHub Actions workflows:
+### 6. Headless CI Gatekeeper & Standalone HTML Reports
+- Enforces architectural invariants directly in CI pipelines:
   ```bash
   node bin/cli.js --ci --fail-on-cycle --fail-on-leak .
   ```
-- Synthesizes standalone, self-contained single-file 3D HTML architectural reports for air-gapped distribution:
+- Generates self-contained, single-file 3D HTML reports for offline sharing:
   ```bash
   node bin/cli.js --export-html architecture-report.html .
   ```
@@ -144,29 +142,29 @@ $$\text{Traffic Index} = \min\left(100, \text{round}\left(\frac{|\text{SCC Edges
 
 | Shortcut | Action |
 |---|---|
-| **Left Click + Drag** | Orbit and rotate camera around the Istanbul Bosphorus |
-| **Right Click + Drag** | Pan camera across European and Asian sectors |
-| **Scroll Wheel** | Smooth zoom in / zoom out |
-| **`1`** | Focus Camera: **European Sector** (Galata, Beşiktaş & Levent) |
-| **`2`** | Focus Camera: **Asian Sector** (Üsküdar & Ataşehir İFM) |
-| **`3`** | Focus Camera: **Bosphorus Bridge & Strait Overview** |
-| **`4`** | Focus Camera: **Nakkaştepe Millet Bahçesi Viewpoint** |
-| **`Space`** | Toggle Day / Night lighting and neon metropolitan glow |
-| **`H`** | Toggle Architectural Telemetry HUD & Diagnostics Drawer |
-| **`Esc`** | Deselect active module / close modal drawers |
+| **Left Click + Drag** | Orbit camera around the 3D scene |
+| **Right Click + Drag** | Pan viewport across sectors |
+| **Scroll Wheel** | Zoom in / zoom out |
+| **`1`** | Focus: **European Sector** (Galata, Beşiktaş & Levent) |
+| **`2`** | Focus: **Asian Sector** (Üsküdar & Ataşehir) |
+| **`3`** | Focus: **Bosphorus Bridge & Strait Overview** |
+| **`4`** | Focus: **Nakkaştepe Parkland Viewpoint** |
+| **`Space`** | Toggle Day / Night lighting mode |
+| **`H`** | Toggle Telemetry HUD & Diagnostics Drawer |
+| **`Esc`** | Deselect active module / close open drawers |
 
 ---
 
 ## 🛠️ Getting Started
 
-### Live Showcase (No Installation Required)
+### Live Demo (No Installation Required)
 
-Access the production build directly in your browser with zero setup:  
+Access the WebGL application directly in your browser:  
 👉 **[https://cagrik34.github.io/zenith-istanbul/](https://cagrik34.github.io/zenith-istanbul/)**
 
-- **GitHub Ingest**: Enter any public repository (`owner/repo`, e.g., `expressjs/express`) to visualize its topology.
-- **Curated Scenarios**: Instantly inspect pre-configured architectural benchmarks (Cyclic Jam, Zenith Nexus, Vercel AI SDK).
-- **Directory Drag & Drop**: Drag local project folders directly into the WebGL viewport for local-first analysis.
+- **GitHub Ingestion**: Enter any public repository (`owner/repo`) to analyze and visualize its topology.
+- **Pre-configured Benchmarks**: Inspect sample architectures (Cyclic Dependency Jam, Zenith Nexus, Vercel AI SDK).
+- **Local Directory Drag & Drop**: Drag a source folder directly into the browser for local-first analysis.
 
 ---
 
@@ -177,14 +175,14 @@ Access the production build directly in your browser with zero setup:
 - **npm**: `v9.0.0+`
 
 ```bash
-# 1. Clone the repository
+# 1. Clone repository
 git clone https://github.com/Cagrik34/zenith-istanbul.git
 cd zenith-istanbul
 
-# 2. Launch interactive 3D visualizer on local codebase (zero npm install required)
+# 2. Start local visualizer on the current codebase (zero external npm dependencies)
 npm start
 
-# 3. Run full automated test suite & CI gatekeeper audit (48/48 tests)
+# 3. Run full automated test suite & CI gatekeeper audit (48 tests)
 npm test
 
 # 4. Run unit tests only
@@ -196,7 +194,7 @@ npm run test:gatekeeper
 
 ---
 
-### CLI Interface & Arguments
+### CLI Reference
 
 ```bash
 node bin/cli.js [options] [directory]
@@ -204,14 +202,14 @@ node bin/cli.js [options] [directory]
 
 | Option | Flag | Description |
 |---|---|---|
-| **Help Manual** | `-h, --help` | Display manual and CLI flag documentation. |
+| **Help** | `-h, --help` | Display manual and CLI flag documentation. |
 | **Version** | `-v, --version` | Output current semantic version number. |
-| **Headless CI** | `-c, --ci` | Execute static analysis and output telemetry without launching WebGL. |
-| **Fail on Cycle** | `--fail-on-cycle` | Exit with code 1 if Tarjan SCC circular dependencies are detected. |
-| **Fail on Leak** | `--fail-on-leak` | Exit with code 1 if MITRE CWE client-side security leaks are detected. |
-| **JSON Output** | `--json` | Output machine-readable architectural telemetry report in JSON. |
+| **Headless CI** | `-c, --ci` | Run static analysis and print telemetry without launching WebGL. |
+| **Fail on Cycle** | `--fail-on-cycle` | Exit with status 1 if circular dependencies are detected. |
+| **Fail on Leak** | `--fail-on-leak` | Exit with status 1 if MITRE CWE client-side security leaks are detected. |
+| **JSON Output** | `--json` | Output machine-readable telemetry report in JSON format. |
 | **Export HTML** | `--export-html <file>` | Synthesize self-contained single-file 3D HTML architectural report. |
-| **Custom Port** | `--port <number>` | Custom HTTP port for local telemetry server (default: `4173`). |
+| **Port** | `--port <number>` | Custom HTTP port for local telemetry server (default: `4173`). |
 
 ---
 
@@ -221,63 +219,63 @@ node bin/cli.js [options] [directory]
 zenith-istanbul/
 ├── .github/
 │   └── workflows/
-│       ├── deploy-pages.yml       # Automated GitHub Pages showcase deployment
+│       ├── deploy-pages.yml       # Automated GitHub Pages deployment
 │       └── zenith-gatekeeper.yml  # Headless architecture & security CI audit
 ├── assets/
-│   └── og-preview.jpg             # OpenGraph 3D metropole preview
+│   └── og-preview.jpg             # OpenGraph preview asset
 ├── bin/
-│   └── cli.js                     # Zenith Istanbul unified CLI, server & CI gatekeeper
+│   └── cli.js                     # Unified CLI, local server & CI gatekeeper
 ├── docs/
-│   ├── MEMORY_GRAPH_SPEC.md       # Force-directed memory graph specification
-│   └── SWARM_ARCHITECTURE.md      # AKOM multi-agent swarm architecture
+│   ├── MEMORY_GRAPH_SPEC.md       # Memory graph specification
+│   └── SWARM_ARCHITECTURE.md      # Local multi-agent architecture
 ├── public/                        # Zero-CDN offline client assets
 │   ├── css/                       # Modular design tokens, HUD, and layout styles
 │   ├── fonts/                     # Local WOFF2 fonts (Inter & JetBrains Mono)
 │   ├── js/                        # Client-side 3D Bosphorus engine & telemetry HUD
 │   │   ├── app.js                 # UI controller & GitHub repository ingest
 │   │   ├── bosphorus-scene.js     # Three.js 3D Istanbul Metropole & Nakkaştepe
-│   │   ├── samples.js             # Curated architectural benchmark models
-│   │   ├── traffic-hud.js         # Real-time telemetry HUD & glassmorphism
-│   │   └── traffic-particles.js   # 60 FPS Bosphorus traffic particle physics
-│   ├── vendor/three/              # Local Three.js r128 & OrbitControls (100% offline)
+│   │   ├── samples.js             # Pre-configured benchmark models
+│   │   ├── traffic-hud.js         # Real-time telemetry HUD
+│   │   └── traffic-particles.js   # Bosphorus particle traffic physics
+│   ├── vendor/three/              # Local Three.js r128 & OrbitControls (offline)
 │   ├── 404.html                   # SPA routing fallback for GitHub Pages
-│   └── index.html                 # Production WebGL application entry
+│   └── index.html                 # WebGL application entry
 ├── src/
-│   ├── agent/                     # AKOM Autonomous Multi-Agent Swarm
-│   │   ├── agent-dispatcher.js    # Task lifecycle & incident triage dispatch
-│   │   ├── diff-engine.js         # Unified git diff synthesizer & hunk generator
+│   ├── agent/                     # AKOM Local Multi-Agent Orchestrator
+│   │   ├── agent-dispatcher.js    # Task dispatching & status lifecycle
+│   │   ├── diff-engine.js         # Unified git diff synthesizer & hunk builder
 │   │   ├── memory-graph.js        # Deterministic Fruchterman-Reingold physics
-│   │   ├── model-catalog.js       # Dynamic provider catalog with input sanitization
-│   │   ├── swarm-coordinator.js   # Atomic filesystem mailbox protocol & rosters
+│   │   ├── model-catalog.js       # Model provider catalog with input sanitization
+│   │   ├── swarm-coordinator.js   # Filesystem mailbox protocol & rosters
 │   │   ├── swarm-messaging.js     # Message routing, hop caps & JSON string repair
-│   │   └── swarm-reflex.js        # Autonomic heartbeat loop & agent reflexes
-│   └── core/                      # Static Analysis & SRE Telemetry Primitives
+│   │   └── swarm-reflex.js        # Heartbeat loop & reflex handlers
+│   └── core/                      # Static Analysis & Telemetry Primitives
 │       ├── ast-parser.js          # AST lexer, complexity heuristic & district mapper
 │       ├── history-store.js       # Append-only architectural drift ledger (.zenith/)
-│       ├── http-middleware.js     # CSRF firewall, CORS policy & body limit sentry
+│       ├── http-middleware.js     # CSRF firewall, CORS policy & payload limit sentry
 │       ├── report-generator.js    # Automated PR markdown & JSON report builder
 │       ├── tarjan-scc.js          # Stack-based Tarjan SCC cycle detector (O(V+E))
-│       └── traffic-engine.js      # Graph-theoretic coupling & dead code solver
-├── test/                          # Comprehensive Node.js native test suite (48/48 pass)
-├── CHANGELOG.md                   # Semantic versioning & changelog history
+│       └── traffic-engine.js      # Graph coupling & dead-code detection
+├── test/                          # Node.js native test suite (48/48 pass)
+├── CHANGELOG.md                   # Versioning & changelog history
 ├── CONTRIBUTING.md                # Development guidelines & contribution protocol
 ├── LICENSE                        # MIT Open Source License
-├── package.json                   # Zero-runtime-dependency manifest & scripts
-├── README.md                      # Comprehensive English architectural documentation
-├── README.tr.md                   # Kapsamlı Türkçe mimari dokümantasyon
+├── package.json                   # Zero-runtime-dependency package manifest
+├── README.md                      # English documentation
+├── README.tr.md                   # Türkçe dokümantasyon
 └── tsconfig.json                  # Typecheck definitions & schema validations
 ```
 
 ---
 
-## 🔒 Security & Client-Side Privacy
+## 🔒 Security & Privacy
 
-- **Client-Side Execution**: All source code parsing, graph calculations, and telemetry stay strictly in browser memory. Zero code or metrics leave your local machine.
-- **Zero-CDN & Air-Gap Compliance**: Bundled with local Three.js r128 modules and local WOFF2 variable fonts (`Inter`, `JetBrains Mono`). Runs in fully air-gapped environments without internet access.
-- **Strict CSRF & Localhost Firewall**: Restricts state-mutating HTTP endpoints to validated localhost origins (`127.0.0.1`, `[::1]`) and rejects external cross-site requests (`Sec-Fetch-Site: cross-site`).
-- **Path Traversal & DoS Protection**: Hardened against directory traversal escapes via POSIX and Windows boundary checks, and enforces a strict 2 MiB payload ceiling.
-- **ReDoS Mitigation**: Bounded regular expressions and sanitized AST token extraction prevent catastrophic backtracking.
-- **Least-Privilege CI/CD**: GitHub Actions workflows run with minimal scoped permissions (`contents: read`, `pages: write`).
+- **Local Execution**: Code analysis, graph calculations, and telemetry metrics remain strictly in local memory. No source code leaves the machine.
+- **Zero-CDN Operation**: Bundles local Three.js r128 modules and local WOFF2 fonts (`Inter`, `JetBrains Mono`). Functions in fully air-gapped environments.
+- **Localhost CSRF Firewall**: Limits state-mutating HTTP endpoints to validated localhost origins (`127.0.0.1`, `[::1]`) and rejects cross-site requests (`Sec-Fetch-Site: cross-site`).
+- **Path Traversal & Payload Bounds**: Uses strict path containment checks across POSIX and Windows environments, enforcing a 2 MiB body payload ceiling.
+- **ReDoS Prevention**: Bounded regular expressions and input validation prevent catastrophic backtracking during AST parsing.
+- **Least-Privilege Workflows**: GitHub Actions workflows operate with minimal scoped permissions (`contents: read`, `pages: write`).
 
 ---
 
