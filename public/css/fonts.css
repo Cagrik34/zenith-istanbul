@@ -1,0 +1,26 @@
+/**
+ * ZenithIstanbul - Self-Hosted Offline Typography
+ * Zero-CDN variable Latin subsets with comprehensive system fallbacks.
+ */
+
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url('../fonts/jetbrains-mono-latin-var.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url('../fonts/inter-latin-var.woff2') format('woff2');
+}
+
+:root {
+  --font-sans: 'Space Grotesk', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Cascadia Code', 'Fira Code', Menlo, Monaco, Consolas, monospace;
+  --font-display: 'Cinzel', 'Times New Roman', Georgia, serif;
+}

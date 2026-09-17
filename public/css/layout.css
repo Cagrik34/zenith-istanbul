@@ -1,0 +1,552 @@
+/**
+ * ZenithIstanbul - Viewport & Responsive Layout
+ */
+:root {
+      --bg-dark: #060913;
+      --panel-bg: rgba(10, 16, 31, 0.84);
+      --panel-border: rgba(0, 240, 255, 0.25);
+      --accent-cyan: #00f0ff;
+      --accent-pink: #ff007f;
+      --accent-gold: #e5c07b;
+      --accent-red: #ff1744;
+      --accent-green: #00e676;
+      --text-main: #f0f4fc;
+      --text-muted: #8899b5;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body, html {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background-color: var(--bg-dark);
+      font-family: 'Space Grotesk', sans-serif;
+      color: var(--text-main);
+    }
+
+    #viewport-container {
+      width: 100vw;
+      height: 100vh;
+      position: absolute;
+      top: 0;
+      left: 0;
+      z-index: 1;
+    }
+
+    /* GLASSMORPHISM UI OVERLAY */
+    .ui-layer {
+      position: absolute;
+      z-index: 10;
+      pointer-events: none;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 16px 16px 32px 16px;
+      box-sizing: border-box;
+    }
+
+    .interactive {
+      pointer-events: auto;
+    }
+
+    /* MAIN WORKSPACE */
+    .workspace {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      flex: 1;
+      min-height: 0;
+      margin: 10px 0;
+      gap: 16px;
+      position: relative;
+    }
+
+    /* LEFT AKOM HUD & HUD PANEL STYLES */
+    .traffic-hud, .hud-panel {
+      width: 320px;
+      background: var(--panel-bg);
+      border: 1px solid var(--panel-border);
+      backdrop-filter: blur(16px);
+      border-radius: 14px;
+      padding: 16px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
+      display: flex !important;
+      flex-direction: column !important;
+      gap: 12px;
+      max-height: calc(100vh - 120px) !important;
+      overflow-y: auto !important;
+      overflow-x: hidden !important;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(0, 240, 255, 0.3) transparent;
+    }
+    .traffic-hud::-webkit-scrollbar, .hud-panel::-webkit-scrollbar {
+      width: 6px;
+    }
+    .traffic-hud::-webkit-scrollbar-track, .hud-panel::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    .traffic-hud::-webkit-scrollbar-thumb, .hud-panel::-webkit-scrollbar-thumb {
+      background: rgba(0, 240, 255, 0.3);
+      border-radius: 3px;
+    }
+
+    /* Sol Panel Metin Seçim Mavi Arka Plan Lekelerini ve Outlineları Kaldır */
+    .hud-panel *, .traffic-hud *, .brand-title, .gauge-card, .gauge-wrapper, .metric-box, .stat-card, #btn-dispatch-agent {
+      -webkit-user-select: none;
+      user-select: none;
+      outline: none !important;
+    }
+    /* Metin seçim arka planını sıfırla */
+    .hud-panel ::selection, .traffic-hud ::selection {
+      background: transparent !important;
+      color: inherit !important;
+    }
+
+    .hud-title {
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--accent-cyan);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .gauge-wrapper {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 10px 12px;
+      background: rgba(6, 11, 24, 0.7);
+      border-radius: 10px;
+      border: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    .gauge-dial {
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      border: 4px solid var(--accent-red);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--accent-red);
+      box-shadow: 0 0 16px rgba(255, 23, 68, 0.4);
+      transition: all 0.5s ease;
+    }
+
+    .gauge-info h3 {
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    .gauge-info p {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    .incident-alert {
+      background: rgba(255, 23, 68, 0.12);
+      border-left: 3px solid var(--accent-red);
+      padding: 10px 12px;
+      border-radius: 6px;
+      font-size: 11px;
+      line-height: 1.4;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .incident-alert .incident-title {
+      font-weight: 700;
+      color: var(--accent-red);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .btn-dispatch {
+      background: var(--accent-red);
+      color: white;
+      border: none;
+      padding: 7px 12px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      box-shadow: 0 0 14px rgba(255, 23, 68, 0.5);
+      transition: all 0.2s;
+    }
+
+    .btn-dispatch:hover {
+      background: #ff3d67;
+      transform: scale(1.02);
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .stat-card {
+      background: rgba(14, 23, 44, 0.7);
+      padding: 8px 10px;
+      border-radius: 8px;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .stat-card span {
+      font-size: 9px;
+      color: var(--text-muted);
+      display: block;
+      text-transform: uppercase;
+    }
+
+    .stat-card strong {
+      font-size: 15px;
+      color: var(--text-main);
+      margin-top: 2px;
+      display: block;
+    }
+
+    /* RIGHT INSPECTOR DRAWER */
+    .inspector-drawer {
+      width: 360px;
+      max-width: calc(100vw - 32px);
+      max-height: calc(100vh - 110px) !important;
+      background: var(--panel-bg);
+      border: 1px solid var(--panel-border);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-radius: 14px;
+      padding: 16px;
+      box-shadow: 0 16px 48px rgba(0, 0, 0, 0.7), 0 0 24px rgba(0, 240, 255, 0.15);
+      display: none; /* Tıklanınca flex olur */
+      flex-direction: column;
+      gap: 12px;
+      overflow-y: auto;
+      overflow-x: hidden;
+      position: relative;
+      z-index: 25;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(0, 240, 255, 0.35) transparent;
+      box-sizing: border-box;
+      animation: fadeInRight 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .inspector-drawer::-webkit-scrollbar {
+      width: 6px;
+    }
+    .inspector-drawer::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    .inspector-drawer::-webkit-scrollbar-thumb {
+      background: rgba(0, 240, 255, 0.3);
+      border-radius: 3px;
+    }
+
+    @keyframes fadeInRight {
+      from { opacity: 0; transform: translateX(20px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+
+    .inspector-header {
+      position: sticky;
+      top: -16px;
+      margin-top: -16px;
+      margin-left: -16px;
+      margin-right: -16px;
+      padding: 14px 16px 10px 16px;
+      background: var(--panel-bg);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      border-bottom: 1px solid var(--panel-border);
+      z-index: 10;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-top-left-radius: 14px;
+      border-top-right-radius: 14px;
+    }
+
+    .inspector-header h2 {
+      font-size: 13.5px;
+      font-weight: 700;
+      color: var(--accent-cyan);
+      word-break: break-all;
+      margin: 0;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .btn-close {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: var(--text-muted);
+      width: 26px;
+      height: 26px;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      flex-shrink: 0;
+    }
+
+    .btn-close:hover {
+      background: rgba(255, 23, 68, 0.25);
+      border-color: #ff1744;
+      color: #ff1744;
+      transform: scale(1.08);
+    }
+
+    .metric-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 11px;
+      padding: 5px 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+    }
+
+    .metric-row span {
+      color: var(--text-muted);
+    }
+
+    .badge-district {
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 6px;
+      border-radius: 4px;
+      text-transform: uppercase;
+    }
+
+    .blast-radius-box {
+      background: rgba(255, 0, 127, 0.1);
+      border: 1px solid rgba(255, 0, 127, 0.3);
+      padding: 10px;
+      border-radius: 8px;
+      font-size: 11px;
+    }
+
+    .blast-radius-box strong {
+      color: var(--accent-pink);
+      display: block;
+      margin-bottom: 4px;
+    }
+
+    .code-preview-box {
+      background: #040711;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 6px;
+      padding: 8px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      max-height: 140px;
+      overflow-y: auto;
+      color: #a4b3cc;
+      line-height: 1.4;
+      white-space: pre-wrap;
+    }
+
+    /* 2D AKOM RADAR MINIMAP (BOTTOM RIGHT) */
+    .radar-container {
+      position: absolute;
+      bottom: 38px;
+      right: 18px;
+      width: 190px;
+      background: var(--panel-bg);
+      border: 1px solid var(--panel-border);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border-radius: 12px;
+      padding: 10px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      z-index: 15;
+      transition: right 0.35s cubic-bezier(0.16, 1, 0.3, 1), bottom 0.25s ease, opacity 0.2s ease, transform 0.25s ease;
+    }
+
+    /* When Inspector Drawer is open on the right (360px), smoothly shift radar to the left */
+    body.has-inspector .radar-container,
+    .workspace.has-inspector .radar-container {
+      right: 396px !important; /* 360px drawer + 18px right margin + 18px gap */
+      bottom: 38px !important;
+    }
+
+    /* Collapsed state for radar minimap */
+    .radar-container.is-collapsed #radar-canvas,
+    .radar-container.is-collapsed .radar-nav-pills {
+      display: none !important;
+    }
+    .radar-container.is-collapsed {
+      padding: 6px 12px !important;
+      width: auto !important;
+    }
+
+    @media (max-width: 960px) {
+      body.has-inspector .radar-container,
+      .workspace.has-inspector .radar-container {
+        display: none !important; /* Narrow viewports: prevent clutter by hiding radar while inspecting */
+      }
+    }
+
+    .radar-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 10px;
+      font-weight: 700;
+      color: var(--accent-cyan);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    #radar-canvas {
+      width: 100%;
+      height: 110px;
+      background: #040814;
+      border: 1px solid rgba(0, 240, 255, 0.2);
+      border-radius: 6px;
+      cursor: crosshair;
+    }
+
+    .radar-nav-pills {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 4px;
+    }
+
+    .radar-pill {
+      background: rgba(14, 23, 44, 0.85);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      color: var(--text-main);
+      padding: 3px 6px;
+      border-radius: 4px;
+      font-size: 9px;
+      font-weight: 600;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .radar-pill:hover {
+      border-color: var(--accent-cyan);
+      background: rgba(0, 240, 255, 0.15);
+      color: #ffffff;
+    }
+
+    /* Breakpoint 0: <= 1680px (Optimal Desktop - Compact brand sub & inputs so all controls fit on standard 1080p scaled screens) */
+    @media (max-width: 1680px) {
+      .brand-sub, .brand-text p {
+        display: none !important;
+      }
+      #sample-select {
+        min-width: 175px !important;
+        flex: 0 1 185px !important;
+      }
+      #input-github-repo {
+        width: 145px !important;
+        flex: 0 1 145px !important;
+      }
+    }
+
+    /* Breakpoint 1: <= 1400px (Icon-only mode for secondary actions) */
+    @media (max-width: 1400px) {
+      .btn-label {
+        display: none !important;
+      }
+      .brand-text p {
+        display: none !important;
+      }
+      .search-box input {
+        width: 100% !important;
+        min-width: 0 !important;
+      }
+      .github-fetch-bar input {
+        width: 100% !important;
+        min-width: 0 !important;
+      }
+      #sample-select {
+        min-width: 160px !important;
+        flex: 0 1 170px !important;
+      }
+    }
+
+    /* Breakpoint 2: <= 1024px (Tablet / Compact Laptop) */
+    @media (max-width: 1024px) {
+      .github-fetch-bar input {
+        width: 100% !important;
+        min-width: 0 !important;
+      }
+      #sample-select {
+        min-width: 150px !important;
+        flex: 0 1 160px !important;
+      }
+      .brand-icon {
+        font-size: 18px !important;
+      }
+      .brand-text h1, .brand-title {
+        font-size: 13.5px !important;
+      }
+      #live-sse-indicator {
+        display: none !important;
+      }
+    }
+
+    /* Breakpoint 3: <= 768px (Mobile & Small Tablet - Zero Horizontal Scroll Guarantee) */
+    @media (max-width: 768px) {
+      .ui-layer {
+        padding: 6px !important;
+      }
+      header.top-bar {
+        padding: 4px 8px !important;
+        gap: 4px !important;
+      }
+      .toolbar-cluster-center {
+        display: none !important;
+      }
+      .secondary-action {
+        display: none !important;
+      }
+      #btn-toolbar-overflow {
+        display: inline-flex !important;
+      }
+      .workspace {
+        flex-direction: column !important;
+      }
+      .traffic-hud {
+        width: 100% !important;
+        max-width: 100% !important;
+      }
+    }
+
+  
+    @media (max-width: 480px) {
+      .export-popover {
+        min-width: 260px !important;
+        max-width: calc(100vw - 24px) !important;
+        right: 0 !important;
+      }
+    }

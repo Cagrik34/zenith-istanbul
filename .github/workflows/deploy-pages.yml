@@ -27,10 +27,18 @@ jobs:
       - name: Setup Pages
         uses: actions/configure-pages@v4
 
+      - name: Build Web Showcase Distribution
+        run: |
+          mkdir -p _site
+          cp -r public/* _site/
+          mkdir -p _site/src
+          cp -r src/core _site/src/
+          cp -r src/agent _site/src/
+
       - name: Upload Pages Artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: '.'
+          path: '_site'
 
       - name: Deploy to GitHub Pages
         id: deployment

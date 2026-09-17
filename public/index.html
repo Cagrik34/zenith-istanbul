@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🌉</text></svg>">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ZenithIstanbul — 3D Codebase Metropole, Tarjan SCC Cycle Detector & CI Gatekeeper</title>
+  <meta name="title" content="ZenithIstanbul — 3D Codebase Metropole & Architectural CI Gatekeeper">
+  <meta name="description" content="Transform codebases into an interactive 3D Istanbul metropole across the Bosphorus. Detect Tarjan SCC circular dependencies and block architectural drift with zero external dependencies.">
+  <meta name="keywords" content="threejs, codebase-visualizer, webgl, tarjan-scc, circular-dependency, architecture-gatekeeper, static-analysis, istanbul, software-architecture">
+  <meta name="author" content="Çağrı Giray KEŞAN">
+  <link rel="canonical" href="https://cagrik34.github.io/zenith-istanbul/">
+  <meta name="theme-color" content="#060913">
+
+  <!-- Open Graph / Facebook / LinkedIn -->
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://cagrik34.github.io/zenith-istanbul/">
+  <meta property="og:title" content="ZenithIstanbul — 3D Codebase Metropole & Architectural CI Gatekeeper">
+  <meta property="og:description" content="Transform codebases into an interactive 3D Istanbul metropole across the Bosphorus. Detect Tarjan SCC circular dependencies and block architectural drift with zero external dependencies.">
+  <meta property="og:image" content="https://cagrik34.github.io/zenith-istanbul/assets/og-preview.jpg">
+  <meta property="og:site_name" content="ZenithIstanbul">
+
+  <!-- Twitter -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:url" content="https://cagrik34.github.io/zenith-istanbul/">
+  <meta name="twitter:title" content="ZenithIstanbul — 3D Codebase Metropole & Architectural CI Gatekeeper">
+  <meta name="twitter:description" content="Transform codebases into an interactive 3D Istanbul metropole across the Bosphorus. Detect Tarjan SCC circular dependencies and block architectural drift with zero external dependencies.">
+  <meta name="twitter:image" content="https://cagrik34.github.io/zenith-istanbul/assets/og-preview.jpg">
+  <meta name="twitter:creator" content="@Cagrik34">
+  
+  <!-- Content Security Policy: Strict Self-Origin & Whitelisted Telemetry -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob:; connect-src 'self' https://api.github.com https://api.open-meteo.com;">
+  
+  <!-- Modular Self-Hosted Design System -->
+  <link rel="stylesheet" href="./css/fonts.css">
+  <link rel="stylesheet" href="./css/theme.css">
+  <link rel="stylesheet" href="./css/layout.css">
+  <link rel="stylesheet" href="./css/components.css">
+  <link rel="stylesheet" href="./css/terminal.css">
+</head>
+<body>
+
+  
+  <div id="viewport-container"></div>
+
+  
+  <div class="ui-layer">
+    
+    
+        <header class="top-bar interactive">
+      <!-- Sol Küme: Logo + Canlı Durum Rozeti -->
+      <div class="toolbar-cluster-left">
+        <div class="brand">
+          <div class="brand-icon">🌉</div>
+          <div class="brand-text">
+            <h1 class="brand-title" id="header-title">Zenithİstanbul</h1>
+            <p class="brand-sub">3D Codebase Topology & Architectural Telemetry</p>
+          </div>
+        </div>
+
+        <div id="live-sse-indicator" style="display: inline-flex; align-items: center; gap: 4px; font-size: 9px; color: var(--accent-green); background: rgba(0, 230, 118, 0.1); border: 1px solid rgba(0, 230, 118, 0.3); padding: 3px 6px; border-radius: 5px; white-space: nowrap;">
+          <span style="width: 5px; height: 5px; border-radius: 50%; background: var(--accent-green); box-shadow: 0 0 5px var(--accent-green);"></span>
+          <span>WEB SHOWCASE</span>
+        </div>
+      </div>
+
+      <!-- Orta Küme: Repo Ingest + Token + Senaryo + Klasör Aç -->
+      <div class="toolbar-cluster-center">
+        <div class="repo-input-wrapper" title="GitHub deposunu 3D metropole dönüştürün">
+          <input type="text" id="input-github-repo" placeholder="owner/repo (örn: expressjs/express)">
+          <button id="btn-fetch-github" class="btn-control btn-ingest">Ingest</button>
+          <button id="btn-open-pat-modal" class="btn-control" title="GitHub Personal Access Token (PAT)">🔑 Token</button>
+        </div>
+
+        <select id="sample-select" title="Örnek Senaryo Seçin">
+          <option value="circular-jam-demo">🚨 Cyclic Deadlock (Tarjan SCC)</option>
+          <option value="zenith-nexus">🌐 Zenith Nexus (Hybrid RAG)</option>
+          <option value="vercel-ai-sdk">▲ Vercel AI SDK (App Router)</option>
+        </select>
+
+        <input type="file" id="folder-input" webkitdirectory directory multiple style="display: none;">
+        <button id="btn-open-folder" class="btn-control btn-primary" title="Yerel Proje Klasörü Yükle">
+          <span class="btn-icon">📁</span> <span class="btn-label">Ingest Directory</span>
+        </button>
+      </div>
+
+      <!-- Sağ Küme: Arama + Rescan + PR Bot + Export Popover + Tur + Vapur + Ses + Tema + Mobil Menü -->
+      <div class="toolbar-cluster-right">
+        <div class="search-box" title="Modül veya semt ara">
+          <span class="search-icon" style="font-size: 11px; margin-right: 4px; pointer-events: none; user-select: none;">🔍</span>
+          <input type="text" id="input-search" placeholder="Search Module...">
+        </div>
+
+        <button id="btn-rescan-project" class="btn-control secondary-action" style="background: rgba(0, 240, 255, 0.12); border-color: var(--accent-cyan); color: var(--accent-cyan);" title="Rescan Local Project (Shortcut: R)">
+          <span class="btn-icon">🔄</span> <span class="btn-label">Rescan</span>
+        </button>
+
+        <button id="btn-copy-pr-comment" class="btn-control secondary-action" title="Copy PR Gatekeeper Status Markdown">
+          <span class="btn-icon">💬</span> <span class="btn-label">PR Bot</span>
+        </button>
+
+        <!-- Anchored Export Popover -->
+        <div class="export-dropdown-wrapper">
+          <button id="btn-download-report" class="btn-control btn-report" title="Mimari Rapor ve Şemaları Dışa Aktar">
+            <span class="btn-icon">📊</span> <span class="btn-label">Export</span> <span style="font-size: 8px; opacity: 0.8; margin-left: 2px;">▼</span>
+          </button>
+          <div id="export-menu-popover" class="export-popover" style="display: none;">
+            <div class="export-popover-header">
+              <span>📦 Mimari Dışa Aktarma</span>
+            </div>
+            <button class="export-popover-item" id="btn-export-md">
+              <span class="export-item-icon">📄</span>
+              <div class="export-item-text">
+                <strong>Markdown Telemetri Raporu (.md)</strong>
+                <small>Tarjan SCC, metrikler ve mimari sağlık denetimi</small>
+              </div>
+            </button>
+            <button class="export-popover-item" id="btn-export-svg">
+              <span class="export-item-icon">🗺️</span>
+              <div class="export-item-text">
+                <strong>2D Vektörel Mimari Şema (.svg)</strong>
+                <small>Semt blokları ve kavisli bağımlılık okları</small>
+              </div>
+            </button>
+            <div class="export-popover-divider"></div>
+            <button class="export-popover-item export-all" id="btn-export-all">
+              <span class="export-item-icon">📦</span>
+              <div class="export-item-text">
+                <strong>Hepsini İndir (İkisi Birden)</strong>
+                <small>400ms güvenlik gecikmesiyle tarayıcı uyarısız indirme</small>
+              </div>
+            </button>
+          </div>
+        </div>
+
+        <button id="btn-cinematic-tour" class="btn-control secondary-action" title="360° Boğaz Sinematik Sunum Turu">
+          <span class="btn-icon tour-icon">🎥</span> <span class="btn-label">360° Tur</span>
+        </button>
+
+        <button id="btn-open-swarm-deck" class="btn-control secondary-action" title="AKOM Otonom Ajan Koordinasyon Masası">
+          <span class="btn-icon">⚡</span> <span class="btn-label">AKOM Swarm</span>
+        </button>
+
+        <button id="btn-vapur-dudugu" class="btn-control secondary-action" title="Karaköy-Kadıköy Vapur Düdüğü & Martı Sesleri">
+          <span class="btn-icon">🚢</span> <span class="btn-label">Vapur</span>
+        </button>
+
+        <button id="btn-toggle-audio" class="btn-control secondary-action" title="Toggle Spatial Audio Synthesizer">
+          <span class="btn-icon" id="audio-icon">🔇</span> <span class="btn-label" id="audio-label">Audio: Off</span>
+        </button>
+
+        <button id="btn-toggle-theme" class="btn-control" title="Toggle Dark / Light Bosphorus Theme">
+          <span class="theme-icon">🌙</span> <span class="btn-label" id="theme-label">Dark</span>
+        </button>
+
+        <button id="btn-toggle-lang" class="btn-control" title="Toggle Language (EN / TR)">
+          <span class="btn-icon">🌐</span> <span class="btn-label" id="lang-label">EN</span>
+        </button>
+
+        <!-- Mobile Overflow Trigger -->
+        <button id="btn-toolbar-overflow" class="btn-control" style="display: none;" title="Ek Menü">
+          <span>⋮</span> <span style="font-size: 10px;">Menü</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Mobil Overflow Açılır Çekmecesi -->
+    <div id="mobile-overflow-drawer" class="mobile-overflow-drawer interactive" style="display: none;">
+      <div class="mobile-drawer-header">
+        <strong id="mobile-drawer-title">⚡ Hızlı Kontrol Menüsü</strong>
+        <button class="btn-close" id="btn-close-mobile-drawer">✕</button>
+      </div>
+      <div class="mobile-drawer-content">
+        <div class="mobile-group">
+          <label id="mobile-label-repo">GitHub Repository:</label>
+          <div style="display: flex; gap: 4px; margin-top: 4px;">
+            <input type="text" id="input-github-repo-mobile" placeholder="owner/repo" style="flex: 1; padding: 5px 8px; font-size: 11px; border-radius: 6px;">
+            <button id="btn-fetch-github-mobile" class="btn-control btn-primary" style="padding: 5px 10px;">Ingest</button>
+          </div>
+        </div>
+        <div class="mobile-group" style="margin-top: 8px;">
+          <label id="mobile-label-sample">Senaryo Seç:</label>
+          <select id="sample-select-mobile" style="width: 100%; margin-top: 4px; padding: 5px 8px;">
+            <option value="circular-jam-demo">🚨 Cyclic Deadlock Scenario</option>
+            <option value="zenith-nexus">🌐 Zenith Nexus Topology</option>
+            <option value="vercel-ai-sdk">▲ Vercel AI SDK Core</option>
+          </select>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 10px;">
+          <button id="btn-rescan-mobile" class="btn-control" style="text-align: left;">🔄 Rescan</button>
+          <button id="btn-swarm-mobile" class="btn-control" style="text-align: left; border-color: var(--accent-cyan); color: var(--accent-cyan);">⚡ AKOM Swarm</button>
+          <button id="btn-pr-bot-mobile" class="btn-control" style="text-align: left;">💬 PR Bot</button>
+          <button id="btn-tour-mobile" class="btn-control" style="text-align: left;">🎥 360° Tur</button>
+          <button id="btn-vapur-mobile" class="btn-control" style="text-align: left;">🚢 Vapur</button>
+          <button id="btn-audio-mobile" class="btn-control" style="text-align: left;">🔇 Ses Aç/Kapat</button>
+          <button id="btn-lang-mobile" class="btn-control" style="text-align: left;">🌐 Dil: EN</button>
+          <button id="btn-token-mobile" class="btn-control" style="text-align: left; grid-column: span 2;">🔑 GitHub PAT</button>
+        </div>
+      </div>
+    </div>
+
+    
+    <div class="workspace">
+      
+      
+      <aside class="traffic-hud hud-panel interactive">
+        <div class="hud-title">
+          <span>Architectural Telemetry & Topology HUD</span>
+          <span style="font-size: 9px; color: var(--accent-green);">● TELEMETRY LIVE</span>
+        </div>
+
+        
+        <div class="filter-group-wrapper">
+          <button id="btn-filter-all" class="btn-filter active">All</button>
+          <button id="btn-filter-cycles" class="btn-filter">🚨 SCC Cycles</button>
+          <button id="btn-filter-bridges" class="btn-filter">🌉 Ingress Bridges</button>
+        </div>
+
+        <div class="gauge-wrapper gauge-card">
+          <div class="gauge-dial" id="gauge-dial">%0</div>
+          <div class="gauge-info">
+            <h3 id="gauge-status-title">Topology Nominal</h3>
+            <p id="gauge-status-desc">Zero Cycle Invariants</p>
+          </div>
+        </div>
+
+        
+        <div class="weather-badge" id="akom-weather-badge">
+          <span id="weather-icon" style="font-size: 16px;">✨</span>
+          <div>
+            <div id="weather-title" style="font-weight: 700; color: var(--accent-cyan);">Atmospheric Telemetry</div>
+            <div id="weather-desc" style="color: var(--text-muted); font-size: 10px;">Istanbul (41.0082°N, 28.9784°E)</div>
+          </div>
+        </div>
+
+        
+        <div class="incident-alert" id="incident-box" style="display: none;">
+          <div class="incident-title">Cyclic Deadlock Detected (Tarjan SCC Invariant Violation)</div>
+          <div id="incident-desc">Directed acyclic graph invariant broken across ingress bridge modules.</div>
+          <button class="btn-dispatch" id="btn-dispatch-agent">
+            <span>Dispatch Autonomous Remediation Agent</span>
+          </button>
+        </div>
+
+        
+        <div class="incident-alert" id="security-alert-box" style="display: none; border-color: #ff9100; background: rgba(255, 145, 0, 0.1);">
+          <div class="incident-title" style="color: #ff9100;">Security Boundary Violation (CWE)</div>
+          <div id="security-alert-desc" style="color: #ffe0b2;">Client-side security boundary invariant violated (forbidden module or secret exposure).</div>
+        </div>
+
+        
+        <button id="btn-view-diff" class="btn-control btn-primary" style="display: none; width: 100%; margin-top: 4px; margin-bottom: 4px;">
+          View Remediation Diff
+        </button>
+
+        
+        <div class="stats-grid">
+          <div class="stat-card">
+            <span>Total Modules</span>
+            <strong id="stat-modules">0</strong>
+          </div>
+          <div class="stat-card">
+            <span>SCC Cycles</span>
+            <strong id="stat-cycles" style="color: var(--accent-red);">0</strong>
+          </div>
+          <div class="stat-card">
+            <span>Bridge Ingress</span>
+            <strong id="stat-bridges">0</strong>
+          </div>
+          <div class="stat-card">
+            <span>Security Leaks</span>
+            <strong id="stat-leaks" style="color: #ff9100;">0</strong>
+          </div>
+          <div class="stat-card">
+            <span>Isolated Subgraphs</span>
+            <strong id="stat-dead">0</strong>
+          </div>
+        </div>
+
+        
+        <div class="drift-panel" id="drift-panel" style="display: none !important;">
+          <div class="drift-header" id="drift-toggle-header">
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <span style="font-size: 11px; font-weight: 700; color: var(--accent-cyan);">Architecture Drift</span>
+              <span id="drift-badge-count" style="font-size: 9px; padding: 1px 5px; border-radius: 4px; background: rgba(0, 240, 255, 0.15); color: var(--accent-cyan); font-weight: 700;">0</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <button id="btn-snapshot-return" class="btn-control" style="display: none; font-size: 8px; padding: 2px 6px; background: rgba(0, 230, 118, 0.2); border-color: var(--accent-green); color: var(--accent-green);" title="Reset HUD to live telemetry">↩ Live</button>
+              <span id="drift-toggle-icon" style="font-size: 10px; color: var(--text-muted); transition: transform 0.2s;">▼</span>
+            </div>
+          </div>
+
+          <div class="drift-body" id="drift-body" style="display: none !important; margin-top: 8px;">
+            
+            <div id="drift-chart-container" class="drift-chart-wrapper" style="display: none !important; position: relative; width: 100%; height: 80px; background: rgba(6, 11, 24, 0.6); border: 1px solid rgba(255, 255, 255, 0.06); border-radius: 6px; overflow: hidden;">
+              <svg id="drift-svg" width="100%" height="100%" viewBox="0 0 280 80" preserveAspectRatio="none" style="display: block;"></svg>
+              <div id="drift-tooltip" style="display: none; position: absolute; background: rgba(6, 11, 24, 0.96); border: 1px solid var(--accent-cyan); border-radius: 6px; padding: 5px 8px; font-size: 10px; pointer-events: none; z-index: 50; box-shadow: 0 4px 16px rgba(0,0,0,0.6); min-width: 125px;"></div>
+            </div>
+
+            
+            <div style="display: flex; justify-content: space-between; font-size: 9px; color: var(--text-muted); margin: 6px 0; padding: 0 2px;">
+              <span style="display: inline-flex; align-items: center; gap: 4px;"><span style="width: 8px; height: 2px; background: var(--accent-cyan); display: inline-block; border-radius: 1px;"></span> Traffic Index</span>
+              <span style="display: inline-flex; align-items: center; gap: 4px;"><span style="width: 8px; height: 2px; background: var(--accent-red); display: inline-block; border-radius: 1px;"></span> Cyclic Deadlocks</span>
+            </div>
+
+            
+            <div id="drift-history-list" style="max-height: 90px; overflow-y: auto; display: flex; flex-direction: column; gap: 3px; padding-right: 2px;"></div>
+          </div>
+        </div>
+      </aside>
+
+      
+      <aside class="inspector-drawer interactive" id="inspector-drawer">
+        <div class="inspector-header">
+          <h2 id="inspect-name">Module</h2>
+          <button class="btn-close" id="btn-close-inspect">✕</button>
+        </div>
+
+        <div class="metric-row">
+          <span>Sector / District:</span>
+          <strong id="inspect-district" class="badge-district">-</strong>
+        </div>
+
+        <div class="metric-row">
+          <span>Lines of Code (LOC):</span>
+          <strong id="inspect-loc">-</strong>
+        </div>
+
+        <div class="metric-row">
+          <span>Cyclomatic Complexity:</span>
+          <strong id="inspect-complexity">-</strong>
+        </div>
+
+        <div class="metric-row">
+          <span>Code Health Score:</span>
+          <strong id="inspect-health">-</strong>
+        </div>
+
+        
+        <div class="blast-radius-box" id="inspect-blast-box">
+          <strong>Topological Blast Radius:</strong>
+          <div id="inspect-blast-desc">-</div>
+        </div>
+
+        
+        <div class="blast-radius-box" id="inspect-security-box" style="display: none; border-color: #ff9100; background: rgba(255, 145, 0, 0.12);">
+          <strong style="color: #ff9100;">Client-Side Security Boundary Violation (CWE):</strong>
+          <div id="inspect-security-desc" style="color: #ffe0b2; font-size: 11px; margin-top: 4px;">-</div>
+        </div>
+
+        
+        <div class="metric-row" style="flex-direction: column; gap: 4px;">
+          <span>AST Exported Signatures:</span>
+          <div id="inspect-functions" style="font-size: 10px; color: var(--accent-cyan); font-family: monospace;">-</div>
+        </div>
+
+        
+        <div class="metric-row" style="flex-direction: column; gap: 4px;">
+          <span>Source Code Buffer:</span>
+          <div class="code-preview-box" id="inspect-code-preview">// Loading module source...</div>
+        </div>
+      </aside>
+
+      
+      <div class="radar-container interactive" id="radar-container">
+        <div class="radar-header">
+          <div style="display: flex; align-items: center; gap: 6px;">
+            <span>Topological Sector Radar</span>
+            <span style="color: var(--accent-green); font-size: 8px;">● 360°</span>
+          </div>
+          <button id="btn-toggle-radar-collapse" class="btn-close" style="width: 18px; height: 18px; font-size: 10px; padding: 0; line-height: 1; border-radius: 4px;" title="Radar panelini daralt / genişlet">─</button>
+        </div>
+        <canvas id="radar-canvas" width="170" height="110"></canvas>
+        <div class="radar-nav-pills">
+          <div class="radar-pill" data-target="maslak">Maslak</div>
+          <div class="radar-pill" data-target="galata" style="color: #ffd700;">Galata</div>
+          <div class="radar-pill" data-target="maiden" style="color: #00ffff;">Kız Kulesi</div>
+          <div class="radar-pill" data-target="bridge-15temmuz" title="15 Temmuz Şehitler Köprüsü">15 Temmuz</div>
+          <div class="radar-pill" data-target="bridge-fsm" title="Fatih Sultan Mehmet Köprüsü">FSM</div>
+          <div class="radar-pill" data-target="bridge-yss" title="Yavuz Sultan Selim Köprüsü">YSS</div>
+          <div class="radar-pill" data-target="bridge-halic" title="Haliç Metro Köprüsü">Haliç</div>
+          <div class="radar-pill" data-target="bridge-galata" title="Tarihi Galata Köprüsü">Galata Kpr.</div>
+          <div class="radar-pill" data-target="kadikoy">Kadıköy</div>
+          <div class="radar-pill" data-target="historic">Historical</div>
+        </div>
+      </div>
+
+    </div>
+
+    
+    <div class="terminal-drawer terminal-bar interactive" id="terminal-drawer">
+      <div class="log-line header">🌉 [ZENITH-ISTANBUL] Telemetry Engine Online. Hardware-Accelerated WebGL Context Initialized.</div>
+      <div class="log-line info">📡 System operational. Streaming real-time telemetry, AST graph parsing, and autonomous agent dispatch bridge.</div>
+    </div>
+
+  </div>
+
+  
+  <div class="diff-modal-backdrop interactive" id="diff-modal">
+    <div class="diff-modal">
+      <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 12px; gap: 12px; flex-wrap: wrap;">
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <h2 style="font-size: 15px; color: var(--accent-cyan); margin: 0; font-weight: 700;">Remediation Patch Inspector (Myers Diff)</h2>
+          <span id="diff-stats-badge" style="display: inline-flex; gap: 6px; font-size: 11px; font-family: monospace;"></span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <div style="display: flex; background: rgba(0,0,0,0.4); border-radius: 6px; padding: 2px; border: 1px solid rgba(255,255,255,0.1);">
+            <button id="btn-diff-mode-split" style="background: var(--accent-cyan); color: #040711; border: none; padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: 700; cursor: pointer; transition: all 0.2s;">⊞ Split View</button>
+            <button id="btn-diff-mode-unified" style="background: transparent; color: var(--text-muted); border: none; padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: 700; cursor: pointer; transition: all 0.2s;">☰ Unified</button>
+          </div>
+          <button class="btn-close" id="btn-close-diff-modal">✕</button>
+        </div>
+      </div>
+      <div class="diff-viewer" id="diff-viewer-content"></div>
+      <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 12px; flex-wrap: wrap; gap: 10px;">
+        <div id="diff-engine-tag" style="font-size: 11px; font-family: monospace; color: var(--text-muted); display: flex; align-items: center; gap: 6px;">
+          <span>Engine:</span> <strong id="diff-engine-name" style="color: var(--accent-cyan);">DETERMINISTIC_MYERS_LCS</strong>
+        </div>
+        <div style="display: flex; justify-content: flex-end; gap: 10px; flex-wrap: wrap;">
+          <button id="btn-copy-diff" class="btn-control">📋 Copy Patch</button>
+          <button id="btn-download-patch" class="btn-control btn-primary">💾 Export .patch File</button>
+          <button id="btn-apply-patch-live" class="btn-control" style="background: linear-gradient(135deg, #00e676, #00f0ff); color: #060913; font-weight: 700; border: none; box-shadow: 0 0 16px rgba(0, 230, 118, 0.4);">🛠️ Apply Remediation Patch to Disk</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- AKOM Swarm Command Deck Modal -->
+  <div class="diff-modal-backdrop interactive" id="swarm-modal" style="display: none;">
+    <div class="diff-modal" style="width: 1080px; max-width: 95vw; height: 85vh; max-height: 85vh; display: flex; flex-direction: column;">
+      <!-- Header -->
+      <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 12px; flex-wrap: wrap; gap: 10px;">
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <div style="width: 34px; height: 34px; border-radius: 8px; background: linear-gradient(135deg, #00f0ff, #7928ca); display: flex; align-items: center; justify-content: center; font-size: 18px; box-shadow: 0 0 16px rgba(0, 240, 255, 0.4);">⚡</div>
+          <div>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <h2 style="font-size: 15px; color: #fff; margin: 0; font-weight: 700; letter-spacing: 0.5px;">AKOM Autonomous SRE Swarm Ops Deck</h2>
+              <span id="swarm-live-pulse" style="display: inline-flex; align-items: center; gap: 4px; font-size: 9px; font-family: monospace; background: rgba(0,230,118,0.12); color: #00e676; border: 1px solid rgba(0,230,118,0.3); padding: 2px 7px; border-radius: 10px;">
+                <span style="width: 5px; height: 5px; border-radius: 50%; background: #00e676; box-shadow: 0 0 6px #00e676;"></span> CANLI AKIŞ (LIVE)
+              </span>
+            </div>
+            <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">5 Specialized Autonomous Agents • FIPA-Lite Inbox Routing • Shared Blackboard • Task Ledger</div>
+          </div>
+        </div>
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <button id="btn-swarm-refresh" class="btn-control" style="font-size: 11px; padding: 5px 12px;">🔄 Refresh State</button>
+          <button class="btn-close" id="btn-close-swarm-modal">✕</button>
+        </div>
+      </div>
+
+      <!-- Navigation Tabs -->
+      <div style="display: flex; gap: 8px; border-bottom: 1px solid rgba(255,255,255,0.06); padding: 8px 0; overflow-x: auto;">
+        <button id="swarm-tab-roster" class="swarm-tab-btn" style="background: var(--accent-cyan); color: #040711; border: none; padding: 6px 14px; border-radius: 6px; font-size: 11px; font-weight: 700; cursor: pointer;">👥 Agent Roster (5)</button>
+        <button id="swarm-tab-tasks" class="swarm-tab-btn" style="background: transparent; color: var(--text-muted); border: 1px solid rgba(255,255,255,0.1); padding: 6px 14px; border-radius: 6px; font-size: 11px; font-weight: 700; cursor: pointer;">📋 Task Ledger</button>
+        <button id="swarm-tab-board" class="swarm-tab-btn" style="background: transparent; color: var(--text-muted); border: 1px solid rgba(255,255,255,0.1); padding: 6px 14px; border-radius: 6px; font-size: 11px; font-weight: 700; cursor: pointer;">📝 Shared Blackboard</button>
+        <button id="swarm-tab-feed" class="swarm-tab-btn" style="background: transparent; color: var(--text-muted); border: 1px solid rgba(255,255,255,0.1); padding: 6px 14px; border-radius: 6px; font-size: 11px; font-weight: 700; cursor: pointer;">📡 Inter-Agent Activity</button>
+        <button id="swarm-tab-graph" class="swarm-tab-btn" style="background: transparent; color: var(--text-muted); border: 1px solid rgba(255,255,255,0.1); padding: 6px 14px; border-radius: 6px; font-size: 11px; font-weight: 700; cursor: pointer;">🧠 Memory Graph</button>
+      </div>
+
+      <!-- Tab Contents -->
+      <div id="swarm-tab-content-roster" class="swarm-tab-pane" style="flex: 1; overflow-y: auto; padding: 14px 4px;">
+        <div id="swarm-roster-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 14px;"></div>
+      </div>
+
+      <div id="swarm-tab-content-tasks" class="swarm-tab-pane" style="display: none; flex: 1; overflow-y: auto; padding: 14px 4px;">
+        <div id="swarm-tasks-list" style="display: flex; flex-direction: column; gap: 10px;"></div>
+      </div>
+
+      <div id="swarm-tab-content-board" class="swarm-tab-pane" style="display: none; flex: 1; overflow-y: auto; padding: 14px 4px;">
+        <pre id="swarm-board-content" style="background: #040711; border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 16px; font-family: 'JetBrains Mono', monospace; font-size: 11px; line-height: 1.6; color: #e2e8f0; white-space: pre-wrap; margin: 0;"></pre>
+      </div>
+
+      <div id="swarm-tab-content-feed" class="swarm-tab-pane" style="display: none; flex: 1; overflow-y: auto; padding: 14px 4px;">
+        <div id="swarm-feed-list" style="display: flex; flex-direction: column; gap: 8px; font-family: 'JetBrains Mono', monospace; font-size: 11px;"></div>
+      </div>
+
+      <div id="swarm-tab-content-graph" class="swarm-tab-pane" style="display: none; flex: 1; flex-direction: column; gap: 8px; overflow: hidden; padding: 6px 0;">
+        <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06); padding: 6px 12px; border-radius: 6px; font-size: 11px;">
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; color: #fff;">
+              <input type="checkbox" id="graph-toggle-topics" checked style="accent-color: var(--accent-cyan);">
+              <span>Ortak Konuları Göster (Shared Knowledge Topics)</span>
+            </label>
+            <span id="graph-stat-badge" style="color: var(--text-muted); font-family: monospace;">5 ajan • 0 mesaj kenarı</span>
+          </div>
+          <button id="btn-reset-graph" class="btn-control" style="font-size: 10px; padding: 3px 8px;">🔄 Düzeni Sıfırla (Reset Physics)</button>
+        </div>
+        <div style="flex: 1; position: relative; min-height: 380px; border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; overflow: hidden; background: #02040a;">
+          <svg id="swarm-memory-svg" width="100%" height="100%" style="width: 100%; height: 100%; user-select: none; cursor: grab;"></svg>
+          <div id="graph-tooltip" style="display: none; position: absolute; background: rgba(4,7,17,0.95); border: 1px solid var(--accent-cyan); border-radius: 6px; padding: 8px 12px; font-size: 11px; color: #fff; pointer-events: none; z-index: 20; box-shadow: 0 4px 16px rgba(0,0,0,0.8); max-width: 260px;"></div>
+        </div>
+      </div>
+
+      <!-- Footer -->
+      <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 12px; flex-wrap: wrap; gap: 10px;">
+        <div style="font-size: 11px; color: var(--text-muted); font-family: monospace;">
+          <span>State:</span> <strong style="color: #00e676;">● SWARM_NOMINAL</strong> • Mailbox: <span id="swarm-mailbox-stat" style="color: var(--accent-cyan);">Ready</span>
+        </div>
+        <div style="display: flex; gap: 10px;">
+          <button id="btn-swarm-pump" class="btn-control">📬 Pump Mailboxes</button>
+          <button id="btn-swarm-simulate" class="btn-control btn-primary">⚡ Dispatch Crisis Drill</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  
+  <!-- Protocol Diagnostic & File:/// Protocol Shield -->
+  <script>
+    (function() {
+      if (window.location.protocol === 'file:') {
+        window.addEventListener('DOMContentLoaded', function() {
+          var container = document.getElementById('viewport-container');
+          if (container) {
+            container.innerHTML = '<div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);max-width:560px;width:90%;background:rgba(6,11,24,0.95);border:2px solid #ff1744;border-radius:14px;padding:28px;box-shadow:0 0 40px rgba(255,23,68,0.35);text-align:center;font-family:system-ui,-apple-system,sans-serif;color:#f8fafc;z-index:9999;backdrop-filter:blur(12px);">' +
+              '<div style="font-size:42px;margin-bottom:12px;">⚠️</div>' +
+              '<h2 style="font-size:17px;color:#ff5252;margin:0 0 10px 0;font-weight:800;letter-spacing:0.5px;">LOCAL FILE PROTOCOL (CORS) ENGELİ</h2>' +
+              '<p style="font-size:12px;color:#94a3b8;line-height:1.6;margin-bottom:18px;">Modern tarayıcılar (Chrome, Edge, Brave), <code>file:///</code> protokolü üzerinden yerel ES modüllerinin (<code>import/export</code>) yüklenmesini güvenlik gerekçesiyle engeller. Bu nedenle 3D sahne ve telemetri motoru doğrudan dosya çift tıklamasıyla çalışamaz.</p>' +
+              '<div style="background:rgba(15,23,42,0.85);border:1px solid rgba(0,240,255,0.25);border-radius:8px;padding:14px;text-align:left;margin-bottom:18px;">' +
+                '<div style="font-size:11px;color:#00f0ff;font-weight:700;margin-bottom:6px;">🚀 ÇÖZÜM YÖNTEMLERİ:</div>' +
+                '<div style="font-size:12px;color:#e2e8f0;line-height:1.7;">' +
+                  '<strong>1. Yerel Geliştirme Sunucusu (Önerilen):</strong><br>' +
+                  'Terminalde <code>npm start</code> çalıştırın (Otomatik olarak <code>http://localhost:4173</code> adresini açar).<br><br>' +
+                  '<strong>2. Doğrudan Canlı Web Sürümü:</strong><br>' +
+                  '<a href="https://cagrik34.github.io/zenith-istanbul/" target="_blank" style="color:#00e676;font-weight:700;text-decoration:underline;">cagrik34.github.io/zenith-istanbul</a>' +
+                '</div>' +
+              '</div>' +
+              '<a href="https://cagrik34.github.io/zenith-istanbul/" target="_blank" style="display:inline-block;background:linear-gradient(135deg,#00f0ff,#00e676);color:#060913;font-weight:800;font-size:12px;padding:10px 22px;border-radius:6px;text-decoration:none;box-shadow:0 0 18px rgba(0,240,255,0.4);">🌐 Canlı Web Showcase\'i Aç</a>' +
+            '</div>';
+          }
+          var terminal = document.getElementById('terminal-drawer');
+          if (terminal) {
+            var errLine = document.createElement('div');
+            errLine.className = 'log-line error';
+            errLine.style.color = '#ff1744';
+            errLine.style.fontWeight = '700';
+            errLine.textContent = '🚨 [CORS ENGELİ] "file://" protokolünde ES Modülleri çalıştırılamaz. Lütfen terminalden "npm start" çalıştırın veya GitHub Pages canlı sürümünü açın.';
+            terminal.appendChild(errLine);
+          }
+        });
+      }
+    })();
+  </script>
+  <!-- Main Application Orchestrator (ES Module) -->
+  <script type="module" src="./js/app.js"></script>
+  <div id="building-tooltip"></div>
+
+  <!-- GitHub PAT Modal -->
+  <div id="modal-github-pat" class="modal-overlay" style="display: none;">
+    <div class="modal-card" style="max-width: 480px; width: 90%;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+        <h2 style="font-size: 16px; color: var(--accent-cyan); margin: 0; display: flex; align-items: center; gap: 8px;">
+          <span>🔑</span> <span>GitHub Personal Access Token (PAT)</span>
+        </h2>
+        <button class="btn-close" id="btn-close-pat-modal">✕</button>
+      </div>
+      <p style="font-size: 12px; color: var(--text-muted); line-height: 1.5; margin-bottom: 14px;">
+        GitHub API anonim kullanıcılara saatte sadece 60 istek sınırı uygular. Kişisel erişim belirtecinizi (PAT) girerek <strong>saatte 5.000 istek kotasıyla</strong> büyük depoları derinlemesine tarayabilirsiniz. Token yalnızca tarayıcınızın yerel belleğinde saklanır.
+      </p>
+      <div style="margin-bottom: 16px;">
+        <label style="display: block; font-size: 11px; font-weight: 600; color: var(--text-main); margin-bottom: 6px;">GitHub Token (Classic veya Fine-grained):</label>
+        <input type="password" id="input-github-pat" placeholder="ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" style="width: 100%; padding: 8px 12px; border-radius: 6px; font-family: monospace; font-size: 12px; box-sizing: border-box;">
+      </div>
+      <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px;">
+        <button id="btn-clear-pat" class="btn-control" style="border-color: var(--accent-red); color: var(--accent-red);">🗑️ Token'ı Temizle</button>
+        <div style="display: flex; gap: 8px;">
+          <button id="btn-close-pat-modal-btn" class="btn-control">Vazgeç</button>
+          <button id="btn-save-pat" class="btn-control btn-primary">💾 Kaydet</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</body>
+</html>

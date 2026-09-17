@@ -26,7 +26,7 @@ Thank you for your interest in contributing to **ZenithIstanbul**! We welcome ar
 
 ## Architectural Principles
 
-1. **Zero External Runtime Dependencies**: All AST parsing, Tarjan SCC graph algorithms, and CLI serving use native Node.js core modules. Three.js is consumed directly via standard ESM CDN in the browser.
+1. **Zero External Runtime Dependencies & 100% Offline Autonomy**: All AST parsing, Tarjan SCC graph algorithms, and CLI serving use native Node.js core modules. The 3D client uses self-hosted variable typography and local Three.js ESM runtime with zero external CDN requests.
 2. **Deterministic Graph Theory**: Tarjan SCC runs in $O(V + E)$ stack-based iterative DFS to avoid call stack overflow on large monorepos.
 3. **Cross-Platform POSIX Hygiene**: Always normalize file paths with forward slashes (`/`).
 

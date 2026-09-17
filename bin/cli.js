@@ -10,11 +10,13 @@
  * Zero dependencies, cross-platform POSIX path hygiene.
  */
 
-import http from 'http';
-import fs from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
-import { spawn, exec } from 'child_process';
+import http from 'node:http';
+import net from 'node:net';
+import readline from 'node:readline';
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { spawn, exec } from 'node:child_process';
 import { CodebaseParser } from '../src/core/ast-parser.js';
 import { TrafficEngine } from '../src/core/traffic-engine.js';
 import { AgentDispatcher } from '../src/agent/agent-dispatcher.js';
@@ -22,6 +24,15 @@ import { DiffEngine } from '../src/agent/diff-engine.js';
 import { SwarmCoordinator } from '../src/agent/swarm-coordinator.js';
 import { HistoryStore } from '../src/core/history-store.js';
 import { loadModelCatalog, validateModelId } from '../src/agent/model-catalog.js';
+import {
+  MAX_BODY_BYTES,
+  MIME_TYPES,
+  readBodyWithLimit,
+  isAllowedLocalOrigin as _isAllowedLocalOrigin,
+  setCorsHeaders,
+  sendPayloadTooLarge,
+  sendCsrfForbidden
+} from '../src/core/http-middleware.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -118,7 +129,7 @@ function scanAndParseDirectory(dir) {
       const relativePath = path.relative(dir, fullPath).replace(/\\/g, '/');
 
       if (entry.isDirectory()) {
-        if (!['node_modules', '.git', 'dist', 'build', '.next', '.turbo', '.idea', 'coverage', '.cache', '.zenith', 'test', 'tests', '__tests__'].includes(entry.name)) {
+        if (!['node_modules', '.git', 'dist', 'build', '.next', '.turbo', '.idea', 'coverage', '.cache', '.zenith', 'vendor', 'test', 'tests', '__tests__'].includes(entry.name)) {
           scan(fullPath);
         }
       } else if (entry.isFile() && parser.isAuditableFile(relativePath)) {
@@ -158,7 +169,9 @@ function runExportHtml() {
   console.log(`\x1b[36m[ZenithIstanbul]\x1b[0m Scanning "${posixTargetDir}" and synthesizing standalone 3D HTML telemetry report...`);
   const parsedModules = scanAndParseDirectory(targetDir);
 
-  const templatePath = path.join(projectRoot, 'index.html');
+  const templatePath = fs.existsSync(path.join(projectRoot, 'public', 'index.html'))
+    ? path.join(projectRoot, 'public', 'index.html')
+    : path.join(projectRoot, 'index.html');
   let htmlContent = fs.readFileSync(templatePath, 'utf8');
 
   const injection = `<script>window.__ZENITH_EMBEDDED_MODULES__ = ${JSON.stringify(parsedModules)};</script>\n</head>`;
@@ -230,60 +243,220 @@ async function runHeadlessCI() {
 }
 
 /**
- * Strict Localhost CSRF Firewall
- * Parses Origin and Referer directly with new URL() and strictly enforces:
- * parsed.hostname === 'localhost' || parsed.hostname === '127.0.0.1'
- * Rejects any external web-origin requests (Drive-by RCE protection).
+ * Strict Localhost CSRF Firewall.
+ * Delegated to http-middleware.js for modular security testing.
+ * Re-exported for backward compatibility with serve.js.
  */
 export function isAllowedLocalOrigin(req) {
-  const origin = req.headers['origin'];
-  const referer = req.headers['referer'];
+  return _isAllowedLocalOrigin(req);
+}
 
-  if (origin) {
-    try {
-      const parsed = new URL(origin);
-      if (parsed.hostname !== 'localhost' && parsed.hostname !== '127.0.0.1') {
-        return false;
+/**
+ * Tests if a specific port is currently occupied.
+ */
+function isPortInUse(port) {
+  return new Promise((resolve) => {
+    const tester = net.createServer();
+    tester.unref();
+
+    tester.once('error', (err) => {
+      if (err.code === 'EADDRINUSE') {
+        resolve(true);
+      } else {
+        resolve(false);
       }
-    } catch (e) {
-      return false;
-    }
-  }
+    });
 
-  if (referer) {
-    try {
-      const parsed = new URL(referer);
-      if (parsed.hostname !== 'localhost' && parsed.hostname !== '127.0.0.1') {
-        return false;
+    tester.once('listening', () => {
+      tester.close(() => {
+        resolve(false);
+      });
+    });
+
+    tester.listen(port);
+  });
+}
+
+/**
+ * Cross-platform browser opener.
+ */
+function openBrowser(url) {
+  try {
+    if (process.platform === 'win32') {
+      exec(`start "" "${url}"`, { windowsHide: true });
+    } else if (process.platform === 'darwin') {
+      spawn('open', [url], { stdio: 'ignore' });
+    } else {
+      spawn('xdg-open', [url], { stdio: 'ignore' });
+    }
+  } catch (e) {}
+}
+
+/**
+ * Cross-platform process killer for a specific port.
+ * Safely frees up the port by terminating the occupying process.
+ */
+function killProcessOnPort(port) {
+  return new Promise((resolve) => {
+    if (process.platform === 'win32') {
+      exec(`netstat -ano -p tcp | findstr :${port}`, (err, stdout) => {
+        if (err || !stdout) return resolve({ success: false, pids: [] });
+        const lines = stdout.trim().split('\n');
+        const pids = new Set();
+        for (const line of lines) {
+          if (line.includes('LISTENING')) {
+            const parts = line.trim().split(/\s+/);
+            const pid = parseInt(parts[parts.length - 1], 10);
+            if (pid && pid !== process.pid) pids.add(pid);
+          }
+        }
+        if (pids.size === 0) return resolve({ success: false, pids: [] });
+        const pidList = Array.from(pids);
+        let completed = 0;
+        for (const pid of pidList) {
+          exec(`taskkill /F /PID ${pid}`, () => {
+            completed++;
+            if (completed === pidList.length) {
+              setTimeout(() => resolve({ success: true, pids: pidList }), 300);
+            }
+          });
+        }
+      });
+    } else {
+      exec(`lsof -ti :${port}`, (err, stdout) => {
+        if (err || !stdout) return resolve({ success: false, pids: [] });
+        const pids = stdout.trim().split(/\s+/).map(p => parseInt(p, 10)).filter(p => p && p !== process.pid);
+        for (const pid of pids) {
+          try { process.kill(pid, 'SIGKILL'); } catch (e) {}
+        }
+        setTimeout(() => resolve({ success: pids.length > 0, pids }), 300);
+      });
+    }
+  });
+}
+
+/**
+ * Prompts user interactively (e/h). If piped or unattended, gracefully defaults.
+ */
+function promptUser(questionText) {
+  return new Promise((resolve) => {
+    let answered = false;
+    const rl = readline.createInterface({
+      input: process.stdin,
+      output: process.stdout
+    });
+
+    const finish = (val) => {
+      if (!answered) {
+        answered = true;
+        clearTimeout(timer);
+        try { rl.close(); } catch (e) {}
+        resolve(val);
       }
-    } catch (e) {
-      return false;
+    };
+
+    rl.on('close', () => {
+      finish(process.stdin.isTTY ? 'k' : 'y');
+    });
+
+    const timeoutMs = process.stdin.isTTY ? 15000 : 1500;
+    const timer = setTimeout(() => {
+      finish(process.stdin.isTTY ? 'k' : 'y');
+    }, timeoutMs);
+
+    rl.question(questionText, (answer) => {
+      finish(answer.trim().toLowerCase());
+    });
+  });
+}
+
+/**
+ * Scans for an available TCP port starting from startPort.
+ * Prevents EADDRINUSE crashes by automatically testing and finding the first open port.
+ */
+function findAvailablePort(startPort, maxAttempts = 30) {
+  return new Promise((resolve, reject) => {
+    let currentPort = startPort;
+    let attempts = 0;
+
+    function testNext() {
+      if (attempts >= maxAttempts) {
+        return reject(new Error(`Could not find an available port after ${maxAttempts} attempts starting from ${startPort}`));
+      }
+      const tester = net.createServer();
+      tester.unref();
+
+      tester.once('error', (err) => {
+        if (err.code === 'EADDRINUSE') {
+          currentPort++;
+          attempts++;
+          testNext();
+        } else {
+          reject(err);
+        }
+      });
+
+      tester.once('listening', () => {
+        tester.close(() => {
+          resolve(currentPort);
+        });
+      });
+
+      tester.listen(currentPort);
     }
-  }
 
-  const secFetchSite = req.headers['sec-fetch-site'];
-  if (secFetchSite && secFetchSite === 'cross-site') {
-    return false;
-  }
-
-  return true;
+    testNext();
+  });
 }
 
 /**
  * 3. INTERACTIVE 3D WEBGEL SERVER MODE
  */
-function runInteractiveServer() {
-  console.log(`\n\x1b[36m🌉 ZenithIstanbul\x1b[0m — \x1b[35m3D Codebase Metropole & Autonomous Agent Command Deck\x1b[0m\n\x1b[33m📍 Target:\x1b[0m ${posixTargetDir}\n\x1b[32m🚀 Telemetry Server Online:\x1b[0m http://localhost:${PORT}\n`);
+async function runInteractiveServer() {
+  let activePort = PORT;
+  const inUse = await isPortInUse(PORT);
 
-  const mimeTypes = {
-    '.html': 'text/html; charset=utf-8',
-    '.js': 'text/javascript; charset=utf-8',
-    '.css': 'text/css; charset=utf-8',
-    '.json': 'application/json; charset=utf-8',
-    '.png': 'image/png',
-    '.jpg': 'image/jpeg',
-    '.svg': 'image/svg+xml'
-  };
+  if (inUse) {
+    console.log(`\n\x1b[33m⚠️  Port ${PORT} zaten kullanımda (çalışan bir süreç tespit edildi).\x1b[0m`);
+    console.log(`\x1b[90m👉 Nasıl devam etmek istersiniz?\x1b[0m`);
+    console.log(`   \x1b[32m[K / H]\x1b[0m Eski süreci sonlandır (kill et) ve ${PORT} portunda tertemiz başlat \x1b[36m(Önerilen)\x1b[0m`);
+    console.log(`   \x1b[33m[E]\x1b[0m     Mevcut çalışan web sayfasını tarayıcıda aç`);
+    console.log(`   \x1b[35m[Y]\x1b[0m     Eski süreci koru, yeni bir portta başlat`);
+
+    const answer = await promptUser(`\x1b[37mSeçiminiz [K / E / Y] (Varsayılan: K):\x1b[0m `);
+
+    if (answer === 'e' || answer === 'evet' || (answer.startsWith('y') && answer.length > 2)) {
+      const url = `http://localhost:${PORT}`;
+      console.log(`\n\x1b[32m✔ Mevcut sunucu web arayüzü tarayıcıda açılıyor:\x1b[0m \x1b[36m${url}\x1b[0m\n`);
+      openBrowser(url);
+      process.exit(0);
+    } else if (answer === 'y' || answer === 'yeni') {
+      console.log(`\n\x1b[36m🔄 Eski sürece dokunulmadı. Yeni sunucu için boş port aranıyor...\x1b[0m`);
+      try {
+        activePort = await findAvailablePort(PORT + 1);
+      } catch (err) {
+        console.warn(`\x1b[33m[ZenithIstanbul]\x1b[0m Port arama uyarısı: ${err.message}. Port ${PORT + 1} deneniyor.`);
+        activePort = PORT + 1;
+      }
+    } else {
+      // Default: 'k', 'h', empty string (Enter pressed) -> Kill old process & restart on PORT!
+      console.log(`\n\x1b[33m🛑 Port ${PORT}'deki eski süreç sonlandırılıyor...\x1b[0m`);
+      const killRes = await killProcessOnPort(PORT);
+      if (killRes.success) {
+        console.log(`\x1b[32m✔ Port ${PORT} başarıyla serbest bırakıldı (Sonlandırılan PID: ${killRes.pids.join(', ')}).\x1b[0m\n`);
+        activePort = PORT;
+      } else {
+        console.warn(`\x1b[33mℹ Süreç doğrudan sonlandırılamadı, alternatif boş port aranıyor...\x1b[0m`);
+        try {
+          activePort = await findAvailablePort(PORT + 1);
+        } catch (e) {
+          activePort = PORT + 1;
+        }
+      }
+    }
+  }
+
+  const mimeTypes = MIME_TYPES;
 
   const historyStore = new HistoryStore(targetDir);
 
@@ -459,14 +632,7 @@ function runInteractiveServer() {
   const server = http.createServer(async (req, res) => {
     const parsedUrl = new URL(req.url, `http://${req.headers.host || 'localhost'}`);
     const pathname = parsedUrl.pathname;
-    const originHeader = req.headers['origin'];
-    if (originHeader && isAllowedLocalOrigin(req)) {
-      res.setHeader('Access-Control-Allow-Origin', originHeader);
-    } else {
-      res.setHeader('Access-Control-Allow-Origin', `http://localhost:${PORT}`);
-    }
-    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+    setCorsHeaders(req, res, activePort);
 
     if (req.method === 'OPTIONS') {
       res.writeHead(204);
@@ -490,8 +656,7 @@ function runInteractiveServer() {
       res.writeHead(200, {
         'Content-Type': 'text/event-stream',
         'Cache-Control': 'no-cache',
-        'Connection': 'keep-alive',
-        'Access-Control-Allow-Origin': '*'
+        'Connection': 'keep-alive'
       });
       res.write(`data: ${JSON.stringify({ type: 'connected', timestamp: Date.now() })}\n\n`);
       sseClients.add(res);
@@ -540,49 +705,67 @@ function runInteractiveServer() {
 
     if (req.method === 'POST' && req.url === '/api/swarm/dispatch') {
       if (!isAllowedLocalOrigin(req)) {
-        res.writeHead(403, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ success: false, error: 'Forbidden' }));
+        sendCsrfForbidden(res);
         return;
       }
-      let body = '';
-      req.on('data', chunk => { body += chunk; });
-      req.on('end', async () => {
-        try {
-          const payload = JSON.parse(body || '{}');
-          const dispatchRes = await swarm.dispatchIncident(payload);
-          res.writeHead(200, { 'Content-Type': 'application/json' });
-          res.end(JSON.stringify({ success: true, ...dispatchRes }));
-        } catch (err) {
-          res.writeHead(500, { 'Content-Type': 'application/json' });
-          res.end(JSON.stringify({ success: false, error: err.message }));
+      let body;
+      try {
+        body = await readBodyWithLimit(req);
+      } catch (err) {
+        if (err.message === 'PAYLOAD_TOO_LARGE') {
+          sendPayloadTooLarge(res);
+          return;
         }
-      });
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ success: false, error: err.message }));
+        return;
+      }
+      try {
+        const payload = JSON.parse(body || '{}');
+        const dispatchRes = await swarm.dispatchIncident(payload);
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ success: true, ...dispatchRes }));
+      } catch (err) {
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ success: false, error: err.message }));
+      }
       return;
     }
 
     if (req.method === 'POST' && req.url === '/api/swarm/task') {
       if (!isAllowedLocalOrigin(req)) {
-        res.writeHead(403, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ success: false, error: 'Forbidden' }));
+        sendCsrfForbidden(res);
         return;
       }
-      let body = '';
-      req.on('data', chunk => { body += chunk; });
-      req.on('end', () => {
-        try {
-          const payload = JSON.parse(body || '{}');
-          const task = swarm.createTask(payload.title, payload.description, payload.assignee, payload.priority);
-          res.writeHead(200, { 'Content-Type': 'application/json' });
-          res.end(JSON.stringify({ success: true, task }));
-        } catch (err) {
-          res.writeHead(500, { 'Content-Type': 'application/json' });
-          res.end(JSON.stringify({ success: false, error: err.message }));
+      let body;
+      try {
+        body = await readBodyWithLimit(req);
+      } catch (err) {
+        if (err.message === 'PAYLOAD_TOO_LARGE') {
+          sendPayloadTooLarge(res);
+          return;
         }
-      });
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ success: false, error: err.message }));
+        return;
+      }
+      try {
+        const payload = JSON.parse(body || '{}');
+        const task = swarm.createTask(payload.title, payload.description, payload.assignee, payload.priority);
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ success: true, task }));
+      } catch (err) {
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ success: false, error: err.message }));
+      }
       return;
     }
 
     if (req.method === 'POST' && req.url === '/api/swarm/route') {
+      if (!isAllowedLocalOrigin(req)) {
+        sendCsrfForbidden(res);
+        return;
+      }
       try {
         const routed = swarm.drainOutbox();
         res.writeHead(200, { 'Content-Type': 'application/json' });
@@ -623,70 +806,85 @@ function runInteractiveServer() {
 
     if (req.method === 'POST' && req.url === '/api/scan') {
       if (!isAllowedLocalOrigin(req)) {
-        res.writeHead(403, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ success: false, error: 'Forbidden: CSRF Origin/Referer check failed. External cross-origin request blocked.' }));
+        sendCsrfForbidden(res);
         return;
       }
-      let body = '';
-      req.on('data', chunk => { body += chunk; });
-      req.on('end', () => {
-        try {
-          let metrics = {};
-          if (body.trim()) {
-            try { metrics = JSON.parse(body); } catch (e) {}
-          }
-
-          if (metrics.trafficIndex === undefined || metrics.totalModules === undefined) {
-            const parsed = scanAndParseDirectory(targetDir);
-            const engine = new TrafficEngine();
-            engine.loadModules(parsed);
-            const rep = engine.generateTelemetryReport();
-            metrics = {
-              trafficIndex: rep.trafficIndex,
-              cyclicDeadlocks: rep.circularDependencies,
-              securityExposures: rep.securityLeakCount,
-              isolatedModules: rep.deadCodeModules,
-              totalModules: rep.totalModules,
-              totalEdges: rep.totalEdges
-            };
-          }
-
-          const record = historyStore.recordScan(metrics);
-
-          const ssePayload = JSON.stringify({
-            type: 'history-updated',
-            timestamp: Date.now(),
-            record
-          });
-          for (const client of sseClients) {
-            try {
-              client.write(`data: ${ssePayload}\n\n`);
-            } catch (e) {
-              sseClients.delete(client);
-            }
-          }
-
-          res.writeHead(200, { 'Content-Type': 'application/json' });
-          res.end(JSON.stringify({ success: true, record }));
-        } catch (err) {
-          res.writeHead(500, { 'Content-Type': 'application/json' });
-          res.end(JSON.stringify({ success: false, error: err.message }));
+      let body;
+      try {
+        body = await readBodyWithLimit(req);
+      } catch (err) {
+        if (err.message === 'PAYLOAD_TOO_LARGE') {
+          sendPayloadTooLarge(res);
+          return;
         }
-      });
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ success: false, error: err.message }));
+        return;
+      }
+      try {
+        let metrics = {};
+        if (body.trim()) {
+          try { metrics = JSON.parse(body); } catch (e) {}
+        }
+
+        if (metrics.trafficIndex === undefined || metrics.totalModules === undefined) {
+          const parsed = scanAndParseDirectory(targetDir);
+          const engine = new TrafficEngine();
+          engine.loadModules(parsed);
+          const rep = engine.generateTelemetryReport();
+          metrics = {
+            trafficIndex: rep.trafficIndex,
+            cyclicDeadlocks: rep.circularDependencies,
+            securityExposures: rep.securityLeakCount,
+            isolatedModules: rep.deadCodeModules,
+            totalModules: rep.totalModules,
+            totalEdges: rep.totalEdges
+          };
+        }
+
+        const record = historyStore.recordScan(metrics);
+
+        const ssePayload = JSON.stringify({
+          type: 'history-updated',
+          timestamp: Date.now(),
+          record
+        });
+        for (const client of sseClients) {
+          try {
+            client.write(`data: ${ssePayload}\n\n`);
+          } catch (e) {
+            sseClients.delete(client);
+          }
+        }
+
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ success: true, record }));
+      } catch (err) {
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ success: false, error: err.message }));
+      }
       return;
     }
 
     if (req.method === 'POST' && req.url === '/api/dispatch-agent') {
       if (!isAllowedLocalOrigin(req)) {
-        res.writeHead(403, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ success: false, error: 'Forbidden: CSRF Origin/Referer check failed. External cross-origin request blocked.' }));
+        sendCsrfForbidden(res);
         return;
       }
-      let body = '';
-      req.on('data', chunk => { body += chunk; });
-      req.on('end', async () => {
-        try {
-          const payload = JSON.parse(body || '{}');
+      let body;
+      try {
+        body = await readBodyWithLimit(req);
+      } catch (err) {
+        if (err.message === 'PAYLOAD_TOO_LARGE') {
+          sendPayloadTooLarge(res);
+          return;
+        }
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ success: false, error: err.message }));
+        return;
+      }
+      try {
+        const payload = JSON.parse(body || '{}');
           const { chain = [], sourceId, targetId } = payload;
           const srcId = sourceId || chain[0] || 'src/services/userService.ts';
           const tgtId = targetId || chain[1] || 'src/ui/AuthModal.tsx';
@@ -794,47 +992,62 @@ function runInteractiveServer() {
           res.writeHead(500, { 'Content-Type': 'application/json' });
           res.end(JSON.stringify({ success: false, error: err.message }));
         }
-      });
       return;
     }
 
     if (req.method === 'POST' && req.url === '/api/apply-patch') {
       if (!isAllowedLocalOrigin(req)) {
-        res.writeHead(403, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ success: false, error: 'Forbidden: CSRF Origin/Referer check failed. External cross-origin request blocked.' }));
+        sendCsrfForbidden(res);
         return;
       }
-      let body = '';
-      req.on('data', chunk => { body += chunk; });
-      req.on('end', () => {
-        try {
-          const payload = JSON.parse(body);
-          const updatedFiles = [];
+      let body;
+      try {
+        body = await readBodyWithLimit(req);
+      } catch (err) {
+        if (err.message === 'PAYLOAD_TOO_LARGE') {
+          sendPayloadTooLarge(res);
+          return;
+        }
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ success: false, error: err.message }));
+        return;
+      }
+      try {
+        const payload = JSON.parse(body || '{}');
+        const updatedFiles = [];
+        const resolvedTarget = path.resolve(targetDir);
 
-          for (const file of payload.files || []) {
-            const safeRelPath = file.path.replace(/\\/g, '/').replace(/^\//, '');
-            if (safeRelPath.includes('..')) continue; // Path traversal protection
-
-            const absPath = path.join(targetDir, safeRelPath);
-            fs.mkdirSync(path.dirname(absPath), { recursive: true });
-            fs.writeFileSync(absPath, file.content, 'utf8');
-            updatedFiles.push(safeRelPath);
+        for (const file of payload.files || []) {
+          if (!file || typeof file.path !== 'string') continue;
+          const absPath = path.resolve(targetDir, file.path);
+          if (!absPath.startsWith(resolvedTarget + path.sep) && absPath !== resolvedTarget) {
+            continue; // Path traversal protection (handles .. and absolute path escapes)
           }
 
-          res.writeHead(200, { 'Content-Type': 'application/json' });
-          res.end(JSON.stringify({ success: true, updatedFiles }));
-        } catch (err) {
-          res.writeHead(500, { 'Content-Type': 'application/json' });
-          res.end(JSON.stringify({ success: false, error: err.message }));
+          fs.mkdirSync(path.dirname(absPath), { recursive: true });
+          fs.writeFileSync(absPath, file.content, 'utf8');
+          updatedFiles.push(path.relative(targetDir, absPath).replace(/\\/g, '/'));
         }
-      });
+
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ success: true, updatedFiles }));
+      } catch (err) {
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ success: false, error: err.message }));
+      }
       return;
     }
 
     let safePath = req.url.split('?')[0];
     if (safePath === '/') safePath = '/index.html';
 
-    const filePath = path.normalize(path.join(projectRoot, safePath));
+    const publicDir = path.join(projectRoot, 'public');
+    let filePath = path.normalize(path.join(publicDir, safePath));
+
+    if (!filePath.startsWith(publicDir) || !fs.existsSync(filePath) || !fs.statSync(filePath).isFile()) {
+      filePath = path.normalize(path.join(projectRoot, safePath));
+    }
+
     if (!filePath.startsWith(projectRoot)) {
       res.writeHead(403);
       res.end('Forbidden');
@@ -851,7 +1064,6 @@ function runInteractiveServer() {
       } else {
         res.writeHead(200, {
           'Content-Type': contentType,
-          'Access-Control-Allow-Origin': '*',
           'Cache-Control': 'no-cache'
         });
         res.end(content);
@@ -859,12 +1071,27 @@ function runInteractiveServer() {
     });
   });
 
-  server.listen(PORT, () => {
-    const url = `http://localhost:${PORT}`;
+  server.on('error', (err) => {
+    if (err.code === 'EADDRINUSE') {
+      console.warn(`\x1b[33m[ZenithIstanbul]\x1b[0m Port ${activePort} is busy, shifting to ${activePort + 1}...`);
+      activePort++;
+      setTimeout(() => {
+        server.listen(activePort);
+      }, 100);
+    } else {
+      console.error('\x1b[31m[ZenithIstanbul Server Error]\x1b[0m', err);
+    }
+  });
+
+  server.listen(activePort, () => {
+    const url = `http://localhost:${activePort}`;
+    console.log(`\n\x1b[36m🌉 ZenithIstanbul\x1b[0m — \x1b[35m3D Codebase Metropole & Autonomous Agent Command Deck\x1b[0m\n\x1b[33m📍 Target:\x1b[0m ${posixTargetDir}\n\x1b[32m🚀 Telemetry Server Online:\x1b[0m \x1b[36m${url}\x1b[0m\n`);
+    if (activePort !== PORT) {
+      console.log(`\x1b[33mℹ Not: ${PORT} portu kullanımda olduğu için Zenith Istanbul otomatik olarak ${activePort} portuna bağlandı.\x1b[0m\n`);
+    }
     console.log(`\x1b[32m✔ ZenithIstanbul ready.\x1b[0m Opening browser: \x1b[36m${url}\x1b[0m (Press Ctrl+C to terminate)\n`);
 
-    const startCmd = process.platform === 'darwin' ? 'open' : process.platform === 'win32' ? 'start' : 'xdg-open';
-    exec(`${startCmd} ${url}`);
+    openBrowser(url);
   });
 
   const gracefulShutdown = () => {

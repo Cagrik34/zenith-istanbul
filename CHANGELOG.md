@@ -3,6 +3,24 @@
 All notable changes to **ZenithIstanbul** (`zenith-istanbul`) are documented in this file.
 The project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.1.0] — 2026-09-17
+
+### Zero-CDN Offline-First Architecture & Vendoring
+- **Local Variable Typography**: Self-hosted `JetBrains Mono` and `Inter` variable WOFF2 subsets in `public/fonts/`, removing Google Fonts CDN dependencies.
+- **Local Three.js ESM Runtime**: Vendored official Three.js r170 ESM engine and `OrbitControls.js` in `public/vendor/three/`, eliminating `esm.sh` and `unpkg.com` requests.
+- **Strict Content Security Policy (CSP)**: Added `default-src 'self'` CSP metadata to prevent unauthorized third-party script injection.
+
+### Modular Client Decomposition & Boundary Separation
+- **Client/Server Physical Isolation**: Decomposed monolithic 4,677-line `index.html` into a lightweight HTML5 shell (`public/index.html`), 5 modular stylesheets (`public/css/`), and modular client JavaScript (`public/js/`).
+- **Server Engine Purification**: Cleared client presentation code from `src/`, establishing `src/core/` and `src/agent/` as pure Node.js backend modules.
+- **Dual GitHub Pages Compatibility**: Configured automated distribution workflow in `.github/workflows/deploy-pages.yml` with clean `_site` packaging and root fallback redirect.
+
+### Security Hardening & Edge-Case Resilience
+- **HTTP DoS Body Limiter**: Enforced 2 MiB hard limit on incoming mutation payloads via `readBodyWithLimit`.
+- **Node.js 22+ Deprecation Fix**: Eliminated `DEP0190` shell warning in platform-specific browser launchers.
+- **Offline GitHub Ingestion Guard**: Prevented synthetic data generation on network failure, surfacing actionable SRE recovery protocols.
+- **WebGL Context Loss Recovery**: Attached `webglcontextlost` and `webglcontextrestored` event hooks to preserve telemetry state across GPU sleep/wake cycles.
+
 ---
 
 ## [1.0.0] — 2026-09-08

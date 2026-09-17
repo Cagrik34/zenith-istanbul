@@ -23,7 +23,8 @@ export class CodebaseParser {
       /\.turbo/i,
       /\.test\.[jt]sx?$/i,
       /\.spec\.[jt]sx?$/i,
-      /(?:^|[\\/])(?:test|tests|__tests__)[\\/]/i
+      /(?:^|[\\/])(?:test|tests|__tests__)[\\/]/i,
+      /(?:^|[\\/])(?:vendor|public[\\/]vendor)[\\/]/i
     ];
 
     this.supportedExtensions = ['.js', '.jsx', '.ts', '.tsx', '.mjs', '.cjs', '.py', '.vue', '.svelte'];
@@ -131,9 +132,9 @@ export class CodebaseParser {
    * Kök Giriş Noktası tespiti (Galata Kulesi simgesi)
    */
   isRootEntryPoint(filePath) {
-    const p = filePath.toLowerCase();
-    const fileName = p.split('/').pop().split('\\').pop();
-    return ['index.ts', 'index.js', 'index.tsx', 'main.ts', 'main.js', 'main.tsx', 'app.ts', 'app.js', 'app.tsx'].includes(fileName) &&
+    const p = filePath.toLowerCase().replace(/\\/g, '/');
+    const fileName = p.split('/').pop();
+    return ['index.ts', 'index.js', 'index.tsx', 'main.ts', 'main.js', 'main.tsx'].includes(fileName) &&
            (p.startsWith('src/') || !p.includes('/') || p === fileName);
   }
 
@@ -407,7 +408,8 @@ export class CodebaseParser {
    * Next.js App Router, 'use client', 'use server' ve Node built-in heuristikleri
    */
   assignDistrict(filePath, content = '', landmarks = {}) {
-    const p = filePath.toLowerCase();
+    const p = filePath.toLowerCase().replace(/\\/g, '/');
+    const fileName = p.split('/').pop();
     const cleanContent = content ? content.slice(0, 1000).toLowerCase() : '';
 
     if (landmarks.isMiddleware) {
@@ -418,51 +420,100 @@ export class CodebaseParser {
       return { side: 'europe', district: 'Galata (Root Entry)', color: '#ffd700', isLandmark: 'galata_tower' };
     }
 
+    // 1. CLI / Executable Binaries / Terminal Daemons -> Levent & Maslak (Avrupa)
+    if (p.startsWith('bin/') || fileName.startsWith('cli.') || p.includes('/cli.') || p.includes('bin/cli')) {
+      return { side: 'europe', district: 'Levent & Maslak (CLI Hub)', color: '#818cf8' };
+    }
+
+    // 2. Swarm Orchestration / Multi-Agent Coordinator / Diff Engine -> Maslak (Avrupa)
+    if (p.includes('swarm-coordinator') || p.includes('agent-dispatcher') || p.includes('diff-engine')) {
+      return { side: 'europe', district: 'Maslak (Agent Coordinator)', color: '#7000ff' };
+    }
+
+    // 3. Client Root UI / Dashboard (public/js/app.js, main.js) -> Galata & Beyoğlu (Avrupa)
+    if (p.includes('public/js/app.') || p.includes('public/app.') || fileName === 'app.js' || fileName === 'app.ts') {
+      return { side: 'europe', district: 'Galata & Beyoğlu (UI Core)', color: '#38bdf8' };
+    }
+
+    // 4. 3D WebGL Bosphorus Engine / Visual Effects / HUD -> Beşiktaş & Ortaköy (Avrupa)
+    if (p.includes('bosphorus-scene') || p.includes('traffic-hud') || p.includes('traffic-particles') || p.includes('samples.js')) {
+      return { side: 'europe', district: 'Beşiktaş & Ortaköy (3D Engine)', color: '#00f0ff' };
+    }
+
+    // 5. 'use client' Directive -> Levent (Avrupa)
     if (cleanContent.includes("'use client'") || cleanContent.includes('"use client"')) {
       return { side: 'europe', district: 'Levent (Client Component)', color: '#00a8ff' };
     }
+
+    // 6. 'use server' Directive -> Kadıköy (Anadolu)
     if (cleanContent.includes("'use server'") || cleanContent.includes('"use server"')) {
       return { side: 'asia', district: 'Kadıköy (Server Action)', color: '#ff007f' };
     }
 
+    // 7. Security Sentry / Auth / Token Handlers -> Üsküdar (Anadolu)
+    if (p.includes('auth') || p.includes('security') || p.includes('middleware') || p.includes('guard')) {
+      return { side: 'asia', district: 'Üsküdar (Security Gateway)', color: '#14b8a6' };
+    }
+
+    // 8. Event Reflexes / Swarm Messaging / PubSub -> Kadıköy & Moda (Anadolu)
+    if (p.includes('swarm-reflex') || p.includes('swarm-messaging') || p.includes('pubsub') || p.includes('events')) {
+      return { side: 'asia', district: 'Kadıköy (Event Stream)', color: '#10b981' };
+    }
+
+    // 9. AI Model Catalogs / SQLite Persistence / Telemetry Reports / Databases -> Ataşehir (Anadolu)
+    if (p.includes('model-catalog') || p.includes('history-store') || p.includes('report-generator') || p.includes('db') || p.includes('database') || p.includes('models') || p.includes('schema') || p.includes('store')) {
+      return { side: 'asia', district: 'Ataşehir (IFM Vault)', color: '#ec4899' };
+    }
+
+    // 10. Heavy Backend Libraries Import (Only for actual backend code, not client scripts)
     const backendLibs = ['fs', 'path', 'crypto', 'child_process', 'stream', 'http', 'https', 'cluster', 'prisma', 'drizzle', 'pg', 'mongoose', 'redis', 'next/headers', 'next/server'];
     const hasBackendImport = backendLibs.some(lib => cleanContent.includes(`from '${lib}'`) || cleanContent.includes(`from "${lib}"`) || cleanContent.includes(`require('${lib}')`));
-    if (hasBackendImport) {
+    if (hasBackendImport && !p.startsWith('public/') && !p.includes('client')) {
       return { side: 'asia', district: 'Ataşehir (Infrastructure)', color: '#ffaa00' };
     }
 
-    if (p.includes('.client.') || p.endsWith('.css') || p.endsWith('.scss') || p.includes('tailwind')) {
+    // 11. CSS / Stylesheets / UI Client Bundles -> Beşiktaş (Avrupa)
+    if (p.includes('.client.') || p.endsWith('.css') || p.endsWith('.scss') || p.includes('tailwind') || p.startsWith('public/')) {
       return { side: 'europe', district: 'Beşiktaş (UI)', color: '#00f0ff' };
     }
+
+    // 12. Server APIs & Server Actions -> Üsküdar & Ataşehir (Anadolu)
     if (p.includes('.server.') || p.includes('.action.') || p.includes('route.ts') || p.includes('route.js')) {
       return { side: 'asia', district: 'Üsküdar (API Route)', color: '#ff5500' };
     }
 
+    // 13. UI Components, Views, Pages -> Beşiktaş, Levent, Maslak (Avrupa)
     if (p.includes('components') || p.includes('ui') || p.includes('views') || p.includes('pages') || p.includes('app/') || p.includes('hooks') || p.includes('styles')) {
       if (p.includes('button') || p.includes('card') || p.includes('modal') || p.includes('badge')) return { side: 'europe', district: 'Beşiktaş', color: '#00f0ff' };
       if (p.includes('pages') || p.includes('routes') || p.includes('layout')) return { side: 'europe', district: 'Levent', color: '#00a8ff' };
       return { side: 'europe', district: 'Maslak', color: '#7000ff' };
     }
 
-    if (p.includes('server') || p.includes('api') || p.includes('services') || p.includes('db') || p.includes('database') || p.includes('models') || p.includes('controllers')) {
-      if (p.includes('db') || p.includes('models') || p.includes('schema')) return { side: 'asia', district: 'Kadıköy', color: '#ff007f' };
-      if (p.includes('auth') || p.includes('security')) return { side: 'asia', district: 'Üsküdar', color: '#ff5500' };
+    // 14. Server, API, Services -> Ataşehir (Anadolu)
+    if (p.includes('server') || p.includes('api') || p.includes('services') || p.includes('controllers')) {
       return { side: 'asia', district: 'Ataşehir', color: '#ffaa00' };
     }
 
-    if (p.includes('config') || p.includes('core') || p.includes('types') || p.includes('utils') || p.includes('helpers')) {
+    // 15. Core Compilers, AST Parser, Graph Flow, Topo Sorters, Utilities -> Tarihi Yarımada (Historic / Low-rise)
+    if (p.includes('config') || p.includes('core') || p.includes('types') || p.includes('utils') || p.includes('helpers') || p.includes('tarjan') || p.includes('traffic-engine') || p.includes('ast-parser')) {
       return { side: 'historic', district: 'Tarihi Yarımada', color: '#e5c07b' };
     }
 
     if (p.endsWith('.tsx') || p.endsWith('.jsx')) {
       return { side: 'europe', district: 'Şişli', color: '#00e676' };
     }
-    return { side: 'asia', district: 'Ümraniye', color: '#ff8800' };
+
+    // 16. Fallback: Determine side based on path cues
+    if (p.includes('front') || p.includes('web') || p.includes('client') || p.includes('view') || p.includes('gui')) {
+      return { side: 'europe', district: 'Levent', color: '#00a8ff' };
+    }
+
+    return { side: 'asia', district: 'Ataşehir (Modül)', color: '#ffaa00' };
   }
 
   isCoreModule(filePath) {
-    const p = filePath.toLowerCase();
-    return p.includes('index') || p.includes('main') || p.includes('app') || p.includes('core');
+    const p = filePath.toLowerCase().replace(/\\/g, '/');
+    return p.includes('index') || p.includes('main') || p.includes('app') || p.includes('core') || p.includes('cli') || p.startsWith('bin/') || p.includes('/bin/') || p.includes('server');
   }
 
   calculateHealthScore(loc, complexity, leakCount = 0) {

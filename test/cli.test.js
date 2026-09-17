@@ -32,4 +32,35 @@ test('CLI Interface & Arguments', async (t) => {
       'CLI must exit with code 1 on missing directory'
     );
   });
+
+  await t.test('automatically falls back to next available port when specified port is occupied', async () => {
+    const net = await import('node:net');
+    const dummyServer = net.createServer();
+    await new Promise((resolve) => dummyServer.listen(5190, resolve));
+
+    const { spawn } = await import('node:child_process');
+    const child = spawn('node', [cliPath, '--port', '5190', '.'], {
+      stdio: ['ignore', 'pipe', 'pipe']
+    });
+
+    let output = '';
+    const portFoundPromise = new Promise((resolve) => {
+      child.stdout.on('data', (data) => {
+        output += data.toString();
+        if (output.includes('5191') || output.includes('ZenithIstanbul ready')) {
+          resolve(output);
+        }
+      });
+      child.stderr.on('data', (data) => {
+        output += data.toString();
+      });
+      setTimeout(() => resolve(output), 3000);
+    });
+
+    const result = await portFoundPromise;
+    child.kill('SIGKILL');
+    await new Promise((resolve) => dummyServer.close(resolve));
+
+    assert.ok(result.includes('5191') || result.includes('ZenithIstanbul ready'), 'Server must seamlessly bind to next available port without crashing');
+  });
 });

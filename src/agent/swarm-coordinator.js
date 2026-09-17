@@ -15,6 +15,22 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import { buildGraph, forceLayout } from './memory-graph.js';
 import { loadModelCatalog, validateModelId } from './model-catalog.js';
+import {
+  redactSecrets as _redactSecrets,
+  repairLiteralLineBreaksInJsonStrings as _repairBreaks,
+  selectBroadcastTargets as _selectTargets,
+  normalizeMessage as _normalizeMessage,
+  routeMessage as _routeMessage,
+  drainOutbox as _drainOutbox,
+  HOP_CAP
+} from './swarm-messaging.js';
+import {
+  startHeartbeat as _startHeartbeat,
+  stopHeartbeat as _stopHeartbeat,
+  heartbeatTick as _heartbeatTick,
+  executeAgentReflex as _executeAgentReflex,
+  executeAutonomousPatrol as _executeAutonomousPatrol
+} from './swarm-reflex.js';
 
 /**
  * @typedef {'request' | 'inform' | 'propose' | 'query' | 'agree' | 'refuse' | 'done'} SwarmMessageAct
@@ -55,98 +71,12 @@ import { loadModelCatalog, validateModelId } from './model-catalog.js';
  * @property {string} updatedAt
  */
 
-const HOP_CAP = 12;
-
 /**
- * 5-Tier Cryptographic Secret Redaction Battery
+ * Re-exported from swarm-messaging.js for backward compatibility.
  */
-export function redactSecrets(text) {
-  if (typeof text !== 'string' || !text) return typeof text === 'string' ? text : '';
-  let s = text;
-  // 1. PEM private keys
-  s = s.replace(/-----BEGIN [A-Z0-9 ]*PRIVATE KEY-----[\s\S]*?-----END [A-Z0-9 ]*PRIVATE KEY-----/g, '[REDACTED_PRIVATE_KEY]');
-  // 2. JWT tokens (three base64url segments)
-  s = s.replace(/\beyJ[A-Za-z0-9_-]{6,}\.[A-Za-z0-9_-]{6,}\.[A-Za-z0-9_-]{6,}/g, '[REDACTED_JWT]');
-  // 3. Known provider and cloud API key signatures
-  s = s.replace(
-    /(?:sk-(?:ant-)?[A-Za-z0-9_-]{16,}|xox[bpaors]-[A-Za-z0-9-]{10,}|gh[posru]_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,}|AKIA[0-9A-Z]{16}|AIza[A-Za-z0-9_-]{20,})/g,
-    '[REDACTED_API_KEY]'
-  );
-  // 4. Authorization bearer tokens
-  s = s.replace(/\b(bearer)\s+[A-Za-z0-9._~+/=-]{8,}/gi, '$1 [REDACTED_TOKEN]');
-  // 5. Named key-value credential pairs
-  s = s.replace(
-    /\b((?:[a-z0-9]+[_-])*(?:api[_-]?key|secret[_-]?access[_-]?key|secret|token|password|passwd|pwd|access[_-]?token|refresh[_-]?token|client[_-]?secret|signing[_-]?secret|webhook[_-]?secret|auth[_-]?token|bot[_-]?token|private[_-]?key))(\s*[:=]\s*)(["']?)[^\s"',}]{6,}\3/gi,
-    (_m, k) => `${k}=[REDACTED]`
-  );
-  return s;
-}
-
-/**
- * Repairs literal CR/LF characters inside JSON string values.
- * Prevents JSON.parse failures when multi-line LLM diffs or shell outputs are published.
- */
-export function repairLiteralLineBreaksInJsonStrings(raw) {
-  let text = '';
-  let inString = false;
-  let escaped = false;
-  let changed = false;
-
-  for (const ch of raw) {
-    if (!inString) {
-      text += ch;
-      if (ch === '"') inString = true;
-      continue;
-    }
-
-    if (escaped) {
-      text += ch;
-      escaped = false;
-      continue;
-    }
-
-    if (ch === '\\') {
-      text += ch;
-      escaped = true;
-      continue;
-    }
-
-    if (ch === '"') {
-      text += ch;
-      inString = false;
-      continue;
-    }
-
-    if (ch === '\n') {
-      text += '\\n';
-      changed = true;
-      continue;
-    }
-
-    if (ch === '\r') {
-      text += '\\r';
-      changed = true;
-      continue;
-    }
-
-    text += ch;
-  }
-
-  return { text, changed };
-}
-
-/**
- * Pure function selecting live broadcast targets, excluding sender and archived agents.
- */
-export function selectBroadcastTargets(agents, fromId) {
-  return Object.keys(agents || {}).filter(id => {
-    const a = agents[id];
-    if (!a) return false;
-    if (id === fromId) return false;
-    if (a.archived) return false;
-    return true;
-  });
-}
+export function redactSecrets(text) { return _redactSecrets(text); }
+export function repairLiteralLineBreaksInJsonStrings(raw) { return _repairBreaks(raw); }
+export function selectBroadcastTargets(agents, fromId) { return _selectTargets(agents, fromId); }
 
 /**
  * Folds incoming tasks over existing tasks preserving custom on-disk fields.
@@ -418,127 +348,27 @@ export class SwarmCoordinator {
 
   /**
    * Normalizes a message payload and generates standard timestamp ID.
+   * Delegates to swarm-messaging.js.
    */
   normalizeMessage(partial, from = 'system') {
-    const ts = new Date().toISOString().replace(/[:.]/g, '-');
-    const rand = crypto.randomBytes(2).toString('hex');
-    return {
-      id: partial.id || `${ts}-${rand}`,
-      conversation: partial.conversation || `conv-${crypto.randomBytes(3).toString('hex')}`,
-      in_reply_to: partial.in_reply_to || null,
-      from: from || 'system',
-      to: partial.to || 'agent.commander',
-      act: partial.act || 'inform',
-      subject: redactSecrets(partial.subject || 'Autonomous Telemetry Dispatch'),
-      body: redactSecrets(partial.body || ''),
-      hops: typeof partial.hops === 'number' ? partial.hops : 0,
-      requires_reply: !!partial.requires_reply,
-      needs_human: !!partial.needs_human,
-      created_at: new Date().toISOString()
-    };
+    return _normalizeMessage(partial, from);
   }
 
   /**
    * Routes a message into the recipient agent's inbox folder.
+   * Delegates to swarm-messaging.js.
    */
   routeMessage(rawMsg) {
-    const msg = this.normalizeMessage(rawMsg, rawMsg.from);
-
-    if (msg.hops > HOP_CAP) {
-      this.appendLog({
-        kind: 'drop',
-        reason: 'hop_cap_exceeded',
-        id: msg.id,
-        from: msg.from,
-        to: msg.to
-      });
-      return false;
-    }
-
-    const reg = this.getRegistry();
-    const commanderId = reg.commanderId || 'agent.commander';
-    const resolveTarget = t => (t === 'commander' || t === 'god' ? commanderId : t);
-
-    let targets = [];
-    if (msg.to === 'broadcast' || msg.to === 'all') {
-      targets = selectBroadcastTargets(reg.agents, msg.from);
-    } else {
-      const resolved = resolveTarget(msg.to);
-      if (resolved !== msg.from) targets = [resolved];
-    }
-
-    const agentsDir = path.join(this.swarmRoot, 'agents');
-    let deliveredCount = 0;
-
-    for (const targetId of targets) {
-      const targetInbox = path.join(agentsDir, targetId, 'inbox');
-      if (fs.existsSync(targetInbox)) {
-        const filePath = path.join(targetInbox, `${msg.created_at.replace(/[:.]/g, '-')}-${msg.id}.json`);
-        this.atomicWriteJson(filePath, msg);
-        deliveredCount++;
-      }
-    }
-
-    this.appendLog({
-      kind: 'message_routed',
-      id: msg.id,
-      from: msg.from,
-      to: msg.to,
-      act: msg.act,
-      subject: msg.subject,
-      deliveredTo: targets
-    });
-
-    return deliveredCount > 0;
+    return _routeMessage(this, rawMsg);
   }
 
   /**
    * Scans all agent outboxes, repairs literal line breaks, delivers pending
    * files to target inboxes, and quarantines malformed files safely.
+   * Delegates to swarm-messaging.js.
    */
   drainOutbox() {
-    const agentsDir = path.join(this.swarmRoot, 'agents');
-    if (!fs.existsSync(agentsDir)) return 0;
-
-    const agents = fs.readdirSync(agentsDir);
-    let routedTotal = 0;
-
-    for (const agentId of agents) {
-      const outbox = path.join(agentsDir, agentId, 'outbox');
-      if (!fs.existsSync(outbox)) continue;
-
-      const files = fs.readdirSync(outbox).filter(f => f.endsWith('.json'));
-      for (const f of files) {
-        const full = path.join(outbox, f);
-        try {
-          const rawContent = fs.readFileSync(full, 'utf8');
-          const { text: repaired } = repairLiteralLineBreaksInJsonStrings(rawContent);
-          const raw = JSON.parse(repaired);
-          raw.from = agentId;
-          raw.hops = (raw.hops || 0) + 1;
-          this.routeMessage(raw);
-
-          const sentDir = path.join(outbox, '.sent');
-          fs.mkdirSync(sentDir, { recursive: true });
-          fs.renameSync(full, path.join(sentDir, f));
-          routedTotal++;
-        } catch (e) {
-          try {
-            const malformedDir = path.join(outbox, '.malformed');
-            fs.mkdirSync(malformedDir, { recursive: true });
-            fs.renameSync(full, path.join(malformedDir, f));
-            this.appendLog({
-              kind: 'outbox_malformed',
-              agentId,
-              file: f,
-              error: e.message
-            });
-          } catch (r) {}
-        }
-      }
-    }
-
-    return routedTotal;
+    return _drainOutbox(this);
   }
 
   /**
@@ -631,198 +461,35 @@ export class SwarmCoordinator {
 
   /**
    * Starts the background autonomic heartbeat loop.
-   * Periodically drains mailboxes, executes agent reflexes on pending messages,
-   * updates task states, and emits telemetry.
+   * Delegates to swarm-reflex.js.
    */
   startHeartbeat(intervalMs = 3500) {
-    if (this._heartbeatTimer) return;
-    this._heartbeatCount = 0;
-    this._heartbeatTimer = setInterval(() => {
-      this.heartbeatTick();
-    }, intervalMs);
-    if (this._heartbeatTimer && typeof this._heartbeatTimer.unref === 'function') {
-      this._heartbeatTimer.unref();
-    }
+    _startHeartbeat(this, intervalMs);
   }
 
   stopHeartbeat() {
-    if (this._heartbeatTimer) {
-      clearInterval(this._heartbeatTimer);
-      this._heartbeatTimer = null;
-    }
+    _stopHeartbeat(this);
   }
 
   /**
-   * Single autonomous tick:
-   * 1. Drains outboxes to target inboxes.
-   * 2. Inspects each agent's inbox and executes the autonomous reaction (Agent Reflex).
-   * 3. Performs periodic metropolitan patrol checks if the system is idle.
+   * Single autonomous tick. Delegates to swarm-reflex.js.
    */
   heartbeatTick() {
-    this._heartbeatCount = (this._heartbeatCount || 0) + 1;
-
-    // 1. Drain pending outbox files
-    this.drainOutbox();
-
-    // 2. Process inboxes across all agents
-    const agentsDir = path.join(this.swarmRoot, 'agents');
-    if (!fs.existsSync(agentsDir)) return;
-
-    let activeWorkFound = false;
-    let agents = [];
-    try {
-      agents = fs.readdirSync(agentsDir);
-    } catch (e) {
-      return;
-    }
-
-    for (const agentId of agents) {
-      const inboxDir = path.join(agentsDir, agentId, 'inbox');
-      if (!fs.existsSync(inboxDir)) continue;
-
-      let files = [];
-      try {
-        files = fs.readdirSync(inboxDir).filter(f => f.endsWith('.json') && !f.startsWith('.'));
-      } catch (e) {
-        continue;
-      }
-
-      for (const f of files) {
-        activeWorkFound = true;
-        const msgFile = path.join(inboxDir, f);
-        try {
-          const msg = JSON.parse(fs.readFileSync(msgFile, 'utf8'));
-          this.executeAgentReflex(agentId, msg);
-
-          // Archive processed message to inbox/.done/
-          const doneDir = path.join(inboxDir, '.done');
-          fs.mkdirSync(doneDir, { recursive: true });
-          fs.renameSync(msgFile, path.join(doneDir, f));
-        } catch (e) {
-          try {
-            const doneDir = path.join(inboxDir, '.done');
-            fs.mkdirSync(doneDir, { recursive: true });
-            fs.renameSync(msgFile, path.join(doneDir, `err-${f}`));
-          } catch (r) {}
-        }
-      }
-    }
-
-    // 3. Periodic Autonomous Patrol (every ~6 ticks, if idle)
-    if (!activeWorkFound && this._heartbeatCount % 6 === 0) {
-      this.executeAutonomousPatrol();
-    }
+    _heartbeatTick(this);
   }
 
   /**
-   * Agent Reflex: An agent reads a message and autonomously produces a response.
+   * Agent Reflex: Delegates to swarm-reflex.js.
    */
   executeAgentReflex(agentId, msg) {
-    const outboxDir = path.join(this.swarmRoot, 'agents', agentId, 'outbox');
-    fs.mkdirSync(outboxDir, { recursive: true });
-
-    if (agentId === 'agent.bridge_engineer' && msg.act === 'request') {
-      this.updateAgentStatus(agentId, 'working');
-
-      const tasks = this.getTasks();
-      const openTask = tasks.find(t => t.assignee === agentId && (t.status === 'todo' || t.status === 'doing'));
-      const resultText = 'Topological cycle analyzed. Decoupled contract interface synthesized to eliminate runtime cyclic deadlock.';
-
-      if (openTask) {
-        this.updateTaskStatus(openTask.id, 'done', resultText);
-      }
-
-      const reply = {
-        to: 'agent.commander',
-        act: 'done',
-        subject: `✔ [REMEDIATED] Decoupled Interface Synthesized (${msg.subject})`,
-        body: `AKOM Bridge Engineer report:\n${resultText}\nAST edge validated against Tarjan SCC DAG invariants.`,
-        conversation: msg.conversation,
-        in_reply_to: msg.id
-      };
-      this.routeMessage({ from: agentId, ...reply });
-
-      const currentBoard = this.getBoard();
-      this.updateBoard(currentBoard + `\n- **[RESOLVED]** ${msg.subject} -> Remediated by \`${agentId}\` at ${new Date().toLocaleTimeString()}\n`);
-
-      setTimeout(() => {
-        this.updateAgentStatus(agentId, 'idle');
-        this.updateAgentStatus('agent.commander', 'idle');
-      }, 5000);
-
-    } else if (agentId === 'agent.security_sentinel' && msg.act === 'request') {
-      this.updateAgentStatus(agentId, 'working');
-      const tasks = this.getTasks();
-      const openTask = tasks.find(t => t.assignee === agentId && (t.status === 'todo' || t.status === 'doing'));
-      const resultText = 'Boundary audit completed. Sensitive variables masked and client-server boundaries verified.';
-      if (openTask) {
-        this.updateTaskStatus(openTask.id, 'done', resultText);
-      }
-
-      this.routeMessage({
-        from: agentId,
-        to: 'agent.commander',
-        act: 'done',
-        subject: '🛡️ [VERIFIED] CWE Boundary Compliance Verified',
-        body: 'Galata Security Sentinel audit complete: Zero active token leaks in AST export signatures.',
-        conversation: msg.conversation,
-        in_reply_to: msg.id
-      });
-
-      setTimeout(() => {
-        this.updateAgentStatus(agentId, 'idle');
-        this.updateAgentStatus('agent.commander', 'idle');
-      }, 5000);
-
-    } else if (agentId === 'agent.commander' && msg.act === 'done') {
-      this.appendLog({
-        kind: 'incident_resolved',
-        from: msg.from,
-        subject: msg.subject,
-        ts: Date.now()
-      });
-      this.updateAgentStatus('agent.commander', 'idle');
-
-    } else if (agentId === 'agent.qa_inspector' && msg.act === 'query') {
-      this.routeMessage({
-        from: agentId,
-        to: msg.from,
-        act: 'inform',
-        subject: 'Telemetry Gatekeeper Nominal',
-        body: 'Automated test suites nominal. DAG verified clean. Zero circular deadlock invariants.',
-        conversation: msg.conversation,
-        in_reply_to: msg.id
-      });
-
-    } else if (msg.act === 'query') {
-      this.routeMessage({
-        from: agentId,
-        to: msg.from,
-        act: 'inform',
-        subject: `Re: ${msg.subject} [Telemetry Verified]`,
-        body: `Agent ${agentId} status nominal. District parameters verified healthy.`,
-        conversation: msg.conversation,
-        in_reply_to: msg.id
-      });
-    }
+    _executeAgentReflex(this, agentId, msg);
   }
 
   /**
-   * Autonomous Patrol: The Commander checks in with QA or Bridge Specialist periodically.
+   * Autonomous Patrol: Delegates to swarm-reflex.js.
    */
   executeAutonomousPatrol() {
-    const patrolTargets = ['agent.qa_inspector', 'agent.bridge_engineer', 'agent.security_sentinel'];
-    const targetId = patrolTargets[Math.floor(Math.random() * patrolTargets.length)];
-
-    this.routeMessage({
-      from: 'agent.commander',
-      to: targetId,
-      act: 'query',
-      subject: `Metropolitan Patrol Check [Routine Telemetry]`,
-      body: `AKOM Central Command automated telemetry poll. Report district coupling status and boundary invariants.`,
-      requires_reply: true,
-      needs_human: false
-    });
+    _executeAutonomousPatrol(this);
   }
 
   /**

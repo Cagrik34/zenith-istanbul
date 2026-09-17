@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { TrafficEngine } from '../src/core/traffic-engine.js';
+import { findSCCs } from '../src/core/tarjan-scc.js';
 
 test('TrafficEngine - Tarjan SCC Cycle Detection', async (t) => {
   await t.test('verifies clean DAG topology has 0 cyclic deadlocks', () => {
@@ -45,5 +46,30 @@ test('TrafficEngine - Tarjan SCC Cycle Detection', async (t) => {
     const report = engine.generateTelemetryReport();
 
     assert.ok(report.deadCodeModules >= 1, 'Should identify isolated modules');
+  });
+
+  await t.test('standalone findSCCs returns empty array for empty graph or DAG', () => {
+    const emptyAdj = new Map();
+    assert.deepEqual(findSCCs(emptyAdj), []);
+
+    const dagAdj = new Map([
+      ['A', new Set(['B'])],
+      ['B', new Set(['C'])],
+      ['C', new Set()]
+    ]);
+    assert.deepEqual(findSCCs(dagAdj), []);
+  });
+
+  await t.test('standalone findSCCs detects cycles in arbitrary directed graphs', () => {
+    const cyclicAdj = new Map([
+      ['A', new Set(['B'])],
+      ['B', new Set(['C'])],
+      ['C', new Set(['A'])],
+      ['D', new Set(['A'])]
+    ]);
+    const sccs = findSCCs(cyclicAdj);
+    assert.equal(sccs.length, 1);
+    const cycleNodes = sccs[0].sort();
+    assert.deepEqual(cycleNodes, ['A', 'B', 'C']);
   });
 });

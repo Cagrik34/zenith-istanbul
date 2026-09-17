@@ -59,4 +59,36 @@ test('CodebaseParser - AST Static Analysis', async (t) => {
     assert.equal(clientMod.district.side, 'europe', 'UI component belongs to European sector');
     assert.equal(serverMod.district.side, 'asia', 'Backend service belongs to Asian sector');
   });
+
+  await t.test('strictly separates European and Asian sectors for real project architecture', () => {
+    // 1. European Side: Client, UI, 3D Engine, CLI Coordinator
+    const appJs = parser.parseModule('public/js/app.js', 'console.log("Client dashboard");');
+    const bosphorusScene = parser.parseModule('public/js/bosphorus-scene.js', 'import * as THREE from "../vendor/three/three.module.js";');
+    const cliJs = parser.parseModule('bin/cli.js', '#!/usr/bin/env node\nconst fs = require("fs");\nconsole.log("CLI");');
+    const swarmCoord = parser.parseModule('src/core/swarm-coordinator.js', 'export class SwarmCoordinator {}');
+
+    assert.equal(appJs.district.side, 'europe', 'app.js must be in European sector (Galata)');
+    assert.equal(bosphorusScene.district.side, 'europe', 'bosphorus-scene.js must be in European sector (Beşiktaş)');
+    assert.equal(cliJs.district.side, 'europe', 'cli.js must be in European sector (Levent/Maslak)');
+    assert.equal(cliJs.isCore, true, 'cli.js must be recognized as core entrypoint');
+    assert.equal(swarmCoord.district.side, 'europe', 'swarm-coordinator must be in European sector (Maslak)');
+
+    // 2. Asian Side: Databases, Vaults, Reflexes, Sentry
+    const modelCatalog = parser.parseModule('src/core/model-catalog.js', 'export const catalog = [];');
+    const swarmReflex = parser.parseModule('src/core/swarm-reflex.js', 'export function onEvent() {}');
+    const securitySentry = parser.parseModule('src/core/security-sentry.js', 'export function auditLeakedSecrets() {}');
+
+    assert.equal(modelCatalog.district.side, 'asia', 'model-catalog.js must be in Asian sector (Ataşehir)');
+    assert.equal(swarmReflex.district.side, 'asia', 'swarm-reflex.js must be in Asian sector (Kadıköy)');
+    assert.equal(securitySentry.district.side, 'asia', 'security-sentry.js must be in Asian sector (Üsküdar)');
+
+    // 3. Bosphorus Strait (Boğaz): Central API Gateway & Middleware (Kız Kulesi)
+    const httpMiddleware = parser.parseModule('src/core/http-middleware.js', 'export function securityHeaders() {}');
+    assert.equal(httpMiddleware.district.side, 'bosphorus', 'http-middleware.js must be Maiden Tower in Bosphorus');
+    assert.equal(httpMiddleware.district.isLandmark, 'maiden_tower', 'must be maiden_tower landmark');
+
+    // 4. Historic Peninsula: Core Compilers & Graph Solvers
+    const astParser = parser.parseModule('src/core/ast-parser.js', 'export class CodebaseParser {}');
+    assert.equal(astParser.district.side, 'historic', 'ast-parser.js must be in Historic Peninsula');
+  });
 });

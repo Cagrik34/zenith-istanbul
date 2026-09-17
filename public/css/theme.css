@@ -1,0 +1,74 @@
+/**
+ * ZenithIstanbul - Design Tokens, Variables & Themes
+ */
+:root {
+  --bg-dark: #060913;
+  --panel-bg: rgba(10, 16, 31, 0.84);
+  --panel-border: rgba(0, 240, 255, 0.25);
+  --accent-cyan: #00f0ff;
+  --accent-pink: #ff007f;
+  --accent-gold: #e5c07b;
+  --accent-red: #ff1744;
+  --accent-green: #00e676;
+  --text-main: #f0f4fc;
+  --text-muted: #8899b5;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body, html {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background-color: var(--bg-dark);
+  font-family: var(--font-sans, 'Space Grotesk', sans-serif);
+  color: var(--text-main);
+  user-select: none;
+}
+
+/* ─── Light (Daylight Bosphorus) Theme Overrides ─── */
+body.theme-light {
+  --bg-dark: #eef2f8;
+  --panel-bg: rgba(248, 250, 255, 0.94);
+  --panel-border: rgba(0, 130, 200, 0.28);
+  --accent-cyan: #0088cc;
+  --accent-pink: #d9006c;
+  --accent-gold: #c49000;
+  --accent-red: #d32f2f;
+  --accent-green: #2e7d32;
+  --text-main: #0c1524;
+  --text-muted: #4a5d78;
+}
+
+body.theme-light input,
+body.theme-light select,
+body.theme-light textarea {
+  background: #ffffff !important;
+  color: #0c1524 !important;
+  border-color: rgba(0, 130, 200, 0.35) !important;
+}
+
+body.theme-light .btn-control {
+  background: #ffffff !important;
+  color: #0c1524 !important;
+  border-color: rgba(0, 130, 200, 0.35) !important;
+}
+
+body.theme-light .btn-control:hover {
+  background: #e1e9f5 !important;
+  color: #0088cc !important;
+}
+
+body.theme-light #terminal-drawer {
+  background: #f4f7fc !important;
+  border-top-color: rgba(0, 130, 200, 0.4) !important;
+}
+
+body.theme-light #terminal-output {
+  background: #ffffff !important;
+  color: #1a273a !important;
+}
