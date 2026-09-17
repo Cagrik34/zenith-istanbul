@@ -10,6 +10,7 @@
   "files": [
     "bin/",
     "src/",
+    "docs/",
     "assets/",
     "index.html",
     "serve.js",

@@ -26,6 +26,15 @@ The project adheres to [Semantic Versioning](https://semver.org/).
   - **CWE-200 / CWE-798**: Flags leaked credentials and environment secrets with 1-indexed source coordinates.
 - **Localhost CSRF Firewall**: Origin and referer validation with DNS-rebinding protection.
 
+### AKOM Autonomous SRE Swarm & Memory Graph
+- **Autonomous Multi-Agent System**: 5 specialized agents (Commander, Bridge Engineer, Security Sentinel, Refactorer, QA Inspector) operating via atomic filesystem mailboxes.
+- **FIPA-Lite Message Routing**: Type-safe speech acts (`request`, `inform`, `query`, `propose`, `agree`, `refuse`, `done`) with anti-livelock hop caps.
+- **Resilient Message Pipeline**: Literal line-break recovery (`repairLiteralLineBreaksInJsonStrings`), `.malformed/` quarantine, and broadcast fan-out filtering.
+- **Invariant-Preserving Task Ledger**: Atomic merge rules (`mergeTaskLedger`, `patchTaskInLedger`) safeguarding custom card metadata.
+- **5-Tier Secret Redaction Battery**: Masks private keys, JWTs, cloud API keys, Bearer tokens, and named key-value credentials across all inter-agent traffic.
+- **Interactive Memory Graph**: Force-directed equilibrium positioning using the Fruchterman–Reingold physics model, client-side semantic topic extraction, and interactive SVG dragging.
+- **Dynamic Model Catalog**: 6-hour disk TTL catalog caching with strict shell injection validation (`validateModelId`).
+
 ### Headless CI Gatekeeper
 - **CLI and GitHub Actions Integration**:
   - `zenith-istanbul --ci --fail-on-cycle --fail-on-leak [directory]`

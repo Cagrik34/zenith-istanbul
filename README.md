@@ -69,6 +69,16 @@ $$\text{Traffic Index} = \min\left(100, \text{round}\left(\frac{|\text{SCC Edges
   ```
 - Exits with non-zero status codes upon invariant violations, blocking unauthorized PR merges.
 
+### 5. Autonomous AKOM SRE Swarm
+- Operates 5 specialized local agents (Commander, Bridge Engineer, Security Sentinel, Refactorer, QA Inspector) collaborating over an atomic filesystem mailbox protocol.
+- Features resilient JSON string recovery (`repairLiteralLineBreaksInJsonStrings`), broadcast fan-out filtering, non-destructive task ledger persistence, and 5-tier cryptographic secret redaction.
+- Detailed design: [docs/SWARM_ARCHITECTURE.md](docs/SWARM_ARCHITECTURE.md)
+
+### 6. Interactive Memory & Knowledge Graph
+- Computes node equilibrium coordinates using a deterministic Fruchterman–Reingold spring-force algorithm ($O(I \cdot (V^2 + E))$).
+- Performs client-side semantic topic extraction to surface shared architectural knowledge across agent long-term memory streams without sending unredacted code to external embedding APIs.
+- Detailed design: [docs/MEMORY_GRAPH_SPEC.md](docs/MEMORY_GRAPH_SPEC.md)
+
 ---
 
 ## Quick Start
