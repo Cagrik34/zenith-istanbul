@@ -53,27 +53,27 @@ All core modules and boundary conditions are verified by automated unit, integra
 ```mermaid
 flowchart TD
     subgraph INGEST ["1. Static Ingestion"]
-        A[Local Repository / Drag & Drop / GitHub API] --> B[CodebaseParser - AST Static Lexer]
+        A["Local Repository / Drag & Drop / GitHub API"] --> B["CodebaseParser - AST Static Lexer"]
     end
 
     subgraph SOLVERS ["2. Graph-Theoretic & Security Solvers"]
-        B --> C[Tarjan SCC Solver\nCycle Detection O(V+E)]
-        B --> D[Security Sentry\nMITRE CWE Boundary Auditing]
-        B --> E[District Mapper\nEurope / Historic / Asia / Bosphorus]
-        C --> F[Traffic Coupling Engine\nTraffic Index Density Calculation]
+        B --> C["Tarjan SCC Solver<br/>Cycle Detection O(V+E)"]
+        B --> D["Security Sentry<br/>MITRE CWE Boundary Auditing"]
+        B --> E["District Mapper<br/>Europe / Historic / Asia / Bosphorus"]
+        C --> F["Traffic Coupling Engine<br/>Traffic Index Density Calculation"]
     end
 
     subgraph PRESENTATION ["3. Spatial & Telemetry Delivery"]
-        E --> G[Three.js 3D Viewport\nProcedural Buildings & Nakkaştepe]
-        F --> H[Bridge Particle Ingress\nCross-Boundary Coupling]
-        C --> I[DiffEngine Contract Synthesizer\nUnified Git Diffs]
-        D --> J[Telemetry HUD & Security Drawer\nReal-Time Sparklines]
+        E --> G["Three.js 3D Viewport<br/>Procedural Buildings & Nakkaştepe"]
+        F --> H["Bridge Particle Ingress<br/>Cross-Boundary Coupling"]
+        C --> I["DiffEngine Contract Synthesizer<br/>Unified Git Diffs"]
+        D --> J["Telemetry HUD & Security Drawer<br/>Real-Time Sparklines"]
     end
 
     subgraph CI ["4. CI Gatekeeper & Local Agents"]
-        F --> K[CLI Headless Gatekeeper\n--fail-on-cycle --fail-on-leak]
-        K --> L[Automated PR Markdown Report\nGitHub Step Summary]
-        K --> M[AKOM Local Agent Orchestrator\nMailbox Coordination]
+        F --> K["CLI Headless Gatekeeper<br/>--fail-on-cycle --fail-on-leak"]
+        K --> L["Automated PR Markdown Report<br/>GitHub Step Summary"]
+        K --> M["AKOM Local Agent Orchestrator<br/>Mailbox Coordination"]
     end
 ```
 

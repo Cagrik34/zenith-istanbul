@@ -53,27 +53,27 @@ Tüm çekirdek modüller ve sınır durumları otomatik birim, entegrasyon ve CI
 ```mermaid
 flowchart TD
     subgraph INGEST ["1. Statik Alma Katmanı"]
-        A[Yerel Depo / Sürükle-Bırak / GitHub API] --> B[CodebaseParser - AST Statik Ayrıştırıcı]
+        A["Yerel Depo / Sürükle-Bırak / GitHub API"] --> B["CodebaseParser - AST Statik Ayrıştırıcı"]
     end
 
     subgraph SOLVERS ["2. Çizge Teorisi & Güvenlik Çözücüler"]
-        B --> C[Tarjan SCC Çözücü\nDöngü Tespiti O(V+E)]
-        B --> D[Güvenlik Nöbetçisi\nMITRE CWE Sınır Denetimi]
-        B --> E[Bölge Eşleyici\nAvrupa / Tarihi / Asya / Boğaz]
-        C --> F[Trafik Eşleşme Motoru\nTrafik Endeksi Hesaplaması]
+        B --> C["Tarjan SCC Çözücü<br/>Döngü Tespiti O(V+E)"]
+        B --> D["Güvenlik Nöbetçisi<br/>MITRE CWE Sınır Denetimi"]
+        B --> E["Bölge Eşleyici<br/>Avrupa / Tarihi / Asya / Boğaz"]
+        C --> F["Trafik Eşleşme Motoru<br/>Trafik Endeksi Hesaplaması"]
     end
 
     subgraph PRESENTATION ["3. Uzamsal & Telemetri Sunumu"]
-        E --> G[Three.js 3D Görünüm\nProsedürel Binalar & Nakkaştepe]
-        F --> H[Köprü Parçacık Girişi\nSınırlar Arası Eşleşme]
-        C --> I[DiffEngine Sözleşme Sentezleyici\nStandart Birleşik Git Diff]
-        D --> J[Telemetri HUD & Güvenlik Çekmecesi\nGerçek Zamanlı Trend Çizgileri]
+        E --> G["Three.js 3D Görünüm<br/>Prosedürel Binalar & Nakkaştepe"]
+        F --> H["Köprü Parçacık Girişi<br/>Sınırlar Arası Eşleşme"]
+        C --> I["DiffEngine Sözleşme Sentezleyici<br/>Standart Birleşik Git Diff"]
+        D --> J["Telemetri HUD & Güvenlik Çekmecesi<br/>Gerçek Zamanlı Trend Çizgileri"]
     end
 
     subgraph CI ["4. CI Kapı Denetçisi & Yerel Ajanlar"]
-        F --> K[CLI Headless Gatekeeper\n--fail-on-cycle --fail-on-leak]
-        K --> L[Otomatik PR Markdown Raporu\nGitHub Step Summary]
-        K --> M[AKOM Yerel Ajan Yöneticisi\nPosta Kutusu Koordinasyonu]
+        F --> K["CLI Headless Gatekeeper<br/>--fail-on-cycle --fail-on-leak"]
+        K --> L["Otomatik PR Markdown Raporu<br/>GitHub Step Summary"]
+        K --> M["AKOM Yerel Ajan Yöneticisi<br/>Posta Kutusu Koordinasyonu"]
     end
 ```
 
